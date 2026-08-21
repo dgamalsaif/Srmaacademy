@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Shield, Eye, EyeOff, ArrowLeft, Headphones } from "lucide-react";
+import { Shield, Eye, EyeOff, ArrowLeft, Headphones, X, CheckCircle2, Loader2, UserRound, Mail, Phone, Building2 } from "lucide-react";
 import { useLocation } from "wouter";
 
 const ADMIN_PASSWORD = "RSPF2026";
@@ -8,6 +8,7 @@ export default function CoordinatorPortal() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
+  const [requestOpen, setRequestOpen] = useState(false);
   const [, setLocation] = useLocation();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -29,7 +30,7 @@ export default function CoordinatorPortal() {
           <p className="text-sm text-slate-500 mt-2">سجّل دخولك برمز الوصول الخاص بك</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-[0_18px_45px_rgba(17,38,59,0.10)] border border-slate-200/80 p-8 text-center">
+        <div className="page-enter bg-white rounded-2xl shadow-[0_18px_45px_rgba(17,38,59,0.10)] border border-slate-200/80 p-8 text-center">
           <div className="w-14 h-14 bg-[#e7f3ef] rounded-full flex items-center justify-center mx-auto mb-5">
             <Shield size={27} className="text-[#117b59]" strokeWidth={2.2} />
           </div>
@@ -79,18 +80,132 @@ export default function CoordinatorPortal() {
           <div className="mt-6 pt-5 border-t border-slate-100">
             <p className="text-sm text-slate-500">
               لا تملك حساباً؟{" "}
-              <a href="https://t.me/RSPF_Services" target="_blank" rel="noopener noreferrer"
+              <button type="button" onClick={() => setRequestOpen(true)}
                 data-testid="link-coordinator-help"
                 className="text-[#117b59] font-bold hover:underline inline-flex items-center gap-1">
                 سجّل الآن
                 <Headphones size={14} />
-              </a>
+              </button>
             </p>
           </div>
         </div>
         <p className="text-center text-xs text-slate-400 mt-6">
           البوابة مخصصة للمنسقين المعتمدين فقط
         </p>
+      </div>
+      {requestOpen && <CoordinatorRequestModal onClose={() => setRequestOpen(false)} />}
+    </div>
+  );
+}
+
+interface CoordinatorRequestModalProps {
+  onClose: () => void;
+}
+
+function CoordinatorRequestModal({ onClose }: CoordinatorRequestModalProps) {
+  const [form, setForm] = useState({
+    fullName: "",
+    phone: "",
+    email: "",
+    affiliation: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [requestNumber, setRequestNumber] = useState("");
+  const [error, setError] = useState("");
+
+  const submitRequest = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      const response = await fetch("/api/service-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: form.fullName,
+          phone: form.phone,
+          email: form.email,
+          serviceType: "طلب اعتماد منسق بحثي",
+          details: `أرغب في الانضمام كمنسق للأبحاث العلمية في منصة RSPF. جهة الانتساب: ${form.affiliation}`,
+          fileLink: "",
+        }),
+      });
+      const saved = await response.json() as { id?: number; error?: string };
+      if (!response.ok || !saved.id) throw new Error(saved.error || "تعذر إرسال الطلب");
+      const number = `RSPF-COORD-${String(saved.id).padStart(4, "0")}`;
+      setRequestNumber(number);
+      const message = encodeURIComponent(
+        `طلب اعتماد منسق بحثي جديد\n\nالاسم: ${form.fullName}\nالهاتف: ${form.phone}\nالبريد: ${form.email}\nجهة الانتساب: ${form.affiliation}\nرقم الطلب: ${number}`
+      );
+      window.open(`https://wa.me/966578032336?text=${message}`, "_blank", "noopener,noreferrer");
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : "حدث خطأ غير متوقع");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-[#102d2a]/45 backdrop-blur-sm" />
+      <div className="relative w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl page-enter" onClick={(event) => event.stopPropagation()} dir="rtl">
+        <button type="button" onClick={onClose} data-testid="button-close-coordinator-request" className="absolute left-5 top-5 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
+          <X size={19} />
+        </button>
+        {requestNumber ? (
+          <div className="py-8 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#e7f3ef]">
+              <CheckCircle2 size={32} className="text-[#117b59]" />
+            </div>
+            <h2 className="text-xl font-black text-[#172238]">تم إرسال طلبك بنجاح</h2>
+            <p className="mt-2 text-sm leading-7 text-slate-500">تم إشعار الإدارة برسالة واتساب، وسيتم التواصل معك بعد مراجعة الطلب.</p>
+            <div className="my-5 rounded-xl border border-[#d8eee7] bg-[#f3fbf8] px-4 py-3">
+              <p className="text-xs text-[#568477]">رقم طلب المتابعة</p>
+              <p data-testid="text-coordinator-request-number" className="mt-1 font-black tracking-wider text-[#117b59]" dir="ltr">{requestNumber}</p>
+            </div>
+            <p className="text-xs leading-6 text-slate-400">بعد اعتمادك سيصلك رمز الدخول من الإدارة عبر واتساب أو البريد الإلكتروني.</p>
+            <button type="button" onClick={onClose} data-testid="button-close-request-success" className="mt-6 w-full rounded-xl bg-[#117b59] py-3 font-bold text-white transition hover:bg-[#0c6549]">إغلاق</button>
+          </div>
+        ) : (
+          <>
+            <div className="mb-6 border-b border-slate-100 pb-5">
+              <p className="text-xs font-bold text-[#117b59]">طلب اعتماد جديد</p>
+              <h2 className="mt-1 text-xl font-black text-[#172238]">كن منسقاً للأبحاث العلمية</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-500">أدخل بياناتك، وسنرسل طلبك مباشرة إلى إدارة RSPF للمراجعة.</p>
+            </div>
+            <form onSubmit={submitRequest} className="space-y-4">
+              {[
+                { key: "fullName", label: "الاسم الكامل", placeholder: "د. أحمد محمد", icon: UserRound, type: "text" },
+                { key: "phone", label: "رقم الواتساب", placeholder: "+966 5X XXX XXXX", icon: Phone, type: "tel" },
+                { key: "email", label: "البريد الإلكتروني", placeholder: "name@example.com", icon: Mail, type: "email" },
+                { key: "affiliation", label: "جهة الانتساب", placeholder: "الجامعة أو المستشفى", icon: Building2, type: "text" },
+              ].map(({ key, label, placeholder, icon: Icon, type }) => (
+                <div key={key}>
+                  <label htmlFor={`coordinator-${key}`} className="mb-1.5 block text-right text-sm font-semibold text-[#263447]">{label}</label>
+                  <div className="relative">
+                    <Icon size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      id={`coordinator-${key}`}
+                      data-testid={`input-coordinator-${key}`}
+                      required
+                      type={type}
+                      placeholder={placeholder}
+                      value={form[key as keyof typeof form]}
+                      onChange={(event) => setForm({ ...form, [key]: event.target.value })}
+                      className="w-full rounded-xl border border-slate-200 py-3 pr-10 pl-4 text-right text-sm outline-none transition focus:border-[#117b59] focus:ring-2 focus:ring-[#117b59]/15"
+                      dir={key === "email" || key === "phone" ? "ltr" : undefined}
+                    />
+                  </div>
+                </div>
+              ))}
+              {error && <p data-testid="status-coordinator-request-error" className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-right text-sm text-red-600">{error}</p>}
+              <button type="submit" disabled={loading} data-testid="button-submit-coordinator-request" className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#117b59] py-3.5 font-bold text-white shadow-[0_8px_18px_rgba(17,123,89,0.16)] transition hover:bg-[#0c6549] disabled:opacity-60">
+                {loading ? <><Loader2 size={17} className="animate-spin" /> جارٍ إرسال الطلب...</> : "إرسال طلب الاعتماد"}
+              </button>
+              <p className="text-center text-xs leading-5 text-slate-400">بعد الإرسال ستظهر لك مباشرةً بطاقة تحتوي على رقم طلبك.</p>
+            </form>
+          </>
+        )}
       </div>
     </div>
   );
