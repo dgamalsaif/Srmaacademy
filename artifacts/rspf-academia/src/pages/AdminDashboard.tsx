@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { Plus, Pencil, Trash2, Eye, X, ChevronLeft, LogOut, Search, Users, BookOpen, TrendingUp, AlertCircle } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, X, ChevronLeft, LogOut, Search, Users, BookOpen, TrendingUp, AlertCircle, UserPlus } from "lucide-react";
 import { getResearchOpportunities, saveResearchOpportunities, getNextId, ResearchOpportunity, SPECIALTY_COLORS } from "@/lib/researchData";
+import RegistrationModal from "@/components/RegistrationModal";
 
 const EMPTY_FORM: Omit<ResearchOpportunity, "id" | "createdAt"> = {
   specialty: "",
@@ -286,6 +287,7 @@ export default function AdminDashboard() {
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<ResearchOpportunity | null>(null);
   const [deleteItem, setDeleteItem] = useState<ResearchOpportunity | null>(null);
+  const [studentResearch, setStudentResearch] = useState<ResearchOpportunity | null>(null);
 
   useEffect(() => {
     setResearch(getResearchOpportunities());
@@ -482,6 +484,15 @@ export default function AdminDashboard() {
                             >
                               <Pencil size={16} />
                             </button>
+                            <button
+                              onClick={() => setStudentResearch(item)}
+                              data-testid={`button-add-student-${item.id}`}
+                              className="flex items-center gap-1.5 rounded-lg bg-[#117b59] px-3 py-2 text-xs font-bold text-white transition-colors hover:bg-[#0c6549]"
+                              title="إضافة طالب"
+                            >
+                              <UserPlus size={14} />
+                              إضافة طالب
+                            </button>
                             <Link
                               href={`/research/${item.id}`}
                               data-testid={`button-view-${item.id}`}
@@ -530,6 +541,14 @@ export default function AdminDashboard() {
           research={deleteItem}
           onConfirm={handleDelete}
           onClose={() => setDeleteItem(null)}
+        />
+      )}
+      {studentResearch && (
+        <RegistrationModal
+          isOpen={true}
+          onClose={() => setStudentResearch(null)}
+          researchTitle={studentResearch.title}
+          researchId={studentResearch.id}
         />
       )}
     </div>

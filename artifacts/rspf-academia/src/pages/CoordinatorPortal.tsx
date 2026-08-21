@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Shield, Eye, EyeOff } from "lucide-react";
+import { Shield, Eye, EyeOff, ArrowLeft, Headphones } from "lucide-react";
 import { useLocation } from "wouter";
 
 const ADMIN_PASSWORD = "RSPF2026";
@@ -21,32 +21,37 @@ export default function CoordinatorPortal() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-white flex items-center justify-center px-4 py-16">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 bg-[#0C3156]/8 border border-[#0C3156]/15 text-[#0C3156] px-4 py-1.5 rounded-full text-sm font-semibold mb-4">
-            بوابة المنسق
-          </div>
+    <div className="min-h-screen bg-[#f5f8fa] flex items-center justify-center px-4 py-16">
+      <div className="w-full max-w-[430px]">
+        <div className="text-center mb-7">
+          <p className="text-sm font-bold text-[#0C3156] mb-2">بوابة المنسق — Research Aid 2026</p>
+          <h1 className="text-2xl font-black text-[#172238]">بوابة المنسقين</h1>
+          <p className="text-sm text-slate-500 mt-2">سجّل دخولك برمز الوصول الخاص بك</p>
         </div>
 
-        <div className="bg-white rounded-3xl shadow-xl border border-slate-100 p-8 text-center">
-          <div className="w-16 h-16 bg-gradient-to-br from-[#0C3156] to-[#1A5FAE] rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-md">
-            <Shield size={30} className="text-white" />
+        <div className="bg-white rounded-2xl shadow-[0_18px_45px_rgba(17,38,59,0.10)] border border-slate-200/80 p-8 text-center">
+          <div className="w-14 h-14 bg-[#e7f3ef] rounded-full flex items-center justify-center mx-auto mb-5">
+            <Shield size={27} className="text-[#117b59]" strokeWidth={2.2} />
           </div>
-          <h1 className="text-2xl font-black text-slate-900 mb-2">بوابة المنسقين</h1>
-          <p className="text-slate-500 text-sm mb-7">سجل دخولك برمز الوصول الخاص بك للوصول إلى لوحة التحكم</p>
+          <h2 className="text-xl font-black text-[#172238] mb-2">دخول المنسق</h2>
+          <p className="text-slate-500 text-sm mb-7">أدخل رمز الدخول للوصول إلى لوحة إدارة الفرص والطلاب</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="relative">
+              <label htmlFor="coordinator-password" className="block text-right text-sm font-semibold text-[#263447] mb-2">
+                رمز الدخول
+              </label>
               <input
+                id="coordinator-password"
                 data-testid="input-coordinator-password"
                 type={showPassword ? "text" : "password"}
                 required
-                placeholder="رمز الدخول"
+                autoComplete="current-password"
+                placeholder="أدخل الرمز هنا..."
                 value={password}
                 onChange={(e) => { setPassword(e.target.value); setError(""); }}
-                className={`w-full border rounded-xl px-5 py-3.5 text-right text-sm focus:outline-none focus:ring-2 transition-colors ${
-                  error ? "border-red-300 focus:ring-red-200" : "border-slate-200 focus:ring-[#0C3156]/20 focus:border-[#0C3156]"
+                className={`w-full border rounded-xl px-5 py-3.5 text-right text-sm bg-white focus:outline-none focus:ring-2 transition-colors ${
+                  error ? "border-red-300 focus:ring-red-200" : "border-slate-200 focus:ring-[#117b59]/20 focus:border-[#117b59]"
                 }`}
               />
               <button
@@ -64,25 +69,27 @@ export default function CoordinatorPortal() {
             <button
               data-testid="button-coordinator-login"
               type="submit"
-              className="w-full bg-[#0C3156] text-white font-bold py-3.5 rounded-xl hover:bg-[#0a2847] transition-colors text-base shadow-sm"
+              className="w-full bg-[#117b59] text-white font-bold py-3.5 rounded-xl hover:bg-[#0c6549] transition-colors text-base shadow-[0_8px_18px_rgba(17,123,89,0.18)] flex items-center justify-center gap-2"
             >
-              دخول إلى لوحة التحكم
+              دخول
+              <ArrowLeft size={17} />
             </button>
           </form>
 
           <div className="mt-6 pt-5 border-t border-slate-100">
             <p className="text-sm text-slate-500">
-              هل تحتاج مساعدة؟{" "}
+              لا تملك حساباً؟{" "}
               <a href="https://t.me/RSPF_Services" target="_blank" rel="noopener noreferrer"
                 data-testid="link-coordinator-help"
-                className="text-[#0C3156] font-semibold hover:underline">
-                تواصل مع الإدارة
+                className="text-[#117b59] font-bold hover:underline inline-flex items-center gap-1">
+                سجّل الآن
+                <Headphones size={14} />
               </a>
             </p>
           </div>
         </div>
         <p className="text-center text-xs text-slate-400 mt-6">
-          هذه البوابة مخصصة لمنسقي RSPF فقط — كلمة المرور: RSPF2026
+          البوابة مخصصة للمنسقين المعتمدين فقط
         </p>
       </div>
     </div>
