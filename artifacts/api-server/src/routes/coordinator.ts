@@ -12,12 +12,14 @@ router.post("/coordinator/login", async (req, res) => {
   const rawPassword = typeof req.body?.password === "string" ? req.body.password.trim() : "";
   const accessCode = rawPassword.toUpperCase();
   const ownerPassword = process.env["OWNER_ADMIN_PASSWORD"] || "";
+  const normalizedOwnerInput = rawPassword.replace(/\s+/g, "").toUpperCase();
+  const normalizedOwnerPassword = ownerPassword.replace(/\s+/g, "").toUpperCase();
   if (!rawPassword) {
     res.status(401).json({ error: "رمز الدخول غير صحيح. يرجى التحقق والمحاولة مجدداً." });
     return;
   }
 
-  if (ownerPassword && rawPassword === ownerPassword) {
+  if (normalizedOwnerPassword && normalizedOwnerInput === normalizedOwnerPassword) {
     setCoordinatorCookie(res, createSession("owner"));
     res.json({ authenticated: true, role: "owner" });
     return;
