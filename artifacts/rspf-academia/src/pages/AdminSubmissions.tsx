@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
-import { ChevronLeft, LogOut, RefreshCw, Users, FileText, Check, X, Clock, Mail, Phone, Download } from "lucide-react";
+import { ChevronRight, LogOut, RefreshCw, Users, FileText, Check, X, Clock, Mail, Phone, Download } from "lucide-react";
 
 const API_BASE = "/api";
 
@@ -33,10 +33,10 @@ interface ServiceRequest {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  pending: "bg-yellow-100 text-yellow-700",
-  approved: "bg-emerald-100 text-emerald-700",
-  rejected: "bg-red-100 text-red-600",
-  contacted: "bg-blue-100 text-blue-700",
+  pending: "bg-yellow-50 text-yellow-700 border border-yellow-200",
+  approved: "bg-[#e6f5ef] text-[#117b59] border border-[#117b59]/20",
+  rejected: "bg-red-50 text-red-600 border border-red-200",
+  contacted: "bg-blue-50 text-blue-700 border border-blue-200",
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -48,7 +48,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 function StatusBadge({ status }: { status: string }) {
   return (
-    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${STATUS_STYLES[status] || "bg-gray-100 text-gray-600"}`}>
+    <span className={`text-[11px] font-black px-3 py-1.5 rounded-lg whitespace-nowrap ${STATUS_STYLES[status] || "bg-slate-100 text-slate-600 border border-slate-200"}`}>
       {STATUS_LABELS[status] || status}
     </span>
   );
@@ -72,20 +72,20 @@ function StatusActions({ id, current, onUpdate, endpoint }: { id: number; curren
     <div className="flex items-center gap-1.5">
       {current !== "approved" && (
         <button onClick={() => update("approved")} disabled={loading} title="قبول"
-          className="p-1.5 text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors">
-          <Check size={15} />
+          className="p-2 text-[#117b59] hover:bg-[#e6f5ef] rounded-lg transition-colors border border-transparent hover:border-[#117b59]/20">
+          <Check size={16} />
         </button>
       )}
       {current !== "contacted" && (
         <button onClick={() => update("contacted")} disabled={loading} title="تم التواصل"
-          className="p-1.5 text-blue-500 hover:bg-blue-50 rounded-lg transition-colors">
-          <Phone size={15} />
+          className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-transparent hover:border-blue-200">
+          <Phone size={16} />
         </button>
       )}
       {current !== "rejected" && (
         <button onClick={() => update("rejected")} disabled={loading} title="رفض"
-          className="p-1.5 text-red-400 hover:bg-red-50 rounded-lg transition-colors">
-          <X size={15} />
+          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-200">
+          <X size={16} />
         </button>
       )}
     </div>
@@ -124,15 +124,15 @@ function CoordinatorApproval({ requestId, fullName, phone, status, onUpdate }: {
 
   if (!status.includes("pending") && !status.includes("approved")) return null;
   return (
-    <div className="mt-2">
+    <div className="mt-3">
       {status === "approved" && message === "" ? (
-        <span className="text-xs text-emerald-600 font-semibold">تم اعتماد الطلب</span>
+        <span className="text-xs text-[#117b59] font-bold bg-[#e6f5ef] px-2 py-1 rounded">تم اعتماد الطلب</span>
       ) : (
-        <button onClick={approve} disabled={loading} className="rounded-lg bg-[#117b59] px-2.5 py-1.5 text-xs font-bold text-white hover:bg-[#0c6549] disabled:opacity-60">
+        <button onClick={approve} disabled={loading} className="rounded-xl bg-[#117b59] px-4 py-2 text-xs font-bold text-white hover:bg-[#0c6549] disabled:opacity-60 transition-colors shadow-sm w-full">
           {loading ? "جارٍ الإصدار..." : "اعتماد وإصدار رمز"}
         </button>
       )}
-      {message && <p className="mt-1 max-w-[180px] text-[11px] leading-4 text-emerald-700">{message}</p>}
+      {message && <p className="mt-2 text-xs font-bold text-[#117b59]">{message}</p>}
     </div>
   );
 }
@@ -196,6 +196,7 @@ export default function AdminSubmissions() {
     totalSvc: services.length,
     pendingSvc: services.filter((s) => s.status === "pending").length,
   };
+
   const registrationGroups = registrations.reduce<Record<number, { id: number; title: string; count: number; pending: number }>>((groups, registration) => {
     const current = groups[registration.researchId] || {
       id: registration.researchId,
@@ -208,9 +209,11 @@ export default function AdminSubmissions() {
     groups[registration.researchId] = current;
     return groups;
   }, {});
+
   const filteredRegistrations = selectedResearchId === "all"
     ? registrations
     : registrations.filter((registration) => registration.researchId === selectedResearchId);
+
   const exportRegistrations = () => {
     setExportError("");
     if (filteredRegistrations.length === 0) {
@@ -244,8 +247,6 @@ export default function AdminSubmissions() {
           formatExportDate(registration.createdAt),
         ]),
       ];
-      // Excel's XML Spreadsheet format keeps Arabic text intact and opens on
-      // phones and desktop Excel without requiring a third-party export server.
       const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <?mso-application progid="Excel.Sheet"?>
 <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
@@ -283,231 +284,238 @@ export default function AdminSubmissions() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-[#f8fafc] text-right" dir="rtl">
       {/* TOP BAR */}
-       <div className="bg-gradient-to-l from-[#0b2a4d] via-[#0C3156] to-[#164e78] text-white px-4 sm:px-6 lg:px-8 py-4 shadow-lg">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/admin" data-testid="link-submissions-dashboard"
-              className="flex items-center gap-1.5 text-blue-200 hover:text-white text-sm transition-colors">
-              <ChevronLeft size={16} />
-              لوحة التحكم
-            </Link>
-            <span className="text-blue-400">|</span>
-            <button onClick={handleLogout} data-testid="link-submissions-logout"
-              className="flex items-center gap-1.5 text-blue-200 hover:text-white text-sm transition-colors">
-              <LogOut size={14} />
-              خروج
-            </button>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <h1 className="text-lg font-black tracking-tight">الطلبات والتسجيلات</h1>
-              <p className="text-blue-300 text-xs">بيانات المستخدمين المسجلين</p>
-            </div>
-            <div className="w-10 h-10 border border-white/25 bg-white/10 rounded-xl flex items-center justify-center font-black text-[#ffd47d] text-sm">SR</div>
-          </div>
+      <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-5 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-20">
+        <div className="flex items-center gap-4">
+           <div className="text-right">
+             <h1 className="text-2xl font-black text-slate-800">الطلبات والتسجيلات</h1>
+             <p className="text-sm text-slate-500 mt-1 font-medium">بيانات المستخدمين المسجلين في البرامج</p>
+           </div>
         </div>
-      </div>
+        <div className="flex items-center gap-3">
+          <Link href="/admin" data-testid="link-submissions-dashboard" className="flex items-center gap-2 border border-slate-200 rounded-xl px-4 py-2.5 bg-slate-50 shadow-sm hover:bg-slate-100 text-slate-700 text-sm font-bold transition-colors">
+             <ChevronRight size={16} />
+             لوحة التحكم
+          </Link>
+          <button onClick={handleLogout} data-testid="link-submissions-logout" className="flex items-center gap-2 border border-red-200 text-red-600 hover:bg-red-50 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors shadow-sm">
+            خروج <LogOut size={16} />
+          </button>
+        </div>
+      </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
         {/* STATS */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           {[
-            { label: "إجمالي التسجيلات", value: stats.totalReg, icon: <Users size={20} className="text-[#0C3156]" />, bg: "bg-blue-50", pending: stats.pendingReg },
-            { label: "بانتظار المراجعة", value: stats.pendingReg, icon: <Clock size={20} className="text-yellow-500" />, bg: "bg-yellow-50", pending: null },
+            { label: "إجمالي التسجيلات", value: stats.totalReg, icon: <Users size={28} className="text-[#117b59]" />, bg: "bg-[#e6f5ef]", pending: stats.pendingReg },
+            { label: "بانتظار المراجعة", value: stats.pendingReg, icon: <Clock size={28} className="text-amber-600" />, bg: "bg-amber-50", pending: null },
               ...(canManageCoordinatorRequests ? [
-                { label: "طلبات الخدمات", value: stats.totalSvc, icon: <FileText size={20} className="text-purple-500" />, bg: "bg-purple-50", pending: stats.pendingSvc },
-                { label: "خدمات بانتظار الرد", value: stats.pendingSvc, icon: <Clock size={20} className="text-orange-500" />, bg: "bg-orange-50", pending: null },
+                { label: "طلبات الخدمات", value: stats.totalSvc, icon: <FileText size={28} className="text-purple-600" />, bg: "bg-purple-50", pending: stats.pendingSvc },
+                { label: "خدمات بانتظار الرد", value: stats.pendingSvc, icon: <Clock size={28} className="text-orange-600" />, bg: "bg-orange-50", pending: null },
               ] : [
-                { label: "برامج قيد المتابعة", value: new Set(registrations.map((item) => item.researchId)).size, icon: <FileText size={20} className="text-purple-500" />, bg: "bg-purple-50", pending: null },
-                { label: "طلبات تم التواصل معها", value: registrations.filter((item) => item.status === "contacted").length, icon: <Phone size={20} className="text-orange-500" />, bg: "bg-orange-50", pending: null },
+                { label: "برامج قيد المتابعة", value: new Set(registrations.map((item) => item.researchId)).size, icon: <FileText size={28} className="text-purple-600" />, bg: "bg-purple-50", pending: null },
+                { label: "طلبات تم التواصل معها", value: registrations.filter((item) => item.status === "contacted").length, icon: <Phone size={28} className="text-orange-600" />, bg: "bg-orange-50", pending: null },
               ]),
           ].map((s) => (
-            <div key={s.label} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-[0_8px_24px_rgba(15,43,76,.06)] text-right transition hover:-translate-y-0.5">
-              <div className={`w-10 h-10 ${s.bg} rounded-xl flex items-center justify-center mb-3`}>{s.icon}</div>
-              <div className="text-3xl font-black text-slate-900">{s.value}</div>
-              <div className="text-sm text-slate-500 mt-1">{s.label}</div>
+            <div key={s.label} className="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm text-right transition hover:shadow-md">
+              <div className="flex items-center justify-between mb-4">
+                <div className={`w-14 h-14 ${s.bg} rounded-2xl flex items-center justify-center`}>{s.icon}</div>
+                <div className="text-3xl font-black text-slate-800">{s.value}</div>
+              </div>
+              <div className="text-sm font-bold text-slate-500">{s.label}</div>
             </div>
           ))}
         </div>
 
         {/* TABS + REFRESH */}
-        <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
-          <button onClick={fetchData} disabled={loading}
-            className="flex items-center gap-2 text-slate-500 hover:text-[#0C3156] text-sm font-medium transition-colors">
-            <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
-            تحديث
-          </button>
-          {tab === "registrations" && (
-            <div className="flex items-center gap-3">
-            <button onClick={exportRegistrations} disabled={exporting || filteredRegistrations.length === 0}
-              className="flex items-center gap-2 text-slate-500 hover:text-[#0C3156] text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-45">
-              <Download size={15} className={exporting ? "animate-pulse" : ""} />
-              {exporting ? "جارٍ تجهيز Excel..." : "تنزيل Excel"}
-            </button>
-            {exportError && <span className="text-xs font-semibold text-red-600">{exportError}</span>}
-            </div>
-          )}
-          <div className="flex gap-2">
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+          <div className="flex gap-2 w-full md:w-auto">
             {canManageCoordinatorRequests && <button onClick={() => setTab("services")}
-              className={`px-5 py-2.5 rounded-full font-semibold text-sm transition-all ${tab === "services" ? "bg-[#E9A020] text-white" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
+              className={`flex-1 md:flex-none px-6 py-3 rounded-2xl font-bold text-sm transition-all shadow-sm ${tab === "services" ? "bg-[#117b59] text-white border border-[#117b59]" : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"}`}>
               طلبات الخدمات ({stats.totalSvc})
             </button>}
             <button onClick={() => setTab("registrations")}
-              className={`px-5 py-2.5 rounded-full font-semibold text-sm transition-all ${tab === "registrations" ? "bg-[#0C3156] text-white" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
-              تسجيلات الفرص البحثية ({stats.totalReg})
+              className={`flex-1 md:flex-none px-6 py-3 rounded-2xl font-bold text-sm transition-all shadow-sm ${tab === "registrations" ? "bg-[#117b59] text-white border border-[#117b59]" : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300"}`}>
+              تسجيلات الفرص ({stats.totalReg})
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3 w-full md:w-auto justify-end">
+            {tab === "registrations" && (
+              <div className="flex items-center gap-3">
+              <button onClick={exportRegistrations} disabled={exporting || filteredRegistrations.length === 0}
+                className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm disabled:cursor-not-allowed disabled:opacity-50">
+                <Download size={16} className={exporting ? "animate-pulse" : "text-slate-400"} />
+                {exporting ? "جارٍ تجهيز Excel..." : "تنزيل Excel"}
+              </button>
+              {exportError && <span className="text-xs font-bold text-red-600">{exportError}</span>}
+              </div>
+            )}
+            <button onClick={fetchData} disabled={loading}
+              className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm disabled:cursor-not-allowed disabled:opacity-50">
+              <RefreshCw size={16} className={loading ? "animate-spin" : "text-slate-400"} />
+              تحديث
             </button>
           </div>
         </div>
 
         {/* REGISTRATIONS TABLE */}
         {tab === "registrations" && (
-          <div className="space-y-4">
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
             {registrations.length > 0 && (
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="mb-3 flex items-center justify-between">
-                  <button onClick={() => setSelectedResearchId("all")} className={`rounded-full px-3 py-1.5 text-xs font-bold ${selectedResearchId === "all" ? "bg-[#0C3156] text-white" : "bg-slate-100 text-slate-600"}`}>كل الفرص</button>
-                  <h2 className="text-right text-sm font-black text-slate-800">الطلاب حسب الفرصة أو البرنامج</h2>
+              <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-right text-sm font-black text-slate-800">تصفية حسب البرنامج</h2>
+                  <button onClick={() => setSelectedResearchId("all")} className={`rounded-xl px-4 py-2 text-xs font-bold transition-colors ${selectedResearchId === "all" ? "bg-[#117b59] text-white shadow-sm" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>عرض الكل</button>
                 </div>
-                <div className="flex gap-2 overflow-x-auto pb-1">
+                <div className="flex gap-3 overflow-x-auto pb-2">
                   {Object.values(registrationGroups).map((group) => (
                     <button key={group.id} onClick={() => setSelectedResearchId(group.id)}
-                      className={`min-w-52 rounded-xl border p-3 text-right transition-all ${selectedResearchId === group.id ? "border-[#117b59] bg-[#f3fbf8] shadow-sm" : "border-slate-200 hover:border-[#b8dbce] hover:bg-slate-50"}`}>
-                      <p className="line-clamp-2 text-xs font-bold text-slate-700">{group.title}</p>
-                      <p className="mt-2 text-xs text-slate-500">{group.count} طالب — {group.pending} بانتظار المراجعة</p>
+                      className={`min-w-[220px] rounded-2xl border p-4 text-right transition-all ${selectedResearchId === group.id ? "border-[#117b59] bg-[#e6f5ef] shadow-sm" : "border-slate-200 bg-slate-50 hover:border-slate-300"}`}>
+                      <p className="line-clamp-2 text-xs font-bold text-slate-800 leading-5">{group.title}</p>
+                      <div className="mt-3 flex items-center gap-3">
+                        <span className="text-xs font-bold text-slate-600"><Users size={12} className="inline mr-1 text-slate-400" /> {group.count} مسجل</span>
+                        {group.pending > 0 && <span className="text-xs font-bold text-amber-600"><Clock size={12} className="inline mr-1 text-amber-400" /> {group.pending} مراجعة</span>}
+                      </div>
                     </button>
                   ))}
                 </div>
               </div>
             )}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            {filteredRegistrations.length === 0 ? (
-              <div className="py-16 text-center text-slate-400">
-                <Users size={40} className="mx-auto mb-3 opacity-30" />
-                <p className="font-medium">لا توجد تسجيلات في هذا القسم</p>
-                <p className="text-sm mt-1">اختر فرصة أخرى أو انتظر تسجيل أول مشارك</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-right">
-                  <thead className="bg-slate-50 border-b border-slate-200">
-                    <tr>
-                      {["الاسم والتخصص", "التواصل", "الجهة / المدينة", "الفرصة البحثية", "الحالة", "التاريخ", "إجراء"].map((h) => (
-                        <th key={h} className="px-4 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filteredRegistrations.map((reg) => (
-                      <tr key={reg.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-4 py-4">
-                          <p className="font-semibold text-slate-800 text-sm">{reg.fullName}</p>
-                          <p className="text-xs text-slate-400 mt-0.5">{reg.specialization}</p>
-                          {reg.orcid && <p className="text-xs text-blue-400 mt-0.5" dir="ltr">ORCID: {reg.orcid}</p>}
-                        </td>
-                        <td className="px-4 py-4">
-                          <a href={`mailto:${reg.email}`} className="flex items-center gap-1 text-xs text-slate-600 hover:text-[#0C3156] mb-1">
-                            <Mail size={11} /> {reg.email}
-                          </a>
-                          {reg.whatsapp && (
-                            <a href={`https://wa.me/${reg.whatsapp.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer"
-                              className="flex items-center gap-1 text-xs text-emerald-600 hover:underline">
-                              <Phone size={11} /> {reg.whatsapp}
-                            </a>
-                          )}
-                        </td>
-                        <td className="px-4 py-4">
-                          <p className="text-sm text-slate-700">{reg.affiliation}</p>
-                          <p className="text-xs text-slate-400 mt-0.5">{reg.country}{reg.city ? ` — ${reg.city}` : ""}</p>
-                        </td>
-                        <td className="px-4 py-4">
-                          <p className="text-xs text-slate-600 line-clamp-2 max-w-[200px]">{reg.researchTitle}</p>
-                          <p className="text-xs text-slate-400 mt-0.5">ID: {reg.researchId}</p>
-                        </td>
-                        <td className="px-4 py-4">
-                          <StatusBadge status={reg.status} />
-                        </td>
-                        <td className="px-4 py-4">
-                          <p className="text-xs text-slate-500 whitespace-nowrap">{formatDate(reg.createdAt)}</p>
-                        </td>
-                        <td className="px-4 py-4">
-                          {canManageCoordinatorRequests ? (
-                            <StatusActions id={reg.id} current={reg.status} onUpdate={fetchData} endpoint="registrations" />
-                          ) : (
-                            <span className="text-xs text-slate-400">للعرض فقط</span>
-                          )}
-                        </td>
+
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+              {filteredRegistrations.length === 0 ? (
+                <div className="py-20 text-center text-slate-400">
+                  <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Users size={32} className="text-slate-300" />
+                  </div>
+                  <p className="font-black text-slate-800 text-lg mb-1">لا توجد تسجيلات</p>
+                  <p className="text-sm font-medium">اختر فرصة أخرى أو انتظر تسجيل أول مشارك</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-right">
+                    <thead className="bg-slate-50 border-b border-slate-100">
+                      <tr>
+                        {["الاسم والتخصص", "التواصل", "الجهة / المدينة", "الفرصة البحثية", "الحالة", "التاريخ", "إجراء"].map((h) => (
+                          <th key={h} className="px-6 py-4 text-xs font-bold text-slate-500 whitespace-nowrap">{h}</th>
+                        ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            {filteredRegistrations.length > 0 && (
-              <div className="px-5 py-3 border-t border-slate-100 bg-slate-50 text-xs text-slate-500 text-right">
-                {filteredRegistrations.length} تسجيل ظاهر — {stats.pendingReg} بانتظار المراجعة إجمالاً
-              </div>
-            )}
-          </div>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredRegistrations.map((reg) => (
+                        <tr key={reg.id} className="hover:bg-slate-50/50 transition-colors">
+                          <td className="px-6 py-5">
+                            <p className="font-bold text-slate-800 text-sm mb-1">{reg.fullName}</p>
+                            <p className="text-xs font-medium text-slate-500">{reg.specialization}</p>
+                            {reg.orcid && <p className="text-[11px] font-bold text-[#117b59] mt-1.5" dir="ltr">ORCID: {reg.orcid}</p>}
+                          </td>
+                          <td className="px-6 py-5">
+                            <a href={`mailto:${reg.email}`} className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-[#117b59] mb-2 transition-colors">
+                              <Mail size={14} className="text-slate-400" /> <span className="truncate max-w-[150px]">{reg.email}</span>
+                            </a>
+                            {reg.whatsapp && (
+                              <a href={`https://wa.me/${reg.whatsapp.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:text-emerald-700 transition-colors">
+                                <Phone size={14} className="text-emerald-400" /> <span dir="ltr">{reg.whatsapp}</span>
+                              </a>
+                            )}
+                          </td>
+                          <td className="px-6 py-5">
+                            <p className="text-sm font-bold text-slate-700 mb-1">{reg.affiliation}</p>
+                            <p className="text-xs font-medium text-slate-500">{reg.country}{reg.city ? ` — ${reg.city}` : ""}</p>
+                          </td>
+                          <td className="px-6 py-5">
+                            <p className="text-xs font-bold text-slate-700 leading-5 line-clamp-2 max-w-[220px] mb-1">{reg.researchTitle}</p>
+                            <p className="text-[11px] font-medium text-slate-400">ID: {reg.researchId}</p>
+                          </td>
+                          <td className="px-6 py-5">
+                            <StatusBadge status={reg.status} />
+                          </td>
+                          <td className="px-6 py-5">
+                            <p className="text-xs font-bold text-slate-500 whitespace-nowrap">{formatDate(reg.createdAt)}</p>
+                          </td>
+                          <td className="px-6 py-5">
+                            {canManageCoordinatorRequests ? (
+                              <StatusActions id={reg.id} current={reg.status} onUpdate={fetchData} endpoint="registrations" />
+                            ) : (
+                              <span className="text-xs font-bold text-slate-400 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">للعرض فقط</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {filteredRegistrations.length > 0 && (
+                <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 text-xs font-bold text-slate-500 text-right">
+                  {filteredRegistrations.length} تسجيل ظاهر — {stats.pendingReg} بانتظار المراجعة إجمالاً
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         {/* SERVICE REQUESTS TABLE */}
         {canManageCoordinatorRequests && tab === "services" && (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-300">
             {services.length === 0 ? (
-              <div className="py-16 text-center text-slate-400">
-                <FileText size={40} className="mx-auto mb-3 opacity-30" />
-                <p className="font-medium">لا توجد طلبات خدمات بعد</p>
-                <p className="text-sm mt-1">ستظهر هنا بعد تقديم أول طلب</p>
+              <div className="py-20 text-center text-slate-400">
+                <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FileText size={32} className="text-slate-300" />
+                </div>
+                <p className="font-black text-slate-800 text-lg mb-1">لا توجد طلبات خدمات</p>
+                <p className="text-sm font-medium">ستظهر هنا بعد تقديم أول طلب</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-right">
-                  <thead className="bg-slate-50 border-b border-slate-200">
+                  <thead className="bg-slate-50 border-b border-slate-100">
                     <tr>
                       {["مقدم الطلب", "التواصل", "نوع الخدمة", "التفاصيل", "الحالة", "التاريخ", "إجراء"].map((h) => (
-                        <th key={h} className="px-4 py-3.5 text-xs font-bold text-slate-500 uppercase tracking-wide whitespace-nowrap">{h}</th>
+                        <th key={h} className="px-6 py-4 text-xs font-bold text-slate-500 whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {services.map((svc) => (
-                      <tr key={svc.id} className="hover:bg-slate-50 transition-colors">
-                        <td className="px-4 py-4">
-                          <p className="font-semibold text-slate-800 text-sm">{svc.fullName}</p>
+                      <tr key={svc.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="px-6 py-5">
+                          <p className="font-bold text-slate-800 text-sm">{svc.fullName}</p>
                         </td>
-                        <td className="px-4 py-4">
-                          <a href={`mailto:${svc.email}`} className="flex items-center gap-1 text-xs text-slate-600 hover:text-[#0C3156] mb-1">
-                            <Mail size={11} /> {svc.email}
+                        <td className="px-6 py-5">
+                          <a href={`mailto:${svc.email}`} className="flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-[#117b59] mb-2 transition-colors">
+                            <Mail size={14} className="text-slate-400" /> <span className="truncate max-w-[150px]">{svc.email}</span>
                           </a>
                           <a href={`https://wa.me/${svc.phone.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-xs text-emerald-600 hover:underline">
-                            <Phone size={11} /> {svc.phone}
+                            className="flex items-center gap-1.5 text-xs font-bold text-emerald-600 hover:text-emerald-700 transition-colors">
+                            <Phone size={14} className="text-emerald-400" /> <span dir="ltr">{svc.phone}</span>
                           </a>
                         </td>
-                        <td className="px-4 py-4">
-                          <span className="bg-[#0C3156]/10 text-[#0C3156] text-xs font-bold px-2.5 py-1 rounded-full whitespace-nowrap">
+                        <td className="px-6 py-5">
+                          <span className="bg-purple-50 border border-purple-100 text-purple-700 text-[11px] font-black px-3 py-1.5 rounded-lg whitespace-nowrap inline-block">
                             {svc.serviceType}
                           </span>
                         </td>
-                        <td className="px-4 py-4">
-                          <p className="text-xs text-slate-600 line-clamp-3 max-w-[220px]">{svc.details}</p>
+                        <td className="px-6 py-5">
+                          <p className="text-xs font-medium text-slate-600 leading-5 line-clamp-3 max-w-[240px]">{svc.details}</p>
                           {svc.fileLink && (
                             <a href={svc.fileLink} target="_blank" rel="noopener noreferrer"
-                              className="text-xs text-blue-500 hover:underline mt-1 inline-block">
+                              className="text-xs font-bold text-blue-600 hover:text-blue-700 mt-2 inline-flex items-center gap-1 bg-blue-50 px-2 py-1 rounded">
                               🔗 ملف مرفق
                             </a>
                           )}
                         </td>
-                        <td className="px-4 py-4">
+                        <td className="px-6 py-5">
                           <StatusBadge status={svc.status} />
                         </td>
-                        <td className="px-4 py-4">
-                          <p className="text-xs text-slate-500 whitespace-nowrap">{formatDate(svc.createdAt)}</p>
+                        <td className="px-6 py-5">
+                          <p className="text-xs font-bold text-slate-500 whitespace-nowrap">{formatDate(svc.createdAt)}</p>
                         </td>
-                        <td className="px-4 py-4">
+                        <td className="px-6 py-5 min-w-[180px]">
                           <StatusActions id={svc.id} current={svc.status} onUpdate={fetchData} endpoint="service-requests" />
                           {svc.serviceType.includes("منسق") && (
                             <CoordinatorApproval requestId={svc.id} fullName={svc.fullName} phone={svc.phone} status={svc.status} onUpdate={fetchData} />
@@ -520,7 +528,7 @@ export default function AdminSubmissions() {
               </div>
             )}
             {services.length > 0 && (
-              <div className="px-5 py-3 border-t border-slate-100 bg-slate-50 text-xs text-slate-500 text-right">
+              <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 text-xs font-bold text-slate-500 text-right">
                 {services.length} طلب إجمالاً — {stats.pendingSvc} بانتظار الرد
               </div>
             )}
