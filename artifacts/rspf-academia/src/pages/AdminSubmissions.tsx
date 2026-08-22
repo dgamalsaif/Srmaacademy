@@ -92,6 +92,51 @@ function StatusActions({ id, current, onUpdate, endpoint }: { id: number; curren
   );
 }
 
+function CoordinatorApproval({ requestId, fullName, phone, status, onUpdate }: {
+  requestId: number; fullName: string; phone: string; status: string; onUpdate: () => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const approve = async () => {
+    setLoading(true);
+    setMessage("");
+    try {
+      const response = await fetch(`${API_BASE}/coordinator-accounts/approve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId }),
+      });
+      const result = await response.json() as { accessCode?: string; error?: string };
+      if (!response.ok || !result.accessCode) throw new Error(result.error || "تعذر إصدار الرمز");
+      setMessage(`تم الإصدار: ${result.accessCode}`);
+      const text = encodeURIComponent(
+        `مرحباً ${fullName}\nتم اعتمادك كمنسق في SRMA Research Academy.\n\nرمز الدخول الخاص بك: ${result.accessCode}\nبوابة المنسق: ${window.location.origin}/coordinator-portal\n\nاحتفظ بالرمز ولا تشاركه مع الآخرين.`
+      );
+      window.open(`https://wa.me/${phone.replace(/\D/g, "")}?text=${text}`, "_blank");
+      onUpdate();
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "حدث خطأ");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!status.includes("pending") && !status.includes("approved")) return null;
+  return (
+    <div className="mt-2">
+      {status === "approved" && message === "" ? (
+        <span className="text-xs text-emerald-600 font-semibold">تم اعتماد الطلب</span>
+      ) : (
+        <button onClick={approve} disabled={loading} className="rounded-lg bg-[#117b59] px-2.5 py-1.5 text-xs font-bold text-white hover:bg-[#0c6549] disabled:opacity-60">
+          {loading ? "جارٍ الإصدار..." : "اعتماد وإصدار رمز"}
+        </button>
+      )}
+      {message && <p className="mt-1 max-w-[180px] text-[11px] leading-4 text-emerald-700">{message}</p>}
+    </div>
+  );
+}
+
 export default function AdminSubmissions() {
   const [tab, setTab] = useState<"registrations" | "services">("registrations");
   const [registrations, setRegistrations] = useState<Registration[]>([]);
@@ -326,6 +371,9 @@ export default function AdminSubmissions() {
                         </td>
                         <td className="px-4 py-4">
                           <StatusActions id={svc.id} current={svc.status} onUpdate={fetchData} endpoint="service-requests" />
+                          {svc.serviceType.includes("منسق") && (
+                            <CoordinatorApproval requestId={svc.id} fullName={svc.fullName} phone={svc.phone} status={svc.status} onUpdate={fetchData} />
+                          )}
                         </td>
                       </tr>
                     ))}

@@ -39,6 +39,20 @@ export const serviceRequestsTable = pgTable("service_requests", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const coordinatorsTable = pgTable("coordinators", {
+  id: serial("id").primaryKey(),
+  fullName: text("full_name").notNull(),
+  phone: text("phone").notNull(),
+  email: text("email").notNull(),
+  affiliation: text("affiliation").notNull(),
+  accessCodeHash: text("access_code_hash").notNull().unique(),
+  status: text("status").notNull().default("active"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  lastLoginAt: timestamp("last_login_at"),
+});
+
+export type Coordinator = typeof coordinatorsTable.$inferSelect;
+
 export const insertServiceRequestSchema = createInsertSchema(serviceRequestsTable).omit({
   id: true,
   createdAt: true,

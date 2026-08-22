@@ -20,21 +20,39 @@ function validSignature(value: string, signature: string) {
 }
 
 export function createCoordinatorSession() {
+  return createSession("coordinator");
+}
+
+export function createSession(role: "owner" | "coordinator", coordinatorId?: number) {
   const expiresAt = Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS;
-  const value = String(expiresAt);
+  const value = `${role}:${coordinatorId ?? 0}:${expiresAt}`;
   return `${value}.${sign(value)}`;
 }
 
-export function isCoordinatorSession(value?: string) {
-  if (!secret() || !value) return false;
+export function readSession(value?: string) {
+  if (!secret() || !value) return null;
   const [expiresAt, signature] = value.split(".");
-  if (!expiresAt || !signature || Number(expiresAt) < Math.floor(Date.now() / 1000)) return false;
-  return validSignature(expiresAt, signature);
+  if (!expiresAt || !signature || !validSignature(expiresAt, signature)) return null;
+  const [role, coordinatorId, expiry] = expiresAt.split(":");
+  if ((role !== "owner" && role !== "coordinator") || Number(expiry) < Math.floor(Date.now() / 1000)) return null;
+  return { role, coordinatorId: Number(coordinatorId) };
+}
+
+export function isCoordinatorSession(value?: string) {
+  return Boolean(readSession(value));
 }
 
 export function requireCoordinator(req: Request, res: Response, next: NextFunction) {
-  if (!isCoordinatorSession(req.cookies?.[COOKIE_NAME])) {
+  if (!readSession(req.cookies?.[COOKIE_NAME])) {
     res.status(401).json({ error: "يلزم تسجيل دخول المنسق" });
+    return;
+  }
+  next();
+}
+
+export function requireOwner(req: Request, res: Response, next: NextFunction) {
+  if (readSession(req.cookies?.[COOKIE_NAME])?.role !== "owner") {
+    res.status(403).json({ error: "هذا الإجراء مخصص للإدارة" });
     return;
   }
   next();
