@@ -1,0 +1,20 @@
+{
+  "name": "SRMA Research Academy",
+  "short_name": "SRMA",
+  "description": "منصة SRMA Research Academy للفرص البحثية والتدريب الطبي.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f7fa",
+  "theme_color": "#0d765c",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

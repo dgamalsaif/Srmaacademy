@@ -3,6 +3,8 @@ import { Link, useLocation } from "wouter";
 import { Plus, Pencil, Trash2, Eye, X, ChevronRight, LogOut, Search, Users, BookOpen, TrendingUp, AlertCircle, UserPlus, GraduationCap, Award, Landmark, LayoutDashboard, CreditCard, Settings, ClipboardList, CheckCircle, FlaskConical, Stethoscope, User, Clock, Copy, Check, Edit } from "lucide-react";
 import { ResearchOpportunity, SPECIALTY_COLORS } from "@/lib/researchData";
 import RegistrationModal from "@/components/RegistrationModal";
+import CoordinatorPortalSettingsPanel from "@/components/CoordinatorPortalSettingsPanel";
+import { CoordinatorPortalSettings, DEFAULT_COORDINATOR_PORTAL_SETTINGS } from "@/lib/coordinatorPortalSettings";
 
 const EMPTY_FORM: Omit<ResearchOpportunity, "id" | "createdAt"> = {
   category: "active",
@@ -505,7 +507,7 @@ export default function AdminDashboard() {
   const [statusFilter, setStatusFilter] = useState<"all" | ResearchOpportunity["status"]>("all");
   const [categoryFilter, setCategoryFilter] = useState<NonNullable<ResearchOpportunity["category"]>>("active");
   const [loadingPrograms, setLoadingPrograms] = useState(true);
-  const [view, setView] = useState<"programs" | "payments" | "settings">("programs");
+  const [view, setView] = useState<"programs" | "payments" | "settings" | "portal-settings">("programs");
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [paymentFormOpen, setPaymentFormOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
@@ -513,6 +515,9 @@ export default function AdminDashboard() {
   const [editItem, setEditItem] = useState<ResearchOpportunity | null>(null);
   const [deleteItem, setDeleteItem] = useState<ResearchOpportunity | null>(null);
   const [studentResearch, setStudentResearch] = useState<ResearchOpportunity | null>(null);
+  const [portalSettings, setPortalSettings] = useState<CoordinatorPortalSettings>(DEFAULT_COORDINATOR_PORTAL_SETTINGS);
+  const [portalSettingsSaving, setPortalSettingsSaving] = useState(false);
+  const [portalSettingsMessage, setPortalSettingsMessage] = useState("");
 
   useEffect(() => {
     fetch("/api/coordinator/session")
@@ -541,6 +546,14 @@ export default function AdminDashboard() {
       }
     };
     void loadPrograms();
+  }, [role]);
+
+  useEffect(() => {
+    if (role !== "owner") return;
+    fetch("/api/coordinator-portal-settings")
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((settings: CoordinatorPortalSettings) => setPortalSettings(settings))
+      .catch(() => setPortalSettingsMessage("تعذر تحميل إعدادات البوابة حالياً."));
   }, [role]);
 
   useEffect(() => {
@@ -628,6 +641,29 @@ export default function AdminDashboard() {
   const handleLogout = async () => {
     await fetch("/api/coordinator/logout", { method: "POST" });
     setLocation("/coordinator");
+  };
+
+  const savePortalSettings = async () => {
+    setPortalSettingsSaving(true);
+    setPortalSettingsMessage("");
+    try {
+      const response = await fetch("/api/coordinator-portal-settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(portalSettings),
+      });
+      const result = await response.json() as CoordinatorPortalSettings | { error?: string };
+      if (!response.ok) {
+        setPortalSettingsMessage("error" in result && result.error ? result.error : "تعذر حفظ الإعدادات.");
+        return;
+      }
+      setPortalSettings(result as CoordinatorPortalSettings);
+      setPortalSettingsMessage("تم الحفظ بنجاح. تظهر التغييرات مباشرة في بوابة المنسق.");
+    } catch {
+      setPortalSettingsMessage("تعذر الاتصال بالخادم. حاول مرة أخرى.");
+    } finally {
+      setPortalSettingsSaving(false);
+    }
   };
 
   const openNewResearch = (category: NonNullable<ResearchOpportunity["category"]>) => {
@@ -747,6 +783,12 @@ export default function AdminDashboard() {
             <Settings size={18} className={view === 'settings' ? 'text-emerald-100' : 'text-slate-400'} />
             الإعدادات
           </button>
+          {canManage && (
+            <button onClick={() => setView('portal-settings')} data-testid="button-portal-settings" className={`flex items-center gap-2 px-6 py-3 border rounded-2xl text-sm font-bold transition-all shadow-sm ${view === 'portal-settings' ? 'bg-[#117b59] text-white border-[#117b59]' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'}`}>
+              <LayoutDashboard size={18} className={view === 'portal-settings' ? 'text-emerald-100' : 'text-slate-400'} />
+              بوابة المنسق
+            </button>
+          )}
         </div>
 
         {/* CONTENT AREA */}
@@ -920,6 +962,17 @@ export default function AdminDashboard() {
           {view === "settings" && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <SettingsPanel role={role} accountName={accountName} onNameUpdated={setAccountName} />
+            </div>
+          )}
+          {view === "portal-settings" && canManage && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <CoordinatorPortalSettingsPanel
+                settings={portalSettings}
+                onChange={setPortalSettings}
+                onSave={() => void savePortalSettings()}
+                saving={portalSettingsSaving}
+                message={portalSettingsMessage}
+              />
             </div>
           )}
 

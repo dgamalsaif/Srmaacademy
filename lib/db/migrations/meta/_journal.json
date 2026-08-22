@@ -15,6 +15,13 @@
       "when": 1787431200000,
       "tag": "0001_coordinator_registration_ownership",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787433900000,
+      "tag": "0002_coordinator_portal_settings",
+      "breakpoints": true
     }
   ]
 }
