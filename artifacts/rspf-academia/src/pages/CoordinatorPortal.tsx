@@ -46,6 +46,7 @@ export default function CoordinatorPortal() {
           <p className="text-slate-500 text-sm mb-7">أدخل رمز الدخول للوصول إلى لوحة إدارة الفرص والطلاب</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+             <input type="text" name="username" autoComplete="username" tabIndex={-1} aria-hidden="true" className="absolute h-0 w-0 opacity-0 pointer-events-none" />
             <div className="relative">
               <label htmlFor="coordinator-password" className="block text-right text-sm font-semibold text-[#263447] mb-2">
                 رمز الدخول

@@ -170,6 +170,11 @@ export default function AdminSubmissions() {
     setLoading(false);
   }, []);
 
+  const handleLogout = async () => {
+    await fetch("/api/coordinator/logout", { method: "POST" });
+    setLocation("/coordinator-portal");
+  };
+
   useEffect(() => { void fetchData(); }, [fetchData]);
 
   if (authorized !== true) return null;
@@ -196,11 +201,11 @@ export default function AdminSubmissions() {
               لوحة التحكم
             </Link>
             <span className="text-blue-400">|</span>
-            <Link href="/coordinator-portal" data-testid="link-submissions-logout"
+            <button onClick={handleLogout} data-testid="link-submissions-logout"
               className="flex items-center gap-1.5 text-blue-200 hover:text-white text-sm transition-colors">
               <LogOut size={14} />
               خروج
-            </Link>
+            </button>
           </div>
           <div className="flex items-center gap-3">
             <div className="text-right">

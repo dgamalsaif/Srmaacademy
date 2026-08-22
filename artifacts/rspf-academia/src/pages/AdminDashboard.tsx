@@ -329,6 +329,11 @@ export default function AdminDashboard() {
     setDeleteItem(null);
   };
 
+  const handleLogout = async () => {
+    await fetch("/api/coordinator/logout", { method: "POST" });
+    setLocation("/coordinator-portal");
+  };
+
   const filtered = research.filter((r) => {
     const matchSearch = !search || r.title.toLowerCase().includes(search.toLowerCase()) || r.specialty.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "all" || r.status === statusFilter;
@@ -362,11 +367,11 @@ export default function AdminDashboard() {
               الطلبات والتسجيلات
             </Link>
             <span className="text-blue-400">|</span>
-            <Link href="/coordinator-portal" data-testid="link-admin-logout"
+            <button onClick={handleLogout} data-testid="link-admin-logout"
               className="flex items-center gap-1.5 text-blue-200 hover:text-white text-sm transition-colors">
               <LogOut size={14} />
               خروج
-            </Link>
+            </button>
           </div>
           <div className="flex items-center gap-3">
             <div>
