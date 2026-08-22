@@ -412,9 +412,27 @@ function ProgramCard({ research, onRegister, onEdit, onDelete, canManage }: any)
   return (
     <div className="bg-white rounded-[1.25rem] border border-slate-200 p-5 shadow-sm hover:shadow-md transition-all flex flex-col relative group">
       {canManage && (
-        <div className="absolute top-4 left-4 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10 bg-white/80 backdrop-blur-sm rounded-lg p-0.5 border border-slate-100">
-          <button onClick={() => onEdit(research)} className="p-1.5 text-slate-400 hover:text-[#117b59] hover:bg-[#e6f5ef] rounded-md transition-colors"><Edit size={16} /></button>
-          <button onClick={() => onDelete(research)} className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"><Trash2 size={16} /></button>
+        <div className="absolute top-4 left-4 flex items-center gap-1.5 z-10 bg-white rounded-xl p-1 border border-slate-200 shadow-sm">
+          <button
+            type="button"
+            onClick={() => onEdit(research)}
+            title="تعديل الفرصة"
+            aria-label="تعديل الفرصة"
+            className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold text-[#117b59] hover:bg-[#e6f5ef] transition-colors"
+          >
+            <Edit size={15} />
+            تعديل
+          </button>
+          <button
+            type="button"
+            onClick={() => onDelete(research)}
+            title="حذف الفرصة"
+            aria-label="حذف الفرصة"
+            className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 transition-colors"
+          >
+            <Trash2 size={15} />
+            حذف
+          </button>
         </div>
       )}
 
