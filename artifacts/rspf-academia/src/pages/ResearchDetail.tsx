@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "wouter";
 import { ChevronLeft, Users, Clock, BookOpen, CheckCircle2, ArrowLeft, ExternalLink } from "lucide-react";
-import { getResearchOpportunities, ResearchOpportunity } from "@/lib/researchData";
+import { ResearchOpportunity } from "@/lib/researchData";
 import RegistrationModal from "@/components/RegistrationModal";
 
 export default function ResearchDetail() {
@@ -11,10 +11,13 @@ export default function ResearchDetail() {
   const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
-    const data = getResearchOpportunities();
-    setAllResearch(data);
-    const found = data.find((r) => r.id === parseInt(params.id || "0"));
-    setResearch(found || null);
+    fetch("/api/programs")
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("programs unavailable")))
+      .then((data: ResearchOpportunity[]) => {
+        setAllResearch(data);
+        setResearch(data.find((item) => item.id === parseInt(params.id || "0")) || null);
+      })
+      .catch(() => { setAllResearch([]); setResearch(null); });
   }, [params.id]);
 
   if (!research) {
@@ -208,7 +211,7 @@ export default function ResearchDetail() {
         )}
       </div>
 
-      <RegistrationModal isOpen={modalOpen} onClose={() => setModalOpen(false)} researchTitle={research.title} researchId={research.id} />
+      <RegistrationModal isOpen={modalOpen} onClose={() => setModalOpen(false)} researchTitle={research.titleAr || research.title} researchId={research.id} />
     </div>
   );
 }

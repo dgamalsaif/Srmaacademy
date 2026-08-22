@@ -61,3 +61,61 @@ export const insertServiceRequestSchema = createInsertSchema(serviceRequestsTabl
 
 export type InsertServiceRequest = z.infer<typeof insertServiceRequestSchema>;
 export type ServiceRequest = typeof serviceRequestsTable.$inferSelect;
+
+export const researchProgramsTable = pgTable("research_programs", {
+  id: serial("id").primaryKey(),
+  category: text("category").notNull().default("active"),
+  titleAr: text("title_ar").notNull(),
+  titleEn: text("title_en").notNull(),
+  specialtyAr: text("specialty_ar").notNull(),
+  specialtyEn: text("specialty_en").notNull(),
+  descriptionAr: text("description_ar").notNull(),
+  descriptionEn: text("description_en").notNull().default(""),
+  seatsLeft: integer("seats_left").notNull().default(0),
+  totalSeats: integer("total_seats").notNull().default(0),
+  status: text("status").notNull().default("open"),
+  journalTarget: text("journal_target").notNull().default(""),
+  indexedIn: text("indexed_in").notNull().default(""),
+  benefits: text("benefits").notNull().default(""),
+  duration: text("duration").notNull().default(""),
+  supervisor: text("supervisor").notNull().default(""),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const programCatalogBootstrapTable = pgTable("program_catalog_bootstrap", {
+  key: text("key").primaryKey(),
+  initializedAt: timestamp("initialized_at").notNull().defaultNow(),
+});
+
+export const insertResearchProgramSchema = createInsertSchema(researchProgramsTable).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertResearchProgram = z.infer<typeof insertResearchProgramSchema>;
+export type ResearchProgram = typeof researchProgramsTable.$inferSelect;
+
+export const paymentRecordsTable = pgTable("payment_records", {
+  id: serial("id").primaryKey(),
+  registrationId: integer("registration_id"),
+  studentName: text("student_name").notNull(),
+  programTitle: text("program_title").notNull().default(""),
+  amount: integer("amount").notNull().default(0),
+  currency: text("currency").notNull().default("SAR"),
+  status: text("status").notNull().default("due"),
+  dueDate: text("due_date").notNull().default(""),
+  paidAt: timestamp("paid_at"),
+  notes: text("notes").notNull().default(""),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertPaymentRecordSchema = createInsertSchema(paymentRecordsTable).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type PaymentRecord = typeof paymentRecordsTable.$inferSelect;

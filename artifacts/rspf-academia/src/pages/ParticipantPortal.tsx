@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { ChevronDown, ChevronUp, Lock, Flame, ChevronLeft } from "lucide-react";
 import { Link } from "wouter";
-import { getResearchOpportunities, ResearchOpportunity } from "@/lib/researchData";
+import { ResearchOpportunity } from "@/lib/researchData";
 import RegistrationModal from "@/components/RegistrationModal";
 
 const hallOfFame = [
@@ -15,18 +15,24 @@ export default function ParticipantPortal() {
   const [activeTab, setActiveTab] = useState(0);
   const [expandedCards, setExpandedCards] = useState<number[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedResearch, setSelectedResearch] = useState("");
+  const [selectedResearch, setSelectedResearch] = useState<ResearchOpportunity | null>(null);
   const [opportunities, setOpportunities] = useState<ResearchOpportunity[]>([]);
 
   useEffect(() => {
-    setOpportunities(getResearchOpportunities().filter((r) => r.status === "open"));
+    fetch("/api/programs")
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error("programs unavailable")))
+      .then((data: ResearchOpportunity[]) => {
+        const available = data.filter((item) => item.status === "open" && (item.category || "active") === "active");
+        setOpportunities(available);
+      })
+      .catch(() => setOpportunities([]));
   }, []);
 
   const toggleExpand = (id: number) => {
     setExpandedCards((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
   };
 
-  const openModal = (title: string) => { setSelectedResearch(title); setModalOpen(true); };
+  const openModal = (research: ResearchOpportunity) => { setSelectedResearch(research); setModalOpen(true); };
 
   return (
     <div className="min-h-screen bg-white">
@@ -143,7 +149,7 @@ export default function ParticipantPortal() {
                         )}
 
                         <div className="flex gap-3">
-                          <button data-testid={`button-register-${opp.id}`} onClick={() => openModal(opp.title)}
+                          <button data-testid={`button-register-${opp.id}`} onClick={() => openModal(opp)}
                             className="flex-1 bg-[#0C3156] text-white font-bold py-3 rounded-xl hover:bg-[#0a2847] transition-colors text-sm shadow-sm">
                             سجل الآن 👤
                           </button>
@@ -218,7 +224,7 @@ export default function ParticipantPortal() {
         </div>
       </section>
 
-      <RegistrationModal isOpen={modalOpen} onClose={() => setModalOpen(false)} researchTitle={selectedResearch} />
+      <RegistrationModal isOpen={modalOpen} onClose={() => { setModalOpen(false); setSelectedResearch(null); }} researchTitle={selectedResearch?.titleAr || selectedResearch?.title || ""} researchId={selectedResearch?.id} />
     </div>
   );
 }

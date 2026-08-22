@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
-import { ChevronLeft, LogOut, RefreshCw, Users, FileText, Check, X, Clock, Mail, Phone } from "lucide-react";
+import { ChevronLeft, LogOut, RefreshCw, Users, FileText, Check, X, Clock, Mail, Phone, Download } from "lucide-react";
 
 const API_BASE = "/api";
 
@@ -142,14 +142,19 @@ export default function AdminSubmissions() {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [services, setServices] = useState<ServiceRequest[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedResearchId, setSelectedResearchId] = useState<number | "all">("all");
   const [, setLocation] = useLocation();
   const [authorized, setAuthorized] = useState<boolean | null>(null);
+  const [role, setRole] = useState<"owner" | "coordinator" | null>(null);
 
   useEffect(() => {
     fetch("/api/coordinator/session")
-      .then((response) => response.json() as Promise<{ authenticated?: boolean }>)
+      .then((response) => response.json() as Promise<{ authenticated?: boolean; role?: "owner" | "coordinator" }>)
       .then((result) => {
-        if (result.authenticated) setAuthorized(true);
+        if (result.authenticated && result.role) {
+          setAuthorized(true);
+          setRole(result.role);
+        }
         else { setAuthorized(false); setLocation("/coordinator-portal"); }
       })
       .catch(() => { setAuthorized(false); setLocation("/coordinator-portal"); });
@@ -158,17 +163,17 @@ export default function AdminSubmissions() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [r, s] = await Promise.all([
-        fetch(`${API_BASE}/registrations`).then((res) => res.json()),
-        fetch(`${API_BASE}/service-requests`).then((res) => res.json()),
-      ]);
+      const r = await fetch(`${API_BASE}/registrations`).then((res) => res.json());
+      const s = role === "owner"
+        ? await fetch(`${API_BASE}/service-requests`).then((res) => res.json())
+        : [];
       setRegistrations(Array.isArray(r) ? r : []);
       setServices(Array.isArray(s) ? s : []);
     } catch {
       // ignore
     }
     setLoading(false);
-  }, []);
+  }, [role]);
 
   const handleLogout = async () => {
     await fetch("/api/coordinator/logout", { method: "POST" });
@@ -178,6 +183,7 @@ export default function AdminSubmissions() {
   useEffect(() => { void fetchData(); }, [fetchData]);
 
   if (authorized !== true) return null;
+  const canManageCoordinatorRequests = role === "owner";
 
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString("ar-SA", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -187,6 +193,38 @@ export default function AdminSubmissions() {
     pendingReg: registrations.filter((r) => r.status === "pending").length,
     totalSvc: services.length,
     pendingSvc: services.filter((s) => s.status === "pending").length,
+  };
+  const registrationGroups = registrations.reduce<Record<number, { id: number; title: string; count: number; pending: number }>>((groups, registration) => {
+    const current = groups[registration.researchId] || {
+      id: registration.researchId,
+      title: registration.researchTitle,
+      count: 0,
+      pending: 0,
+    };
+    current.count += 1;
+    if (registration.status === "pending") current.pending += 1;
+    groups[registration.researchId] = current;
+    return groups;
+  }, {});
+  const filteredRegistrations = selectedResearchId === "all"
+    ? registrations
+    : registrations.filter((registration) => registration.researchId === selectedResearchId);
+  const exportRegistrations = () => {
+    const escapeCell = (value: string | number) => `"${String(value).replaceAll('"', '""')}"`;
+    const rows = [
+      ["الاسم", "التخصص", "البريد", "واتساب", "جهة الانتساب", "الدولة", "المدينة", "الفرصة", "الحالة"],
+      ...filteredRegistrations.map((registration) => [
+        registration.fullName, registration.specialization, registration.email, registration.whatsapp,
+        registration.affiliation, registration.country, registration.city, registration.researchTitle, STATUS_LABELS[registration.status] || registration.status,
+      ]),
+    ];
+    const csv = "\uFEFF" + rows.map((row) => row.map(escapeCell).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = selectedResearchId === "all" ? "srma-registrations.csv" : `srma-program-${selectedResearchId}-students.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -219,12 +257,17 @@ export default function AdminSubmissions() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* STATS */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           {[
             { label: "إجمالي التسجيلات", value: stats.totalReg, icon: <Users size={20} className="text-[#0C3156]" />, bg: "bg-blue-50", pending: stats.pendingReg },
             { label: "بانتظار المراجعة", value: stats.pendingReg, icon: <Clock size={20} className="text-yellow-500" />, bg: "bg-yellow-50", pending: null },
-            { label: "طلبات الخدمات", value: stats.totalSvc, icon: <FileText size={20} className="text-purple-500" />, bg: "bg-purple-50", pending: stats.pendingSvc },
-            { label: "خدمات بانتظار الرد", value: stats.pendingSvc, icon: <Clock size={20} className="text-orange-500" />, bg: "bg-orange-50", pending: null },
+              ...(canManageCoordinatorRequests ? [
+                { label: "طلبات الخدمات", value: stats.totalSvc, icon: <FileText size={20} className="text-purple-500" />, bg: "bg-purple-50", pending: stats.pendingSvc },
+                { label: "خدمات بانتظار الرد", value: stats.pendingSvc, icon: <Clock size={20} className="text-orange-500" />, bg: "bg-orange-50", pending: null },
+              ] : [
+                { label: "برامج قيد المتابعة", value: new Set(registrations.map((item) => item.researchId)).size, icon: <FileText size={20} className="text-purple-500" />, bg: "bg-purple-50", pending: null },
+                { label: "طلبات تم التواصل معها", value: registrations.filter((item) => item.status === "contacted").length, icon: <Phone size={20} className="text-orange-500" />, bg: "bg-orange-50", pending: null },
+              ]),
           ].map((s) => (
             <div key={s.label} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm text-right">
               <div className={`w-10 h-10 ${s.bg} rounded-xl flex items-center justify-center mb-3`}>{s.icon}</div>
@@ -241,11 +284,18 @@ export default function AdminSubmissions() {
             <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
             تحديث
           </button>
+          {tab === "registrations" && registrations.length > 0 && (
+            <button onClick={exportRegistrations}
+              className="flex items-center gap-2 text-slate-500 hover:text-[#0C3156] text-sm font-medium transition-colors">
+              <Download size={15} />
+              تصدير CSV
+            </button>
+          )}
           <div className="flex gap-2">
-            <button onClick={() => setTab("services")}
+            {canManageCoordinatorRequests && <button onClick={() => setTab("services")}
               className={`px-5 py-2.5 rounded-full font-semibold text-sm transition-all ${tab === "services" ? "bg-[#E9A020] text-white" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
               طلبات الخدمات ({stats.totalSvc})
-            </button>
+            </button>}
             <button onClick={() => setTab("registrations")}
               className={`px-5 py-2.5 rounded-full font-semibold text-sm transition-all ${tab === "registrations" ? "bg-[#0C3156] text-white" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
               تسجيلات الفرص البحثية ({stats.totalReg})
@@ -255,12 +305,30 @@ export default function AdminSubmissions() {
 
         {/* REGISTRATIONS TABLE */}
         {tab === "registrations" && (
+          <div className="space-y-4">
+            {registrations.length > 0 && (
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div className="mb-3 flex items-center justify-between">
+                  <button onClick={() => setSelectedResearchId("all")} className={`rounded-full px-3 py-1.5 text-xs font-bold ${selectedResearchId === "all" ? "bg-[#0C3156] text-white" : "bg-slate-100 text-slate-600"}`}>كل الفرص</button>
+                  <h2 className="text-right text-sm font-black text-slate-800">الطلاب حسب الفرصة أو البرنامج</h2>
+                </div>
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                  {Object.values(registrationGroups).map((group) => (
+                    <button key={group.id} onClick={() => setSelectedResearchId(group.id)}
+                      className={`min-w-52 rounded-xl border p-3 text-right transition-colors ${selectedResearchId === group.id ? "border-[#117b59] bg-[#f3fbf8]" : "border-slate-200 hover:bg-slate-50"}`}>
+                      <p className="line-clamp-2 text-xs font-bold text-slate-700">{group.title}</p>
+                      <p className="mt-2 text-xs text-slate-500">{group.count} طالب — {group.pending} بانتظار المراجعة</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            {registrations.length === 0 ? (
+            {filteredRegistrations.length === 0 ? (
               <div className="py-16 text-center text-slate-400">
                 <Users size={40} className="mx-auto mb-3 opacity-30" />
-                <p className="font-medium">لا توجد تسجيلات بعد</p>
-                <p className="text-sm mt-1">ستظهر هنا بعد تسجيل أول مشارك</p>
+                <p className="font-medium">لا توجد تسجيلات في هذا القسم</p>
+                <p className="text-sm mt-1">اختر فرصة أخرى أو انتظر تسجيل أول مشارك</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -273,7 +341,7 @@ export default function AdminSubmissions() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {registrations.map((reg) => (
+                    {filteredRegistrations.map((reg) => (
                       <tr key={reg.id} className="hover:bg-slate-50 transition-colors">
                         <td className="px-4 py-4">
                           <p className="font-semibold text-slate-800 text-sm">{reg.fullName}</p>
@@ -304,7 +372,11 @@ export default function AdminSubmissions() {
                           <p className="text-xs text-slate-500 whitespace-nowrap">{formatDate(reg.createdAt)}</p>
                         </td>
                         <td className="px-4 py-4">
-                          <StatusActions id={reg.id} current={reg.status} onUpdate={fetchData} endpoint="registrations" />
+                          {canManageCoordinatorRequests ? (
+                            <StatusActions id={reg.id} current={reg.status} onUpdate={fetchData} endpoint="registrations" />
+                          ) : (
+                            <span className="text-xs text-slate-400">للعرض فقط</span>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -312,16 +384,17 @@ export default function AdminSubmissions() {
                 </table>
               </div>
             )}
-            {registrations.length > 0 && (
+            {filteredRegistrations.length > 0 && (
               <div className="px-5 py-3 border-t border-slate-100 bg-slate-50 text-xs text-slate-500 text-right">
-                {registrations.length} تسجيل إجمالاً — {stats.pendingReg} بانتظار المراجعة
+                {filteredRegistrations.length} تسجيل ظاهر — {stats.pendingReg} بانتظار المراجعة إجمالاً
               </div>
             )}
+          </div>
           </div>
         )}
 
         {/* SERVICE REQUESTS TABLE */}
-        {tab === "services" && (
+        {canManageCoordinatorRequests && tab === "services" && (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             {services.length === 0 ? (
               <div className="py-16 text-center text-slate-400">

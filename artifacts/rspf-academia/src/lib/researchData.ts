@@ -1,12 +1,19 @@
 export interface ResearchOpportunity {
   id: number;
+  category?: "active" | "completed" | "training" | "cme";
   specialty: string;
+  specialtyAr?: string;
+  specialtyEn?: string;
   specialtyColor: string;
   title: string;
+  titleAr?: string;
+  titleEn?: string;
   description: string;
+  descriptionAr?: string;
+  descriptionEn?: string;
   seatsLeft: number;
   totalSeats: number;
-  status: "open" | "closed" | "draft";
+  status: "open" | "closed" | "draft" | "upcoming";
   journalTarget: string;
   indexedIn: string[];
   benefits: string[];

@@ -3,7 +3,7 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { db, coordinatorsTable, serviceRequestsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import {
-  clearCoordinatorCookie, createSession, readSession, setCoordinatorCookie, requireOwner,
+  clearCoordinatorCookie, createSession, readSession, setCoordinatorCookie, requireCoordinator, requireOwner,
 } from "../middlewares/coordinatorAuth";
 
 const router = Router();
@@ -49,7 +49,28 @@ router.post("/coordinator/logout", (_req, res) => {
 
 router.get("/coordinator/session", (req, res) => {
   const session = readSession(req.cookies?.srma_coordinator_session);
-  res.json({ authenticated: Boolean(session), role: session?.role || null });
+  res.json({ authenticated: Boolean(session), role: session?.role || null, coordinatorId: session?.coordinatorId || null });
+});
+
+router.post("/coordinator/change-access-code", requireCoordinator, async (req, res) => {
+  const session = readSession(req.cookies?.srma_coordinator_session);
+  if (!session || session.role !== "coordinator" || !session.coordinatorId) {
+    res.status(403).json({ error: "تغيير رمز المالك يتم من إعدادات المنصة." });
+    return;
+  }
+  const currentCode = typeof req.body?.currentCode === "string" ? req.body.currentCode.trim().toUpperCase() : "";
+  const newCode = typeof req.body?.newCode === "string" ? req.body.newCode.trim().toUpperCase() : "";
+  if (newCode.length < 8) {
+    res.status(400).json({ error: "يجب ألا يقل رمز الدخول الجديد عن 8 أحرف." });
+    return;
+  }
+  const [coordinator] = await db.select().from(coordinatorsTable).where(eq(coordinatorsTable.id, session.coordinatorId)).limit(1);
+  if (!coordinator || !safeHashMatch(coordinator.accessCodeHash, accessCodeHash(currentCode))) {
+    res.status(400).json({ error: "رمز الدخول الحالي غير صحيح." });
+    return;
+  }
+  await db.update(coordinatorsTable).set({ accessCodeHash: accessCodeHash(newCode) }).where(eq(coordinatorsTable.id, coordinator.id));
+  res.json({ ok: true });
 });
 
 router.post("/coordinator-accounts/approve", requireOwner, async (req, res) => {
@@ -79,6 +100,12 @@ router.post("/coordinator-accounts/approve", requireOwner, async (req, res) => {
 
 function accessCodeHash(code: string) {
   return createHmac("sha256", process.env["SESSION_SECRET"] || "srma-development-secret").update(code).digest("hex");
+}
+
+function safeHashMatch(actualHash: string, expectedHash: string) {
+  const actual = Buffer.from(actualHash);
+  const expected = Buffer.from(expectedHash);
+  return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
 export default router;

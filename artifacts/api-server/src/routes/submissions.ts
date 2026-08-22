@@ -1,8 +1,8 @@
 import { Router } from "express";
-import { db, registrationsTable, serviceRequestsTable, insertRegistrationSchema, insertServiceRequestSchema } from "@workspace/db";
+import { db, registrationsTable, researchProgramsTable, serviceRequestsTable, insertRegistrationSchema, insertServiceRequestSchema } from "@workspace/db";
 import { desc, eq } from "drizzle-orm";
 import { sendRegistrationEmail, sendServiceRequestEmail } from "../lib/mailer";
-import { requireCoordinator } from "../middlewares/coordinatorAuth";
+import { requireCoordinator, requireOwner } from "../middlewares/coordinatorAuth";
 
 const router = Router();
 
@@ -14,7 +14,14 @@ router.post("/registrations", async (req, res) => {
     return;
   }
 
-  const row = await db.insert(registrationsTable).values(parsed.data).returning();
+  const [program] = await db.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, parsed.data.researchId)).limit(1);
+  if (!program || program.status !== "open") {
+    res.status(400).json({ error: "هذه الفرصة غير متاحة للتسجيل حالياً." });
+    return;
+  }
+
+  const researchTitle = program.titleAr || program.titleEn;
+  const row = await db.insert(registrationsTable).values({ ...parsed.data, researchTitle }).returning();
 
   sendRegistrationEmail({
     fullName: parsed.data.fullName,
@@ -25,7 +32,7 @@ router.post("/registrations", async (req, res) => {
     country: parsed.data.country ?? "",
     city: parsed.data.city ?? "",
     orcid: parsed.data.orcid ?? "",
-    researchTitle: parsed.data.researchTitle,
+    researchTitle,
   }).catch(() => {});
 
   res.status(201).json(row[0]);
@@ -41,7 +48,7 @@ router.get("/registrations", requireCoordinator, async (_req, res) => {
 });
 
 /* ── PATCH /api/registrations/:id/status ── */
-router.patch("/registrations/:id/status", requireCoordinator, async (req, res) => {
+router.patch("/registrations/:id/status", requireOwner, async (req, res) => {
   const id = Number(req.params["id"]);
   const { status } = req.body as { status: string };
   if (!status) { res.status(400).json({ error: "status required" }); return; }
@@ -79,7 +86,7 @@ router.post("/service-requests", async (req, res) => {
 });
 
 /* ── GET /api/service-requests ── */
-router.get("/service-requests", requireCoordinator, async (_req, res) => {
+router.get("/service-requests", requireOwner, async (_req, res) => {
   const rows = await db
     .select()
     .from(serviceRequestsTable)
@@ -88,7 +95,7 @@ router.get("/service-requests", requireCoordinator, async (_req, res) => {
 });
 
 /* ── PATCH /api/service-requests/:id/status ── */
-router.patch("/service-requests/:id/status", requireCoordinator, async (req, res) => {
+router.patch("/service-requests/:id/status", requireOwner, async (req, res) => {
   const id = Number(req.params["id"]);
   const { status } = req.body as { status: string };
   if (!status) { res.status(400).json({ error: "status required" }); return; }
