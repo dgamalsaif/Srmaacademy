@@ -142,6 +142,8 @@ export default function AdminSubmissions() {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [services, setServices] = useState<ServiceRequest[]>([]);
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
   const [selectedResearchId, setSelectedResearchId] = useState<number | "all">("all");
   const [, setLocation] = useLocation();
   const [authorized, setAuthorized] = useState<boolean | null>(null);
@@ -210,21 +212,74 @@ export default function AdminSubmissions() {
     ? registrations
     : registrations.filter((registration) => registration.researchId === selectedResearchId);
   const exportRegistrations = () => {
-    const escapeCell = (value: string | number) => `"${String(value).replaceAll('"', '""')}"`;
-    const rows = [
-      ["الاسم", "التخصص", "البريد", "واتساب", "جهة الانتساب", "الدولة", "المدينة", "الفرصة", "الحالة"],
-      ...filteredRegistrations.map((registration) => [
-        registration.fullName, registration.specialization, registration.email, registration.whatsapp,
-        registration.affiliation, registration.country, registration.city, registration.researchTitle, STATUS_LABELS[registration.status] || registration.status,
-      ]),
-    ];
-    const csv = "\uFEFF" + rows.map((row) => row.map(escapeCell).join(",")).join("\n");
-    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = selectedResearchId === "all" ? "srma-registrations.csv" : `srma-program-${selectedResearchId}-students.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+    setExportError("");
+    if (filteredRegistrations.length === 0) {
+      setExportError("لا توجد تسجيلات في العرض الحالي لتصديرها.");
+      return;
+    }
+
+    setExporting(true);
+    try {
+      const escapeXml = (value: string | number) => String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&apos;");
+      const formatExportDate = (date: string) => new Date(date).toLocaleString("ar-SA", {
+        year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
+      });
+      const rows = [
+        ["الاسم الكامل", "التخصص", "البريد الإلكتروني", "واتساب", "جهة الانتساب", "الدولة", "المدينة", "البرنامج / الفرصة", "الحالة", "تاريخ التسجيل"],
+        ...filteredRegistrations.map((registration) => [
+          registration.fullName,
+          registration.specialization,
+          registration.email,
+          registration.whatsapp || "—",
+          registration.affiliation,
+          registration.country,
+          registration.city || "—",
+          registration.researchTitle,
+          STATUS_LABELS[registration.status] || registration.status,
+          formatExportDate(registration.createdAt),
+        ]),
+      ];
+      // Excel's XML Spreadsheet format keeps Arabic text intact and opens on
+      // phones and desktop Excel without requiring a third-party export server.
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+  xmlns:o="urn:schemas-microsoft-com:office:office"
+  xmlns:x="urn:schemas-microsoft-com:office:excel"
+  xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+  xmlns:html="http://www.w3.org/TR/REC-html40">
+  <Styles>
+    <Style ss:ID="Header">
+      <Font ss:Bold="1"/>
+      <Interior ss:Color="#E8F1F8" ss:Pattern="Solid"/>
+    </Style>
+  </Styles>
+  <Worksheet ss:Name="تسجيلات الطلاب">
+    <Table>
+      ${rows.map((row, rowIndex) => `<Row>${row.map((cell) => `<Cell${rowIndex === 0 ? ' ss:StyleID="Header"' : ""}><Data ss:Type="String">${escapeXml(cell)}</Data></Cell>`).join("")}</Row>`).join("")}
+    </Table>
+  </Worksheet>
+</Workbook>`;
+      const blob = new Blob(["\uFEFF", xml], { type: "application/vnd.ms-excel;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = selectedResearchId === "all" ? "srma-student-registrations.xls" : `srma-program-${selectedResearchId}-students.xls`;
+      link.rel = "noopener";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      setExportError("تعذر إنشاء ملف Excel. تحقق من مساحة الجهاز وحاول مرة أخرى.");
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -284,12 +339,15 @@ export default function AdminSubmissions() {
             <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
             تحديث
           </button>
-          {tab === "registrations" && registrations.length > 0 && (
-            <button onClick={exportRegistrations}
-              className="flex items-center gap-2 text-slate-500 hover:text-[#0C3156] text-sm font-medium transition-colors">
-              <Download size={15} />
-              تصدير CSV
+          {tab === "registrations" && (
+            <div className="flex items-center gap-3">
+            <button onClick={exportRegistrations} disabled={exporting || filteredRegistrations.length === 0}
+              className="flex items-center gap-2 text-slate-500 hover:text-[#0C3156] text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-45">
+              <Download size={15} className={exporting ? "animate-pulse" : ""} />
+              {exporting ? "جارٍ تجهيز Excel..." : "تنزيل Excel"}
             </button>
+            {exportError && <span className="text-xs font-semibold text-red-600">{exportError}</span>}
+            </div>
           )}
           <div className="flex gap-2">
             {canManageCoordinatorRequests && <button onClick={() => setTab("services")}

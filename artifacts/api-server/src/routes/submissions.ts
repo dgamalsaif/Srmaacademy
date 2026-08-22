@@ -1,13 +1,12 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import { db, registrationsTable, researchProgramsTable, serviceRequestsTable, insertRegistrationSchema, insertServiceRequestSchema } from "@workspace/db";
 import { desc, eq } from "drizzle-orm";
-import { sendRegistrationEmail, sendServiceRequestEmail } from "../lib/mailer";
+import { isRegistrationEmailConfigured, sendRegistrationEmail, sendServiceRequestEmail } from "../lib/mailer";
 import { requireCoordinator, requireOwner } from "../middlewares/coordinatorAuth";
 
 const router = Router();
 
-/* ── POST /api/registrations ── */
-router.post("/registrations", async (req, res) => {
+async function createRegistration(req: Request, res: Response) {
   const parsed = insertRegistrationSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "بيانات غير صحيحة", details: parsed.error.issues });
@@ -23,7 +22,13 @@ router.post("/registrations", async (req, res) => {
   const researchTitle = program.titleAr || program.titleEn;
   const row = await db.insert(registrationsTable).values({ ...parsed.data, researchTitle }).returning();
 
-  sendRegistrationEmail({
+  const emailNotifications = {
+    configured: isRegistrationEmailConfigured(),
+    pending: isRegistrationEmailConfigured(),
+    adminSent: false,
+    studentSent: false,
+  };
+  void sendRegistrationEmail({
     fullName: parsed.data.fullName,
     specialization: parsed.data.specialization,
     email: parsed.data.email,
@@ -35,7 +40,22 @@ router.post("/registrations", async (req, res) => {
     researchTitle,
   }).catch(() => {});
 
-  res.status(201).json(row[0]);
+  res.status(201).json({ ...row[0], emailNotifications });
+}
+
+/* ── POST /api/registrations ── */
+router.post("/registrations", async (req, res) => {
+  const whatsapp = typeof req.body?.whatsapp === "string" ? req.body.whatsapp.trim() : "";
+  if (!whatsapp) {
+    res.status(400).json({ error: "رقم واتساب مطلوب للتسجيل العام." });
+    return;
+  }
+  await createRegistration(req, res);
+});
+
+/* ── POST /api/coordinator/registrations ── */
+router.post("/coordinator/registrations", requireCoordinator, async (req, res) => {
+  await createRegistration(req, res);
 });
 
 /* ── GET /api/registrations ── */

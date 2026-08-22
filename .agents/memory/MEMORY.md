@@ -1,0 +1,1 @@
+- [Registration email delivery](registration-email-delivery.md) — distinguish a saved registration from a successfully delivered email whenever SMTP may be unavailable.
