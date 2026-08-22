@@ -64,7 +64,7 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
         `📧 ${form.email}\n📱 ${form.whatsapp}\n🏥 ${form.affiliation}`
       );
       setTimeout(() => {
-        window.open(`https://wa.me/966578032336?text=${waMessage}`, "_blank");
+        window.open(`https://wa.me/966562159258?text=${waMessage}`, "_blank");
       }, 1200);
 
     } catch (err: unknown) {
@@ -103,11 +103,11 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
               <CheckCircle2 size={32} className="text-emerald-600" />
             </div>
             <h3 className="text-xl font-black text-slate-900 mb-2">تم استلام طلبك بنجاح!</h3>
-            <p className="text-slate-500 text-sm mb-2">تم حفظ بياناتك وسيتواصل معك فريق RSPF قريباً.</p>
+            <p className="text-slate-500 text-sm mb-2">تم حفظ بياناتك وسيتواصل معك فريق SRMA قريباً.</p>
             <p className="text-slate-500 text-sm mb-6">سيفتح واتساب تلقائياً مع رسالتك...</p>
             <div className="flex gap-3 justify-center">
               <a
-                href={`https://wa.me/966578032336?text=${encodeURIComponent(`مرحباً، أنا ${form.fullName} — أودّ التسجيل في: ${researchTitle}`)}`}
+                href={`https://wa.me/966562159258?text=${encodeURIComponent(`مرحباً، أنا ${form.fullName} — أودّ التسجيل في: ${researchTitle}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-[#25D366] text-white font-bold px-6 py-2.5 rounded-full text-sm hover:bg-[#1eb856] transition-colors"

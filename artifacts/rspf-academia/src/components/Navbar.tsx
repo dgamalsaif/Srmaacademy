@@ -56,12 +56,12 @@ export default function Navbar() {
             <div className="flex flex-col items-end">
               <div className="flex items-center gap-1.5">
                 <span className="text-xs bg-[#E9A020] text-white px-1.5 py-0.5 rounded font-bold tracking-wide">2026</span>
-                <span className="text-xl font-black text-[#0C3156] tracking-tight">RSPF</span>
+                <span className="text-xl font-black text-[#0C3156] tracking-tight">SRMA</span>
                 <div className="w-8 h-8 bg-gradient-to-br from-[#0C3156] to-[#1A5FAE] rounded-full flex items-center justify-center shadow-sm">
                   <Microscope size={15} className="text-white" />
                 </div>
               </div>
-              <span className="text-[10px] text-slate-500 font-medium tracking-wide">بوابتك للتميز البحثي</span>
+              <span className="text-[10px] text-slate-500 font-medium tracking-wide">SRMA Research Academy</span>
             </div>
           </Link>
         </div>

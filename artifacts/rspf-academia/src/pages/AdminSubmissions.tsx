@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { ChevronLeft, LogOut, RefreshCw, Users, FileText, Check, X, Clock, Mail, Phone } from "lucide-react";
 
 const API_BASE = "/api";
@@ -97,6 +97,18 @@ export default function AdminSubmissions() {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [services, setServices] = useState<ServiceRequest[]>([]);
   const [loading, setLoading] = useState(false);
+  const [, setLocation] = useLocation();
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch("/api/coordinator/session")
+      .then((response) => response.json() as Promise<{ authenticated?: boolean }>)
+      .then((result) => {
+        if (result.authenticated) setAuthorized(true);
+        else { setAuthorized(false); setLocation("/coordinator-portal"); }
+      })
+      .catch(() => { setAuthorized(false); setLocation("/coordinator-portal"); });
+  }, [setLocation]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -114,6 +126,8 @@ export default function AdminSubmissions() {
   }, []);
 
   useEffect(() => { void fetchData(); }, [fetchData]);
+
+  if (authorized !== true) return null;
 
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString("ar-SA", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });

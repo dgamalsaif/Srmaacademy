@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, registrationsTable, serviceRequestsTable, insertRegistrationSchema, insertServiceRequestSchema } from "@workspace/db";
 import { desc, eq } from "drizzle-orm";
 import { sendRegistrationEmail, sendServiceRequestEmail } from "../lib/mailer";
+import { requireCoordinator } from "../middlewares/coordinatorAuth";
 
 const router = Router();
 
@@ -21,7 +22,7 @@ router.post("/registrations", async (req, res) => {
     email: parsed.data.email,
     whatsapp: parsed.data.whatsapp,
     affiliation: parsed.data.affiliation,
-    country: parsed.data.country,
+    country: parsed.data.country ?? "",
     city: parsed.data.city ?? "",
     orcid: parsed.data.orcid ?? "",
     researchTitle: parsed.data.researchTitle,
@@ -31,7 +32,7 @@ router.post("/registrations", async (req, res) => {
 });
 
 /* ── GET /api/registrations ── */
-router.get("/registrations", async (_req, res) => {
+router.get("/registrations", requireCoordinator, async (_req, res) => {
   const rows = await db
     .select()
     .from(registrationsTable)
@@ -40,7 +41,7 @@ router.get("/registrations", async (_req, res) => {
 });
 
 /* ── PATCH /api/registrations/:id/status ── */
-router.patch("/registrations/:id/status", async (req, res) => {
+router.patch("/registrations/:id/status", requireCoordinator, async (req, res) => {
   const id = Number(req.params["id"]);
   const { status } = req.body as { status: string };
   if (!status) { res.status(400).json({ error: "status required" }); return; }
@@ -78,7 +79,7 @@ router.post("/service-requests", async (req, res) => {
 });
 
 /* ── GET /api/service-requests ── */
-router.get("/service-requests", async (_req, res) => {
+router.get("/service-requests", requireCoordinator, async (_req, res) => {
   const rows = await db
     .select()
     .from(serviceRequestsTable)
@@ -87,7 +88,7 @@ router.get("/service-requests", async (_req, res) => {
 });
 
 /* ── PATCH /api/service-requests/:id/status ── */
-router.patch("/service-requests/:id/status", async (req, res) => {
+router.patch("/service-requests/:id/status", requireCoordinator, async (req, res) => {
   const id = Number(req.params["id"]);
   const { status } = req.body as { status: string };
   if (!status) { res.status(400).json({ error: "status required" }); return; }

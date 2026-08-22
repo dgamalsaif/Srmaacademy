@@ -64,7 +64,7 @@ export default function ParticipantPortal() {
         <div className="animate-marquee">
           {[...Array(3)].map((_, i) => (
             <span key={i} className="inline-block mx-10 text-sm font-medium whitespace-nowrap">
-              ⚡ انضم لأكثر من 500 طبيب وباحث حققوا متطلبات الهيئة السعودية للتخصصات الصحية مع RSPF &nbsp;|&nbsp; سجل الآن وابدأ رحلتك البحثية اليوم
+              ⚡ انضم لأكثر من 500 طبيب وباحث حققوا متطلبات الهيئة السعودية للتخصصات الصحية مع SRMA &nbsp;|&nbsp; سجل الآن وابدأ رحلتك البحثية اليوم
             </span>
           ))}
         </div>
@@ -108,10 +108,10 @@ export default function ParticipantPortal() {
                         </Link>
 
                         <p className="text-[#0C3156] text-sm italic text-right mb-3 font-medium">
-                          🏆 نحن في RSPF – نبني ملفك البحثي ونصنع الفارق
+                          🏆 نحن في SRMA – نبني ملفك البحثي ونصنع الفارق
                         </p>
 
-                        <a href="https://wa.me/966578032336" target="_blank" rel="noopener noreferrer"
+                        <a href="https://wa.me/966562159258" target="_blank" rel="noopener noreferrer"
                           data-testid={`link-price-${opp.id}`}
                           className="text-[#0C3156] text-sm underline text-right block mb-3 font-semibold">
                           تواصل لمعرفة السعر
@@ -172,7 +172,7 @@ export default function ParticipantPortal() {
               <p className="text-slate-500 max-w-md mx-auto mb-6 leading-relaxed">
                 برنامج تدريبي متكامل يأخذك من الصفر إلى النشر الدولي. تدريب عملي مع إشراف متخصص وفرصة نشر حقيقية في نهاية البرنامج.
               </p>
-              <a href="https://wa.me/966578032336" target="_blank" rel="noopener noreferrer" data-testid="button-trainer-whatsapp"
+              <a href="https://wa.me/966562159258" target="_blank" rel="noopener noreferrer" data-testid="button-trainer-whatsapp"
                 className="inline-flex items-center gap-2 bg-[#0369A1] text-white px-7 py-3.5 rounded-full font-bold hover:bg-[#025b88] transition-colors shadow-md">
                 تواصل معنا للتسجيل ←
               </a>
@@ -186,7 +186,7 @@ export default function ParticipantPortal() {
               <p className="text-slate-500 max-w-md mx-auto mb-6 leading-relaxed">
                 دورات طبية معتمدة من الهيئة السعودية للتخصصات الصحية. احصل على نقاطك CME مع شهادة رسمية معتمدة.
               </p>
-              <a href="https://wa.me/966578032336" target="_blank" rel="noopener noreferrer" data-testid="button-cme-whatsapp"
+              <a href="https://wa.me/966562159258" target="_blank" rel="noopener noreferrer" data-testid="button-cme-whatsapp"
                 className="inline-flex items-center gap-2 bg-violet-600 text-white px-7 py-3.5 rounded-full font-bold hover:bg-violet-700 transition-colors shadow-md">
                 تواصل معنا للتسجيل ←
               </a>

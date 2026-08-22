@@ -170,7 +170,7 @@ export default function ResearchDetail() {
               )}
 
               <a
-                href="https://wa.me/966578032336"
+                href="https://wa.me/966562159258"
                 target="_blank"
                 rel="noopener noreferrer"
                 data-testid="link-detail-whatsapp"

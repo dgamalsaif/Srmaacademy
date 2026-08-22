@@ -32,7 +32,7 @@ export default function About() {
         <div className="max-w-3xl mx-auto">
           <div className="inline-flex items-center gap-2 bg-[#0C3156]/8 border border-[#0C3156]/15 text-[#0C3156] px-4 py-1.5 rounded-full text-sm font-semibold mb-4">عن المنصة</div>
           <h1 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4">رسالتنا نحو بحث علمي طبي متميز</h1>
-          <p className="text-slate-600 text-lg leading-relaxed">RSPF هي منصة أكاديمية سعودية متخصصة تُعنى بدعم الأطباء والباحثين الصحيين في رحلتهم البحثية من الفكرة حتى النشر الدولي</p>
+          <p className="text-slate-600 text-lg leading-relaxed">SRMA Research Academy هي أكاديمية متخصصة تُعنى بدعم الأطباء والباحثين الصحيين في رحلتهم البحثية من الفكرة حتى النشر الدولي</p>
         </div>
       </section>
 
@@ -54,7 +54,7 @@ export default function About() {
         <div className="max-w-3xl mx-auto text-right">
           <h2 className="text-2xl font-black text-slate-900 mb-5">منصة أكاديمية سعودية تُعيد تشكيل مسار البحث الطبي</h2>
           <div className="space-y-4 text-slate-600 leading-relaxed">
-            <p>انطلقت منصة RSPF (Research Scientific Publications Forum) من قناعة راسخة بأن كل طبيب وباحث صحي في المملكة العربية السعودية يستحق الوصول إلى فرصة بحثية حقيقية تمكّنه من النشر في أرقى المجلات العلمية الدولية.</p>
+            <p>انطلقت SRMA Research Academy من قناعة راسخة بأن كل طبيب وباحث صحي في المملكة العربية السعودية يستحق الوصول إلى فرصة بحثية حقيقية تمكّنه من النشر في أرقى المجلات العلمية الدولية.</p>
             <p>نؤمن بأن البحث العلمي الطبي ليس ترفاً أكاديمياً، بل هو ضرورة مهنية تفتح أمام الأطباء أبواب البورد السعودي، والزمالات الخارجية، والترقية الأكاديمية، والابتعاث الدولي.</p>
             <p>لهذا السبب، بنينا منظومة متكاملة من الخدمات البحثية التي تلبي احتياجات كل مرحلة: من اختيار موضوع البحث، مروراً بجمع البيانات والتحليل الإحصائي، وصولاً إلى النشر الدولي والحصول على الشهادات المعتمدة.</p>
           </div>
@@ -97,7 +97,7 @@ export default function About() {
         <div className="max-w-3xl mx-auto">
           <div className="bg-gradient-to-br from-[#1E3A5F] to-[#0C3156] rounded-2xl p-8 text-right text-white shadow-xl">
             <h2 className="text-2xl font-black mb-3 text-[#E9A020]">شركاء رؤية 2030</h2>
-            <p className="text-blue-100 leading-relaxed">RSPF تدعم رؤية المملكة العربية السعودية 2030 من خلال تطوير قدرات الباحثين الصحيين وتعزيز الإنتاج العلمي الوطني. نسعى إلى بناء جيل من الأطباء الباحثين القادرين على المساهمة في رفع المستوى الصحي وتحقيق التنمية المستدامة.</p>
+            <p className="text-blue-100 leading-relaxed">SRMA Research Academy تدعم رؤية المملكة العربية السعودية 2030 من خلال تطوير قدرات الباحثين الصحيين وتعزيز الإنتاج العلمي الوطني. نسعى إلى بناء جيل من الأطباء الباحثين القادرين على المساهمة في رفع المستوى الصحي وتحقيق التنمية المستدامة.</p>
             <div className="mt-6 grid grid-cols-3 gap-4">
               {["بناء المعرفة", "دعم البحث العلمي", "تطوير الكوادر"].map((item) => (
                 <div key={item} className="bg-white/10 rounded-xl p-3 text-center border border-white/10">

@@ -37,7 +37,7 @@ export default function Home() {
         <div className="max-w-5xl mx-auto text-center relative">
           <div className="inline-flex items-center gap-2 bg-[#0C3156]/8 border border-[#0C3156]/15 text-[#0C3156] px-5 py-2 rounded-full text-sm font-semibold mb-7 shadow-sm">
             <span className="w-2 h-2 rounded-full bg-[#E9A020] animate-pulse" />
-            Research Scientific Publications Forum · Edition 2026
+            SRMA Research Academy · Edition 2026
           </div>
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-black leading-tight mb-6 tracking-tight">
             <span className="text-slate-900">المنصة </span>
@@ -193,7 +193,7 @@ export default function Home() {
         <div className="max-w-3xl mx-auto">
           <div className="bg-gradient-to-br from-[#0C3156] to-[#1A5FAE] rounded-3xl p-8 sm:p-10 text-white text-right shadow-xl">
             <div className="inline-flex items-center gap-2 bg-[#E9A020] text-white px-4 py-1.5 rounded-full text-xs font-bold mb-5">
-              RSPF 2026 في 🌟
+              SRMA 2026 في 🌟
             </div>
             <h2 className="text-2xl sm:text-3xl font-black mb-6">نوّر لك المسار الكامل 🚀</h2>
             <ul className="space-y-3 mb-8">
@@ -205,7 +205,7 @@ export default function Home() {
               ))}
             </ul>
             <div className="flex flex-col sm:flex-row gap-3">
-              <a href="https://wa.me/966578032336" target="_blank" rel="noopener noreferrer" data-testid="button-path-whatsapp"
+              <a href="https://wa.me/966562159258" target="_blank" rel="noopener noreferrer" data-testid="button-path-whatsapp"
                 className="bg-[#E9A020] text-white px-6 py-3 rounded-full font-bold text-sm hover:bg-[#d08e10] transition-colors inline-flex items-center gap-2 justify-center shadow-lg shadow-black/20">
                 ابدأ الآن عبر واتساب <ChevronLeft size={16} />
               </a>
@@ -227,7 +227,7 @@ export default function Home() {
           <h2 className="text-2xl sm:text-3xl font-black text-slate-900 mb-8">من رفضين متتاليين إلى القبول في زمالة القلبية ❤️</h2>
           <div className="bg-slate-50 rounded-2xl p-6 sm:p-8 border border-slate-200 text-right mb-5">
             <blockquote className="text-slate-700 text-lg font-medium leading-relaxed mb-6 italic border-r-4 border-[#0C3156] pr-4">
-              "كنت أعتقد أن رحلتي مع الزمالة انتهت بعد الرفض الثاني، لكن RSPF صنع معي ملفاً بحثياً من الصفر خلال 6 أشهر"
+              "كنت أعتقد أن رحلتي مع الزمالة انتهت بعد الرفض الثاني، لكن SRMA صنعت معي ملفاً بحثياً من الصفر خلال 6 أشهر"
             </blockquote>
             <div className="space-y-3">
               {["تحديد موضوع بحثي مناسب لتخصصه في طب القلب","بناء فريق البحث وتوزيع المهام بدقة","الإشراف على جمع البيانات والتحليل الإحصائي","النشر في مجلة Q2 مفهرسة في Scopus"].map((step, i) => (
@@ -241,7 +241,7 @@ export default function Home() {
           <div className="bg-[#E9A020]/10 border-2 border-[#E9A020] rounded-2xl p-5 text-center">
             <div className="text-3xl mb-2">🏆</div>
             <div className="font-black text-slate-900 text-lg">قُبل في برنامج زمالة القلبية ✅</div>
-            <div className="text-sm text-slate-500 mt-1">بعد 6 أشهر فقط مع RSPF</div>
+            <div className="text-sm text-slate-500 mt-1">بعد 6 أشهر فقط مع SRMA</div>
           </div>
         </div>
       </section>
@@ -262,7 +262,7 @@ export default function Home() {
               </div>
             ))}
           </div>
-          <a href="https://wa.me/966578032336" target="_blank" rel="noopener noreferrer" data-testid="button-revive-whatsapp"
+          <a href="https://wa.me/966562159258" target="_blank" rel="noopener noreferrer" data-testid="button-revive-whatsapp"
             className="inline-flex items-center gap-2 bg-[#0C3156] text-white px-8 py-4 rounded-full font-bold text-base hover:bg-[#0a2847] transition-colors shadow-lg shadow-[#0C3156]/25">
             تحدث معنا الآن لإحياء بحثك <ChevronLeft size={18} />
           </a>
@@ -335,7 +335,7 @@ export default function Home() {
       <section className="py-16 px-4 bg-[#0C3156]">
         <div className="max-w-3xl mx-auto text-center text-white">
           <h2 className="text-3xl sm:text-4xl font-black mb-3">جاهز للبدء في بحثك القادم؟</h2>
-          <p className="text-blue-200 mb-8 max-w-xl mx-auto">فريق RSPF جاهز لمساعدتك في كل خطوة من خطوات رحلتك البحثية</p>
+          <p className="text-blue-200 mb-8 max-w-xl mx-auto">فريق SRMA جاهز لمساعدتك في كل خطوة من خطوات رحلتك البحثية</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/participant-portal" data-testid="button-cta-portal"
               className="bg-[#E9A020] text-white px-8 py-4 rounded-full font-bold text-base hover:bg-[#d08e10] transition-colors shadow-lg inline-flex items-center gap-2 justify-center">

@@ -69,7 +69,7 @@ export default function ServiceModal({ isOpen, onClose, serviceName }: ServiceMo
         `التفاصيل: ${form.details}`
       );
       setTimeout(() => {
-        window.open(`https://wa.me/966578032336?text=${waMessage}`, "_blank");
+        window.open(`https://wa.me/966562159258?text=${waMessage}`, "_blank");
       }, 1200);
 
     } catch (err: unknown) {
@@ -110,7 +110,7 @@ export default function ServiceModal({ isOpen, onClose, serviceName }: ServiceMo
             <p className="text-slate-500 text-sm mb-6">سيفتح واتساب تلقائياً...</p>
             <div className="flex gap-3 justify-center">
               <a
-                href={`https://wa.me/966578032336?text=${encodeURIComponent(`مرحباً، أنا ${form.fullName} — أطلب خدمة: ${form.serviceType}`)}`}
+                href={`https://wa.me/966562159258?text=${encodeURIComponent(`مرحباً، أنا ${form.fullName} — أطلب خدمة: ${form.serviceType}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-[#25D366] text-white font-bold px-6 py-2.5 rounded-full text-sm hover:bg-[#1eb856] transition-colors"
@@ -132,7 +132,7 @@ export default function ServiceModal({ isOpen, onClose, serviceName }: ServiceMo
 
             {[
               { label: "الاسم الكامل", key: "fullName", placeholder: "الاسم الكامل", type: "text" },
-              { label: "رقم الجوال (واتساب)", key: "phone", placeholder: "+966 57 803 2336", type: "tel" },
+              { label: "رقم الجوال (واتساب)", key: "phone", placeholder: "+966 56 215 9258", type: "tel" },
               { label: "البريد الإلكتروني", key: "email", placeholder: "example@email.com", type: "email", ltr: true },
             ].map(({ label, key, placeholder, type, ltr }) => (
               <div key={key}>

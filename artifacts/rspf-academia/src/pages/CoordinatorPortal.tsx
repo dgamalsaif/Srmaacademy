@@ -2,8 +2,6 @@ import { useState } from "react";
 import { Shield, Eye, EyeOff, ArrowLeft, Headphones, X, CheckCircle2, Loader2, UserRound, Mail, Phone, Building2 } from "lucide-react";
 import { useLocation } from "wouter";
 
-const ADMIN_PASSWORD = "RSPF2026";
-
 export default function CoordinatorPortal() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -11,13 +9,23 @@ export default function CoordinatorPortal() {
   const [requestOpen, setRequestOpen] = useState(false);
   const [, setLocation] = useLocation();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === ADMIN_PASSWORD) {
+    try {
+      const response = await fetch("/api/coordinator/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      const result = await response.json() as { error?: string };
+      if (response.ok) {
       setError("");
       setLocation("/admin");
-    } else {
-      setError("رمز الدخول غير صحيح. يرجى التحقق والمحاولة مجدداً.");
+      } else {
+        setError(result.error || "تعذر تسجيل الدخول");
+      }
+    } catch {
+      setError("تعذر الاتصال بالخادم. حاول مرة أخرى.");
     }
   };
 
@@ -25,7 +33,7 @@ export default function CoordinatorPortal() {
     <div className="min-h-screen bg-[#f5f8fa] flex items-center justify-center px-4 py-16">
       <div className="w-full max-w-[430px]">
         <div className="text-center mb-7">
-          <p className="text-sm font-bold text-[#0C3156] mb-2">بوابة المنسق — Research Aid 2026</p>
+          <p className="text-sm font-bold text-[#0C3156] mb-2">بوابة المنسق — SRMA Research Academy</p>
           <h1 className="text-2xl font-black text-[#172238]">بوابة المنسقين</h1>
           <p className="text-sm text-slate-500 mt-2">سجّل دخولك برمز الوصول الخاص بك</p>
         </div>
@@ -126,18 +134,18 @@ function CoordinatorRequestModal({ onClose }: CoordinatorRequestModalProps) {
           phone: form.phone,
           email: form.email,
           serviceType: "طلب اعتماد منسق بحثي",
-          details: `أرغب في الانضمام كمنسق للأبحاث العلمية في منصة RSPF. جهة الانتساب: ${form.affiliation}`,
+          details: `أرغب في الانضمام كمنسق للأبحاث العلمية في SRMA Research Academy. جهة الانتساب: ${form.affiliation}`,
           fileLink: "",
         }),
       });
       const saved = await response.json() as { id?: number; error?: string };
       if (!response.ok || !saved.id) throw new Error(saved.error || "تعذر إرسال الطلب");
-      const number = `RSPF-COORD-${String(saved.id).padStart(4, "0")}`;
+      const number = `SRMA-COORD-${String(saved.id).padStart(4, "0")}`;
       setRequestNumber(number);
       const message = encodeURIComponent(
         `طلب اعتماد منسق بحثي جديد\n\nالاسم: ${form.fullName}\nالهاتف: ${form.phone}\nالبريد: ${form.email}\nجهة الانتساب: ${form.affiliation}\nرقم الطلب: ${number}`
       );
-      window.open(`https://wa.me/966578032336?text=${message}`, "_blank", "noopener,noreferrer");
+      window.open(`https://wa.me/966562159258?text=${message}`, "_blank", "noopener,noreferrer");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : "حدث خطأ غير متوقع");
     } finally {
@@ -171,7 +179,7 @@ function CoordinatorRequestModal({ onClose }: CoordinatorRequestModalProps) {
             <div className="mb-6 border-b border-slate-100 pb-5">
               <p className="text-xs font-bold text-[#117b59]">طلب اعتماد جديد</p>
               <h2 className="mt-1 text-xl font-black text-[#172238]">كن منسقاً للأبحاث العلمية</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-500">أدخل بياناتك، وسنرسل طلبك مباشرة إلى إدارة RSPF للمراجعة.</p>
+              <p className="mt-2 text-sm leading-6 text-slate-500">أدخل بياناتك، وسنرسل طلبك مباشرة إلى إدارة SRMA للمراجعة.</p>
             </div>
             <form onSubmit={submitRequest} className="space-y-4">
               {[

@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Microscope, Mail, Phone, Send } from "lucide-react";
+import { Microscope, Phone, Send, Radio } from "lucide-react";
 
 const quickLinks = [
   { href: "/", label: "الرئيسية" },
@@ -21,42 +21,34 @@ export default function Footer() {
             <h3 className="text-lg font-bold mb-5 text-[#E9A020]">تواصل معنا</h3>
             <div className="space-y-3">
               <a
-                href="mailto:info@rspf.sa"
-                data-testid="link-footer-email"
-                className="flex items-center gap-2 text-blue-200 hover:text-white text-sm transition-colors"
-              >
-                <Mail size={15} />
-                info@rspf.sa
-              </a>
-              <a
-                href="https://wa.me/966578032336"
+                href="https://wa.me/966562159258"
                 target="_blank"
                 rel="noopener noreferrer"
                 data-testid="link-footer-phone"
                 className="flex items-center gap-2 text-blue-200 hover:text-white text-sm transition-colors"
               >
                 <Phone size={15} />
-                +966 57 803 2336
+                +966 56 215 9258
               </a>
               <a
-                href="https://t.me/RSPF_Services"
+                href="https://t.me/SRMAAcademy"
                 target="_blank"
                 rel="noopener noreferrer"
                 data-testid="link-footer-telegram-supervisor"
                 className="flex items-center gap-2 text-blue-200 hover:text-white text-sm transition-colors"
               >
                 <Send size={15} />
-                @RSPF_Services (المشرف)
+                @SRMAAcademy (Telegram)
               </a>
               <a
-                href="https://t.me/rspf_Research"
+                href="https://whatsapp.com/channel/0029Vb7QxGE1iUxikfgEFJ0I"
                 target="_blank"
                 rel="noopener noreferrer"
                 data-testid="link-footer-telegram-channel"
                 className="flex items-center gap-2 text-blue-200 hover:text-white text-sm transition-colors"
               >
-                <Send size={15} />
-                قناة Telegram
+                <Radio size={15} />
+                قناة WhatsApp
               </a>
             </div>
           </div>
@@ -85,7 +77,7 @@ export default function Footer() {
               <div className="flex flex-col items-end">
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs bg-[#E9A020] text-white px-1.5 py-0.5 rounded font-bold tracking-wide">2026</span>
-                  <span className="text-2xl font-black text-white tracking-tight">RSPF</span>
+                  <span className="text-2xl font-black text-white tracking-tight">SRMA</span>
                   <div className="w-9 h-9 bg-white/15 border border-white/20 rounded-full flex items-center justify-center">
                     <Microscope size={18} className="text-white" />
                   </div>
@@ -96,7 +88,7 @@ export default function Footer() {
               المنصة الأكاديمية الأولى في المملكة للبحث العلمي الطبي — نرافقك من الفكرة حتى النشر في أرقى المجلات الدولية
             </p>
             <a
-              href="https://t.me/rspf_Research"
+              href="https://t.me/SRMAAcademy"
               target="_blank"
               rel="noopener noreferrer"
               data-testid="button-footer-telegram-channel"
@@ -111,8 +103,8 @@ export default function Footer() {
 
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between flex-wrap gap-2">
-          <p className="text-blue-300 text-xs">© RSPF 2026. جميع الحقوق محفوظة.</p>
-          <p className="text-blue-300 text-xs">Research Scientific Publications Forum</p>
+          <p className="text-blue-300 text-xs">© SRMA Research Academy 2026. جميع الحقوق محفوظة.</p>
+          <p className="text-blue-300 text-xs">SRMA Research Academy</p>
         </div>
       </div>
     </footer>

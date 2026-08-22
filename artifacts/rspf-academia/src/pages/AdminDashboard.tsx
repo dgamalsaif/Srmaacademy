@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Plus, Pencil, Trash2, Eye, X, ChevronLeft, LogOut, Search, Users, BookOpen, TrendingUp, AlertCircle, UserPlus } from "lucide-react";
 import { getResearchOpportunities, saveResearchOpportunities, getNextId, ResearchOpportunity, SPECIALTY_COLORS } from "@/lib/researchData";
 import RegistrationModal from "@/components/RegistrationModal";
@@ -281,6 +281,8 @@ const STATUS_MAP = {
 };
 
 export default function AdminDashboard() {
+  const [, setLocation] = useLocation();
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [research, setResearch] = useState<ResearchOpportunity[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | ResearchOpportunity["status"]>("all");
@@ -288,6 +290,16 @@ export default function AdminDashboard() {
   const [editItem, setEditItem] = useState<ResearchOpportunity | null>(null);
   const [deleteItem, setDeleteItem] = useState<ResearchOpportunity | null>(null);
   const [studentResearch, setStudentResearch] = useState<ResearchOpportunity | null>(null);
+
+  useEffect(() => {
+    fetch("/api/coordinator/session")
+      .then((response) => response.json() as Promise<{ authenticated?: boolean }>)
+      .then((result) => {
+        if (result.authenticated) setAuthorized(true);
+        else { setAuthorized(false); setLocation("/coordinator-portal"); }
+      })
+      .catch(() => { setAuthorized(false); setLocation("/coordinator-portal"); });
+  }, [setLocation]);
 
   useEffect(() => {
     setResearch(getResearchOpportunities());
@@ -330,6 +342,8 @@ export default function AdminDashboard() {
     closed: research.filter((r) => r.status === "closed").length,
   };
 
+  if (authorized !== true) return null;
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* TOP BAR */}
@@ -356,7 +370,7 @@ export default function AdminDashboard() {
           </div>
           <div className="flex items-center gap-3">
             <div>
-              <h1 className="text-lg font-black tracking-tight text-right">لوحة تحكم RSPF</h1>
+              <h1 className="text-lg font-black tracking-tight text-right">لوحة تحكم SRMA</h1>
               <p className="text-blue-300 text-xs text-right">إدارة الفرص البحثية</p>
             </div>
             <div className="w-9 h-9 bg-[#E9A020] rounded-full flex items-center justify-center font-black text-white text-sm">R</div>
