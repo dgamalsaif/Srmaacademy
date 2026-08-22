@@ -1,4 +1,5 @@
 export type Audience = "participant" | "coordinator";
+export type TitleLanguage = "arabic" | "english" | "both";
 export type RegistrationFieldId = "fullName" | "specialization" | "email" | "affiliation" | "whatsapp" | "city" | "orcid" | "country";
 
 export interface RegistrationFieldSetting {
@@ -18,6 +19,8 @@ export interface SiteContentSettings {
   participantDescription: string;
   coordinatorFormTitle: string;
   coordinatorFormDescription: string;
+  participantTitleLanguage: TitleLanguage;
+  coordinatorTitleLanguage: TitleLanguage;
   primaryColor: string;
   accentColor: string;
   cardBackgroundColor: string;
@@ -43,6 +46,8 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
   participantDescription: "اكتشف الفرص البحثية المتاحة وسجل في البرنامج المناسب لتخصصك وأهدافك المهنية",
   coordinatorFormTitle: "تسجيل طالب في الفرصة البحثية",
   coordinatorFormDescription: "أدخل بيانات الطالب كما تظهر في مستنداته الأكاديمية.",
+  participantTitleLanguage: "english",
+  coordinatorTitleLanguage: "arabic",
   primaryColor: "#0C3156",
   accentColor: "#117b59",
   cardBackgroundColor: "#ffffff",

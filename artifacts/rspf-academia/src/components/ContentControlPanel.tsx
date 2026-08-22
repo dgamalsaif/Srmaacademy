@@ -61,6 +61,10 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
               <TextField label="عنوان نموذج المنسق" value={settings.coordinatorFormTitle} onChange={(value) => update("coordinatorFormTitle", value)} />
             </div>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <LanguageField label="لغة عناوين الفرص للمشترك" value={settings.participantTitleLanguage} onChange={(value) => update("participantTitleLanguage", value)} />
+              <LanguageField label="لغة عناوين الفرص للمنسق" value={settings.coordinatorTitleLanguage} onChange={(value) => update("coordinatorTitleLanguage", value)} />
+            </div>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
               <TextArea label="وصف بوابة المشارك" value={settings.participantDescription} onChange={(value) => update("participantDescription", value)} />
               <TextArea label="وصف نموذج المنسق" value={settings.coordinatorFormDescription} onChange={(value) => update("coordinatorFormDescription", value)} />
             </div>
@@ -126,6 +130,9 @@ function TextArea({ label, value, onChange }: { label: string; value: string; on
 }
 function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3"><label className="text-sm font-bold text-slate-700">{label}</label><div className="flex items-center gap-2"><span className="font-mono text-xs text-slate-500">{value}</span><input type="color" value={value} onChange={(event) => onChange(event.target.value)} className="h-9 w-10 rounded-lg border border-slate-200 bg-white p-1" /></div></div>;
+}
+function LanguageField({ label, value, onChange }: { label: string; value: "arabic" | "english" | "both"; onChange: (value: "arabic" | "english" | "both") => void }) {
+  return <div><label className="mb-2 block text-xs font-bold text-slate-500">{label}</label><select value={value} onChange={(event) => onChange(event.target.value as "arabic" | "english" | "both")} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-bold outline-none focus:border-[#117b59]"><option value="arabic">العربية</option><option value="english">الإنجليزية</option><option value="both">العربية والإنجليزية</option></select></div>;
 }
 function AudienceToggle({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return <button type="button" onClick={onClick} className={`flex items-center justify-between rounded-xl border px-3 py-2.5 text-sm font-bold transition ${active ? "border-emerald-200 bg-[#e6f5ef] text-[#117b59]" : "border-slate-200 bg-white text-slate-500"}`}><span>{label}</span>{active ? <Eye size={16} /> : <EyeOff size={16} />}</button>;

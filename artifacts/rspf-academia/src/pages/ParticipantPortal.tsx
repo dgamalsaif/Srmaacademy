@@ -39,6 +39,11 @@ export default function ParticipantPortal() {
   };
 
   const openModal = (research: ResearchOpportunity) => { setSelectedResearch(research); setModalOpen(true); };
+  const displayTitle = (research: ResearchOpportunity) => {
+    if (contentSettings.participantTitleLanguage === "arabic") return research.titleAr || research.title;
+    if (contentSettings.participantTitleLanguage === "both") return `${research.titleAr || research.title}\n${research.titleEn || research.title}`;
+    return research.titleEn || research.title;
+  };
 
   return (
     <div className="min-h-screen bg-white">
@@ -115,7 +120,7 @@ export default function ParticipantPortal() {
 
                         <Link href={`/research/${opp.id}`} data-testid={`link-research-title-${opp.id}`}>
                           <h3 className="mb-2 cursor-pointer text-right font-bold leading-snug text-slate-900 transition-colors" style={{ color: contentSettings.primaryColor }}>
-                            {opp.title}
+                            {displayTitle(opp)}
                           </h3>
                         </Link>
 

@@ -2,6 +2,7 @@ import { coordinatorPortalSettingsTable, db } from "@workspace/db";
 import { eq } from "drizzle-orm";
 
 export type Audience = "participant" | "coordinator";
+type TitleLanguage = "arabic" | "english" | "both";
 type FieldId = "fullName" | "specialization" | "email" | "affiliation" | "whatsapp" | "city" | "orcid" | "country";
 type FieldType = "text" | "email" | "tel";
 
@@ -22,6 +23,8 @@ export interface SiteContentSettings {
   participantDescription: string;
   coordinatorFormTitle: string;
   coordinatorFormDescription: string;
+  participantTitleLanguage: TitleLanguage;
+  coordinatorTitleLanguage: TitleLanguage;
   primaryColor: string;
   accentColor: string;
   cardBackgroundColor: string;
@@ -41,6 +44,8 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
   participantDescription: "اكتشف الفرص البحثية المتاحة وسجل في البرنامج المناسب لتخصصك وأهدافك المهنية",
   coordinatorFormTitle: "تسجيل طالب في الفرصة البحثية",
   coordinatorFormDescription: "أدخل بيانات الطالب كما تظهر في مستنداته الأكاديمية.",
+  participantTitleLanguage: "english",
+  coordinatorTitleLanguage: "arabic",
   primaryColor: "#0C3156",
   accentColor: "#117b59",
   cardBackgroundColor: "#ffffff",
@@ -100,6 +105,8 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
     participantDescription: text("participantDescription", 600),
     coordinatorFormTitle: text("coordinatorFormTitle", 120),
     coordinatorFormDescription: text("coordinatorFormDescription", 600),
+    participantTitleLanguage: input.participantTitleLanguage === "arabic" || input.participantTitleLanguage === "both" || input.participantTitleLanguage === "english" ? input.participantTitleLanguage : DEFAULT_SITE_CONTENT_SETTINGS.participantTitleLanguage,
+    coordinatorTitleLanguage: input.coordinatorTitleLanguage === "arabic" || input.coordinatorTitleLanguage === "both" || input.coordinatorTitleLanguage === "english" ? input.coordinatorTitleLanguage : DEFAULT_SITE_CONTENT_SETTINGS.coordinatorTitleLanguage,
     primaryColor: color("primaryColor"),
     accentColor: color("accentColor"),
     cardBackgroundColor: color("cardBackgroundColor"),

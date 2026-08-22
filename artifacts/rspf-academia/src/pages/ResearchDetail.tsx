@@ -3,6 +3,7 @@ import { useParams, Link } from "wouter";
 import { ChevronLeft, Users, Clock, BookOpen, CheckCircle2, ArrowLeft, ExternalLink } from "lucide-react";
 import { ResearchOpportunity } from "@/lib/researchData";
 import RegistrationModal from "@/components/RegistrationModal";
+import { DEFAULT_SITE_CONTENT_SETTINGS, SiteContentSettings } from "@/lib/siteContentSettings";
 
 const COMPLETED_STAGE_LABELS: Record<string, string> = {
   seats_full: "اكتملت المقاعد",
@@ -16,6 +17,7 @@ export default function ResearchDetail() {
   const [research, setResearch] = useState<ResearchOpportunity | null>(null);
   const [allResearch, setAllResearch] = useState<ResearchOpportunity[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [contentSettings, setContentSettings] = useState<SiteContentSettings>(DEFAULT_SITE_CONTENT_SETTINGS);
 
   useEffect(() => {
     fetch("/api/programs")
@@ -25,6 +27,10 @@ export default function ResearchDetail() {
         setResearch(data.find((item) => item.id === parseInt(params.id || "0")) || null);
       })
       .catch(() => { setAllResearch([]); setResearch(null); });
+    fetch("/api/site-content-settings")
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((settings: SiteContentSettings) => setContentSettings(settings))
+      .catch(() => setContentSettings(DEFAULT_SITE_CONTENT_SETTINGS));
   }, [params.id]);
 
   if (!research) {
@@ -88,7 +94,7 @@ export default function ResearchDetail() {
                   </span>
                 )}
               </div>
-              <h1 className="text-xl sm:text-2xl font-black leading-snug mb-2">{research.title}</h1>
+              <h1 className="text-xl sm:text-2xl font-black leading-snug mb-2 whitespace-pre-line">{contentSettings.participantTitleLanguage === "arabic" ? (research.titleAr || research.title) : contentSettings.participantTitleLanguage === "both" ? `${research.titleAr || research.title}\n${research.titleEn || research.title}` : (research.titleEn || research.title)}</h1>
               <p className="text-blue-200 text-sm">تاريخ الإضافة: {research.createdAt}</p>
             </div>
 
