@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "RSPF Academia"
+title = "SRMA Research Academy"
 version = "1.0.0"
 id = "artifacts/rspf-academia"
 router = "path"
@@ -15,10 +15,10 @@ paths = [ "/" ]
 localPort = 19514
 
 [services.development]
-run = "pnpm --filter @workspace/rspf-academia run dev"
+run = "pnpm --filter @workspace/srma-research-academy run dev"
 
 [services.production]
-build = [ "pnpm", "--filter", "@workspace/rspf-academia", "run", "build" ]
+build = [ "pnpm", "--filter", "@workspace/srma-research-academy", "run", "build" ]
 publicDir = "artifacts/rspf-academia/dist/public"
 serve = "static"
 

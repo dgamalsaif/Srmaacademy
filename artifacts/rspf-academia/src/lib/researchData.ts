@@ -151,13 +151,20 @@ const DEFAULT_RESEARCH: ResearchOpportunity[] = [
   },
 ];
 
-const STORAGE_KEY = "rspf_research_opportunities";
+const STORAGE_KEY = "srma_research_opportunities";
+const LEGACY_STORAGE_KEY = "rspf_research_opportunities";
 
 export function getResearchOpportunities(): ResearchOpportunity[] {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      return JSON.parse(stored) as ResearchOpportunity[];
+    for (const key of [STORAGE_KEY, LEGACY_STORAGE_KEY]) {
+      const stored = localStorage.getItem(key);
+      if (stored) {
+        const data = JSON.parse(stored) as ResearchOpportunity[];
+        if (key === LEGACY_STORAGE_KEY) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+        return data;
+      }
     }
   } catch {
     // ignore
