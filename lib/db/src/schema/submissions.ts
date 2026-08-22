@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, integer, index } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, index, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -12,6 +12,7 @@ export const registrationsTable = pgTable("registrations", {
   country: text("country").notNull().default("المملكة العربية السعودية"),
   city: text("city").default(""),
   orcid: text("orcid").default(""),
+  customFields: jsonb("custom_fields").$type<Record<string, string>>().notNull().default({}),
   researchId: integer("research_id").notNull(),
   researchTitle: text("research_title").notNull(),
   coordinatorId: integer("coordinator_id"),

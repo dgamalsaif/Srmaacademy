@@ -3,6 +3,7 @@ import { ChevronDown, ChevronUp, Lock, Flame, ChevronLeft } from "lucide-react";
 import { Link } from "wouter";
 import { ResearchOpportunity } from "@/lib/researchData";
 import RegistrationModal from "@/components/RegistrationModal";
+import { DEFAULT_SITE_CONTENT_SETTINGS, SiteContentSettings } from "@/lib/siteContentSettings";
 
 const hallOfFame = [
   { specialty: "ENT – Head and Neck Surgery", specialtyColor: "bg-indigo-100 text-indigo-700", title: "Efficacy of Biologic Therapy versus Conventional Treatment in Chronic Rhinosinusitis" },
@@ -17,6 +18,7 @@ export default function ParticipantPortal() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedResearch, setSelectedResearch] = useState<ResearchOpportunity | null>(null);
   const [opportunities, setOpportunities] = useState<ResearchOpportunity[]>([]);
+  const [contentSettings, setContentSettings] = useState<SiteContentSettings>(DEFAULT_SITE_CONTENT_SETTINGS);
 
   useEffect(() => {
     fetch("/api/programs")
@@ -26,6 +28,10 @@ export default function ParticipantPortal() {
         setOpportunities(available);
       })
       .catch(() => setOpportunities([]));
+    fetch("/api/site-content-settings")
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((settings: SiteContentSettings) => setContentSettings(settings))
+      .catch(() => setContentSettings(DEFAULT_SITE_CONTENT_SETTINGS));
   }, []);
 
   const toggleExpand = (id: number) => {
@@ -37,13 +43,13 @@ export default function ParticipantPortal() {
   return (
     <div className="min-h-screen bg-white">
       {/* HEADER */}
-      <section className="bg-gradient-to-br from-slate-50 via-blue-50/30 to-white py-14 px-4 text-center">
+      <section className="py-14 px-4 text-center" style={{ background: `linear-gradient(135deg, ${contentSettings.primaryColor}10, ${contentSettings.accentColor}08, white)` }}>
         <div className="max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 bg-[#0C3156]/8 border border-[#0C3156]/15 text-[#0C3156] px-4 py-1.5 rounded-full text-sm font-semibold mb-4">
-            بوابة المشارك
+          <div className="inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-semibold" style={{ color: contentSettings.primaryColor, backgroundColor: `${contentSettings.primaryColor}0d`, borderColor: `${contentSettings.primaryColor}26` }}>
+            {contentSettings.participantTitle}
           </div>
-          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 mb-3">بوابة المشارك</h1>
-          <p className="text-slate-600 max-w-xl mx-auto">اكتشف الفرص البحثية المتاحة وسجل في البرنامج المناسب لتخصصك وأهدافك المهنية</p>
+          <h1 className="mb-3 text-3xl font-black text-slate-900 sm:text-4xl">{contentSettings.participantTitle}</h1>
+          <p className="mx-auto max-w-xl text-slate-600">{contentSettings.participantDescription}</p>
         </div>
       </section>
 
@@ -66,7 +72,7 @@ export default function ParticipantPortal() {
       </div>
 
       {/* TICKER */}
-      <div className="bg-[#0C3156] text-white py-2.5 overflow-hidden">
+      <div className="py-2.5 text-white overflow-hidden" style={{ backgroundColor: contentSettings.primaryColor }}>
         <div className="animate-marquee">
           {[...Array(3)].map((_, i) => (
             <span key={i} className="inline-block mx-10 text-sm font-medium whitespace-nowrap">
@@ -99,16 +105,16 @@ export default function ParticipantPortal() {
                     const seatsUsed = opp.totalSeats - opp.seatsLeft;
                     const pct = Math.round((seatsUsed / opp.totalSeats) * 100);
                     return (
-                      <div key={opp.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-5" data-testid={`card-research-${opp.id}`}>
+                      <div key={opp.id} className="rounded-2xl border border-slate-200 p-5 shadow-sm transition-shadow hover:shadow-md" style={{ backgroundColor: contentSettings.cardBackgroundColor }} data-testid={`card-research-${opp.id}`}>
                         <div className="flex items-center justify-between gap-3 mb-3 flex-row-reverse">
-                          <span className={`text-xs font-bold px-3 py-1 rounded-full ${opp.specialtyColor}`}>{opp.specialty}</span>
+                          {contentSettings.visibleParticipantCardParts.includes("specialty") && <span className={`text-xs font-bold px-3 py-1 rounded-full ${opp.specialtyColor}`}>{opp.specialty}</span>}
                           <span className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 border border-red-100 px-3 py-1 rounded-full">
                             <Flame size={11} /> متبقية مقاعد محدودة
                           </span>
                         </div>
 
                         <Link href={`/research/${opp.id}`} data-testid={`link-research-title-${opp.id}`}>
-                          <h3 className="font-bold text-slate-900 text-right leading-snug mb-2 hover:text-[#0C3156] transition-colors cursor-pointer">
+                          <h3 className="mb-2 cursor-pointer text-right font-bold leading-snug text-slate-900 transition-colors" style={{ color: contentSettings.primaryColor }}>
                             {opp.title}
                           </h3>
                         </Link>
@@ -116,6 +122,15 @@ export default function ParticipantPortal() {
                         <p className="text-[#0C3156] text-sm italic text-right mb-3 font-medium">
                           🏆 نحن في SRMA – نبني ملفك البحثي ونصنع الفارق
                         </p>
+                        <div className="mb-4 space-y-2 text-right text-sm leading-6 text-slate-600">
+                          {contentSettings.participantCardOrder.filter((part) => contentSettings.visibleParticipantCardParts.includes(part) && !["specialty", "seats", "benefits"].includes(part)).map((part) => {
+                            if (part === "description") return <p key={part}>{opp.descriptionAr || opp.description}</p>;
+                            if (part === "duration" && opp.duration) return <p key={part}><strong>المدة:</strong> {opp.duration}</p>;
+                            if (part === "supervisor" && opp.supervisor) return <p key={part}><strong>المشرف:</strong> {opp.supervisor}</p>;
+                            if (part === "journal" && opp.journalTarget) return <p key={part}><strong>المجلة المستهدفة:</strong> {opp.journalTarget}</p>;
+                            return null;
+                          })}
+                        </div>
 
                         <a href="https://wa.me/966562159258" target="_blank" rel="noopener noreferrer"
                           data-testid={`link-price-${opp.id}`}
@@ -123,16 +138,14 @@ export default function ParticipantPortal() {
                           تواصل لمعرفة السعر
                         </a>
 
-                        <div className="mb-1">
+                        {contentSettings.visibleParticipantCardParts.includes("seats") && <><div className="mb-1">
                           <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-l from-[#0C3156] to-[#1A5FAE] rounded-full transition-all" style={{ width: `${pct}%` }} />
+                            <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: `linear-gradient(to left, ${contentSettings.primaryColor}, ${contentSettings.accentColor})` }} />
                           </div>
                         </div>
-                        <p className="text-xs text-slate-500 text-right mb-4">
-                          تبقى <span className="text-[#0C3156] font-bold">{opp.seatsLeft} مقاعد</span> فقط من أصل {opp.totalSeats}
-                        </p>
+                        <p className="mb-4 text-right text-xs text-slate-500">تبقى <span className="font-bold" style={{ color: contentSettings.primaryColor }}>{opp.seatsLeft} مقاعد</span> فقط من أصل {opp.totalSeats}</p></>}
 
-                        <button data-testid={`button-expand-benefits-${opp.id}`} onClick={() => toggleExpand(opp.id)}
+                        {contentSettings.visibleParticipantCardParts.includes("benefits") && <><button data-testid={`button-expand-benefits-${opp.id}`} onClick={() => toggleExpand(opp.id)}
                           className="flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-[#0C3156] mb-3 flex-row-reverse w-full justify-end">
                           {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                           مزايا وقيمة المشاركة 💡
@@ -146,15 +159,15 @@ export default function ParticipantPortal() {
                               </li>
                             ))}
                           </ul>
-                        )}
+                        )}</>}
 
                         <div className="flex gap-3">
                           <button data-testid={`button-register-${opp.id}`} onClick={() => openModal(opp)}
-                            className="flex-1 bg-[#0C3156] text-white font-bold py-3 rounded-xl hover:bg-[#0a2847] transition-colors text-sm shadow-sm">
+                            className="flex-1 text-white font-bold py-3 rounded-xl transition-colors text-sm shadow-sm" style={{ backgroundColor: contentSettings.primaryColor }}>
                             سجل الآن 👤
                           </button>
                           <Link href={`/research/${opp.id}`} data-testid={`button-detail-${opp.id}`}
-                            className="flex items-center gap-1 border border-[#0C3156]/25 text-[#0C3156] font-semibold px-4 py-3 rounded-xl hover:bg-[#0C3156]/5 transition-colors text-sm">
+                            className="flex items-center gap-1 border font-semibold px-4 py-3 rounded-xl transition-colors text-sm" style={{ borderColor: `${contentSettings.primaryColor}40`, color: contentSettings.primaryColor }}>
                             التفاصيل <ChevronLeft size={14} />
                           </Link>
                         </div>

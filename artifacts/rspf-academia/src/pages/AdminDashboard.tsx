@@ -5,6 +5,8 @@ import { ResearchOpportunity, SPECIALTY_COLORS } from "@/lib/researchData";
 import RegistrationModal from "@/components/RegistrationModal";
 import CoordinatorPortalSettingsPanel from "@/components/CoordinatorPortalSettingsPanel";
 import { CoordinatorPortalSettings, DEFAULT_COORDINATOR_PORTAL_SETTINGS } from "@/lib/coordinatorPortalSettings";
+import ContentControlPanel from "@/components/ContentControlPanel";
+import { DEFAULT_SITE_CONTENT_SETTINGS, SiteContentSettings } from "@/lib/siteContentSettings";
 
 const EMPTY_FORM: Omit<ResearchOpportunity, "id" | "createdAt"> = {
   category: "active",
@@ -498,7 +500,7 @@ function ProgramCard({ research, onRegister, onEdit, onDelete, canManage }: any)
 }
 
 export default function AdminDashboard() {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [role, setRole] = useState<"owner" | "coordinator" | null>(null);
   const [accountName, setAccountName] = useState("");
@@ -507,7 +509,7 @@ export default function AdminDashboard() {
   const [statusFilter, setStatusFilter] = useState<"all" | ResearchOpportunity["status"]>("all");
   const [categoryFilter, setCategoryFilter] = useState<NonNullable<ResearchOpportunity["category"]>>("active");
   const [loadingPrograms, setLoadingPrograms] = useState(true);
-  const [view, setView] = useState<"programs" | "payments" | "settings" | "portal-settings">("programs");
+  const [view, setView] = useState<"programs" | "payments" | "settings" | "portal-settings" | "content-settings">("programs");
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [paymentFormOpen, setPaymentFormOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
@@ -518,20 +520,29 @@ export default function AdminDashboard() {
   const [portalSettings, setPortalSettings] = useState<CoordinatorPortalSettings>(DEFAULT_COORDINATOR_PORTAL_SETTINGS);
   const [portalSettingsSaving, setPortalSettingsSaving] = useState(false);
   const [portalSettingsMessage, setPortalSettingsMessage] = useState("");
+  const [contentSettings, setContentSettings] = useState<SiteContentSettings>(DEFAULT_SITE_CONTENT_SETTINGS);
+  const [contentSettingsSaving, setContentSettingsSaving] = useState(false);
+  const [contentSettingsMessage, setContentSettingsMessage] = useState("");
+  const ownerWorkspace = location === "/admin";
 
   useEffect(() => {
     fetch("/api/coordinator/session")
       .then((response) => response.json() as Promise<{ authenticated?: boolean; role?: "owner" | "coordinator"; coordinatorName?: string | null }>)
       .then((result) => {
         if (result.authenticated && result.role) {
+          if (ownerWorkspace && result.role !== "owner") {
+            setAuthorized(false);
+            setLocation("/coordinator/dashboard");
+            return;
+          }
           setAuthorized(true);
           setRole(result.role);
           setAccountName(result.coordinatorName || "");
         }
-        else { setAuthorized(false); setLocation("/coordinator"); }
+        else { setAuthorized(false); setLocation(ownerWorkspace ? "/owner-admin" : "/coordinator"); }
       })
-      .catch(() => { setAuthorized(false); setLocation("/coordinator"); });
-  }, [setLocation]);
+      .catch(() => { setAuthorized(false); setLocation(ownerWorkspace ? "/owner-admin" : "/coordinator"); });
+  }, [ownerWorkspace, setLocation]);
 
   useEffect(() => {
     if (!role) return;
@@ -546,6 +557,14 @@ export default function AdminDashboard() {
       }
     };
     void loadPrograms();
+  }, [role]);
+
+  useEffect(() => {
+    if (role !== "owner") return;
+    fetch("/api/site-content-settings")
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((settings: SiteContentSettings) => setContentSettings(settings))
+      .catch(() => setContentSettingsMessage("تعذر تحميل إعدادات المحتوى حالياً."));
   }, [role]);
 
   useEffect(() => {
@@ -666,6 +685,29 @@ export default function AdminDashboard() {
     }
   };
 
+  const saveContentSettings = async () => {
+    setContentSettingsSaving(true);
+    setContentSettingsMessage("");
+    try {
+      const response = await fetch("/api/site-content-settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(contentSettings),
+      });
+      const result = await response.json() as SiteContentSettings | { error?: string };
+      if (!response.ok) {
+        setContentSettingsMessage("error" in result && result.error ? result.error : "تعذر حفظ إعدادات المحتوى.");
+        return;
+      }
+      setContentSettings(result as SiteContentSettings);
+      setContentSettingsMessage("تم الحفظ بنجاح. ستظهر التغييرات في صفحات المنصة عند إعادة فتحها.");
+    } catch {
+      setContentSettingsMessage("تعذر الاتصال بالخادم. حاول مرة أخرى.");
+    } finally {
+      setContentSettingsSaving(false);
+    }
+  };
+
   const openNewResearch = (category: NonNullable<ResearchOpportunity["category"]>) => {
     setNewCategory(category);
     setFormOpen(true);
@@ -771,10 +813,10 @@ export default function AdminDashboard() {
             <Landmark size={18} className={view === 'programs' ? 'text-emerald-100' : 'text-slate-400'} />
             إدارة البرامج
           </button>
-          <Link href="/admin/submissions" className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
-            <Users size={18} className="text-slate-400" />
-            الطلاب المسجلون
-          </Link>
+           {canManage && <Link href="/admin/submissions" className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
+             <Users size={18} className="text-slate-400" />
+             الطلاب المسجلون
+           </Link>}
           <button onClick={() => setView('payments')} className={`flex items-center gap-2 px-6 py-3 border rounded-2xl text-sm font-bold transition-all shadow-sm ${view === 'payments' ? 'bg-[#117b59] text-white border-[#117b59]' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'}`}>
             <CreditCard size={18} className={view === 'payments' ? 'text-emerald-100' : 'text-slate-400'} />
             المستحقات
@@ -787,6 +829,12 @@ export default function AdminDashboard() {
             <button onClick={() => setView('portal-settings')} data-testid="button-portal-settings" className={`flex items-center gap-2 px-6 py-3 border rounded-2xl text-sm font-bold transition-all shadow-sm ${view === 'portal-settings' ? 'bg-[#117b59] text-white border-[#117b59]' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'}`}>
               <LayoutDashboard size={18} className={view === 'portal-settings' ? 'text-emerald-100' : 'text-slate-400'} />
               بوابة المنسق
+            </button>
+          )}
+          {canManage && (
+            <button onClick={() => setView('content-settings')} data-testid="button-content-settings" className={`flex items-center gap-2 px-6 py-3 border rounded-2xl text-sm font-bold transition-all shadow-sm ${view === 'content-settings' ? 'bg-[#117b59] text-white border-[#117b59]' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'}`}>
+              <Edit size={18} className={view === 'content-settings' ? 'text-emerald-100' : 'text-slate-400'} />
+              المحتوى والمظهر
             </button>
           )}
         </div>
@@ -973,6 +1021,11 @@ export default function AdminDashboard() {
                 saving={portalSettingsSaving}
                 message={portalSettingsMessage}
               />
+            </div>
+          )}
+          {view === "content-settings" && canManage && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <ContentControlPanel settings={contentSettings} onChange={setContentSettings} onSave={() => void saveContentSettings()} saving={contentSettingsSaving} message={contentSettingsMessage} />
             </div>
           )}
 

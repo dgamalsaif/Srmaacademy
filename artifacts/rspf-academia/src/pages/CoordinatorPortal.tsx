@@ -156,7 +156,7 @@ export default function CoordinatorPortal() {
       const result = await response.json() as { error?: string };
       if (response.ok) {
         setError("");
-        setLocation("/admin");
+        setLocation("/coordinator/dashboard");
       } else {
         setError(result.error || "تعذر تسجيل الدخول");
       }

@@ -3,11 +3,42 @@ import { db, coordinatorsTable, registrationsTable, researchProgramsTable, servi
 import { desc, eq } from "drizzle-orm";
 import { sendServiceRequestEmail } from "../lib/mailer";
 import { readSession, requireCoordinator, requireOwner } from "../middlewares/coordinatorAuth";
+import { getSiteContentSettings } from "../lib/siteContentSettings";
 
 const router = Router();
 
 async function createRegistration(req: Request, res: Response, coordinatorId: number | null) {
-  const parsed = insertRegistrationSchema.safeParse(req.body);
+  const audience = coordinatorId ? "coordinator" : "participant";
+  const settings = await getSiteContentSettings();
+  const source = req.body && typeof req.body === "object" ? req.body as Record<string, unknown> : {};
+  const valueOf = (fieldId: string) => typeof source[fieldId] === "string" ? source[fieldId].trim() : "";
+
+  for (const field of settings.registrationFields) {
+    const visible = audience === "participant" ? field.showParticipant : field.showCoordinator;
+    const required = audience === "participant" ? field.requiredParticipant : field.requiredCoordinator;
+    if (visible && required && !valueOf(field.id)) {
+      res.status(400).json({ error: `حقل «${field.label}» مطلوب لإتمام التسجيل.` });
+      return;
+    }
+  }
+
+  const customFields = source.customFields && typeof source.customFields === "object" && !Array.isArray(source.customFields)
+    ? Object.fromEntries(Object.entries(source.customFields as Record<string, unknown>)
+      .filter(([, value]) => typeof value === "string")
+      .map(([key, value]) => [key.slice(0, 64), (value as string).trim().slice(0, 1000)]))
+    : {};
+  const parsed = insertRegistrationSchema.safeParse({
+    ...source,
+    fullName: valueOf("fullName"),
+    specialization: valueOf("specialization"),
+    email: valueOf("email"),
+    whatsapp: valueOf("whatsapp"),
+    affiliation: valueOf("affiliation"),
+    country: valueOf("country") || "المملكة العربية السعودية",
+    city: valueOf("city"),
+    orcid: valueOf("orcid"),
+    customFields,
+  });
   if (!parsed.success) {
     res.status(400).json({ error: "بيانات غير صحيحة", details: parsed.error.issues });
     return;
@@ -27,11 +58,6 @@ async function createRegistration(req: Request, res: Response, coordinatorId: nu
 
 /* ── POST /api/registrations ── */
 router.post("/registrations", async (req, res) => {
-  const whatsapp = typeof req.body?.whatsapp === "string" ? req.body.whatsapp.trim() : "";
-  if (!whatsapp) {
-    res.status(400).json({ error: "رقم واتساب مطلوب للتسجيل العام." });
-    return;
-  }
   await createRegistration(req, res, null);
 });
 

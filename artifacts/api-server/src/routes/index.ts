@@ -5,6 +5,7 @@ import coordinatorRouter from "./coordinator";
 import programsRouter from "./programs";
 import paymentsRouter from "./payments";
 import coordinatorPortalSettingsRouter from "./coordinatorPortalSettings";
+import siteContentSettingsRouter from "./siteContentSettings";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(coordinatorRouter);
 router.use(programsRouter);
 router.use(paymentsRouter);
 router.use(coordinatorPortalSettingsRouter);
+router.use(siteContentSettingsRouter);
 
 export default router;

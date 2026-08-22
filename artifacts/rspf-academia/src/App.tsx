@@ -16,13 +16,14 @@ import FAQ from "@/pages/FAQ";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminSubmissions from "@/pages/AdminSubmissions";
 import ResearchDetail from "@/pages/ResearchDetail";
+import OwnerLogin from "@/pages/OwnerLogin";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
 
 function Router() {
   const [location] = useLocation();
-  const isAdmin = location === "/admin" || location === "/admin/submissions";
+  const isAdmin = location === "/admin" || location === "/admin/submissions" || location === "/owner-admin" || location === "/coordinator/dashboard";
   const isCoordinatorPortal = location === "/coordinator" || location === "/coordinator-portal";
 
   return (
@@ -40,6 +41,8 @@ function Router() {
           <Route path="/faq" component={FAQ} />
           <Route path="/admin" component={AdminDashboard} />
           <Route path="/admin/submissions" component={AdminSubmissions} />
+          <Route path="/owner-admin" component={OwnerLogin} />
+          <Route path="/coordinator/dashboard" component={AdminDashboard} />
           <Route path="/research/:id" component={ResearchDetail} />
           <Route component={NotFound} />
         </Switch>

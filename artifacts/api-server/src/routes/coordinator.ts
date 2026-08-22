@@ -11,17 +11,8 @@ const router = Router();
 router.post("/coordinator/login", async (req, res) => {
   const rawPassword = typeof req.body?.password === "string" ? req.body.password.trim() : "";
   const accessCode = rawPassword.toUpperCase();
-  const ownerPassword = process.env["OWNER_ADMIN_PASSWORD"] || "";
-  const normalizedOwnerInput = rawPassword.replace(/\s+/g, "").toUpperCase();
-  const normalizedOwnerPassword = ownerPassword.replace(/\s+/g, "").toUpperCase();
   if (!rawPassword) {
     res.status(401).json({ error: "رمز الدخول غير صحيح. يرجى التحقق والمحاولة مجدداً." });
-    return;
-  }
-
-  if (normalizedOwnerPassword && normalizedOwnerInput === normalizedOwnerPassword) {
-    setCoordinatorCookie(res, createSession("owner"));
-    res.json({ authenticated: true, role: "owner" });
     return;
   }
 
@@ -40,6 +31,20 @@ router.post("/coordinator/login", async (req, res) => {
   await db.update(coordinatorsTable).set({ lastLoginAt: new Date() }).where(eq(coordinatorsTable.id, coordinator.id));
   setCoordinatorCookie(res, createSession("coordinator", coordinator.id));
   res.json({ authenticated: true, role: "coordinator", coordinator: { fullName: coordinator.fullName } });
+});
+
+router.post("/owner/login", async (req, res) => {
+  const password = typeof req.body?.password === "string" ? req.body.password : "";
+  const ownerPassword = process.env["OWNER_ADMIN_PASSWORD"] || "";
+  const actual = Buffer.from(password);
+  const expected = Buffer.from(ownerPassword);
+  if (!ownerPassword || actual.length !== expected.length || !timingSafeEqual(actual, expected)) {
+    res.status(401).json({ error: "رمز دخول المالك غير صحيح." });
+    return;
+  }
+
+  setCoordinatorCookie(res, createSession("owner"));
+  res.json({ authenticated: true, role: "owner" });
 });
 
 router.post("/coordinator/logout", (_req, res) => {

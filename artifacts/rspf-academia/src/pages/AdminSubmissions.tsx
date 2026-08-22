@@ -156,13 +156,13 @@ export default function AdminSubmissions() {
     fetch("/api/coordinator/session")
       .then((response) => response.json() as Promise<{ authenticated?: boolean; role?: "owner" | "coordinator" }>)
       .then((result) => {
-        if (result.authenticated && result.role) {
+        if (result.authenticated && result.role === "owner") {
           setAuthorized(true);
           setRole(result.role);
         }
-        else { setAuthorized(false); setLocation("/coordinator"); }
+        else { setAuthorized(false); setLocation(result.authenticated ? "/coordinator/dashboard" : "/owner-admin"); }
       })
-      .catch(() => { setAuthorized(false); setLocation("/coordinator"); });
+      .catch(() => { setAuthorized(false); setLocation("/owner-admin"); });
   }, [setLocation]);
 
   const fetchData = useCallback(async () => {
@@ -182,7 +182,7 @@ export default function AdminSubmissions() {
 
   const handleLogout = async () => {
     await fetch("/api/coordinator/logout", { method: "POST" });
-    setLocation("/coordinator");
+    setLocation("/owner-admin");
   };
 
   useEffect(() => { void fetchData(); }, [fetchData]);
