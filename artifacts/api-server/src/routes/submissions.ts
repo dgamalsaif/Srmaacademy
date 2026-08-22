@@ -1,7 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import { db, registrationsTable, researchProgramsTable, serviceRequestsTable, insertRegistrationSchema, insertServiceRequestSchema } from "@workspace/db";
 import { desc, eq } from "drizzle-orm";
-import { isRegistrationEmailConfigured, sendRegistrationEmail, sendServiceRequestEmail } from "../lib/mailer";
+import { sendServiceRequestEmail } from "../lib/mailer";
 import { requireCoordinator, requireOwner } from "../middlewares/coordinatorAuth";
 
 const router = Router();
@@ -22,25 +22,7 @@ async function createRegistration(req: Request, res: Response) {
   const researchTitle = program.titleAr || program.titleEn;
   const row = await db.insert(registrationsTable).values({ ...parsed.data, researchTitle }).returning();
 
-  const emailNotifications = {
-    configured: isRegistrationEmailConfigured(),
-    pending: isRegistrationEmailConfigured(),
-    adminSent: false,
-    studentSent: false,
-  };
-  void sendRegistrationEmail({
-    fullName: parsed.data.fullName,
-    specialization: parsed.data.specialization,
-    email: parsed.data.email,
-    whatsapp: parsed.data.whatsapp,
-    affiliation: parsed.data.affiliation,
-    country: parsed.data.country ?? "",
-    city: parsed.data.city ?? "",
-    orcid: parsed.data.orcid ?? "",
-    researchTitle,
-  }).catch(() => {});
-
-  res.status(201).json({ ...row[0], emailNotifications });
+  res.status(201).json(row[0]);
 }
 
 /* ── POST /api/registrations ── */

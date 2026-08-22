@@ -22,6 +22,7 @@ export const insertRegistrationSchema = createInsertSchema(registrationsTable).o
   id: true,
   createdAt: true,
   status: true,
+  researchTitle: true,
 });
 
 export type InsertRegistration = z.infer<typeof insertRegistrationSchema>;

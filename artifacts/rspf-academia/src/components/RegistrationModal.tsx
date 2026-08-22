@@ -35,13 +35,11 @@ export default function RegistrationModal({
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
-  const [emailNotice, setEmailNotice] = useState<"sent" | "pending" | "not-configured" | "partial" | "failed" | null>(null);
 
   const reset = () => {
     setForm(initialForm);
     setDone(false);
     setError("");
-    setEmailNotice(null);
     setLoading(false);
   };
   const handleClose = () => { reset(); onClose(); };
@@ -69,23 +67,10 @@ export default function RegistrationModal({
       );
       const result = await response.json().catch(() => ({})) as {
         error?: string;
-        emailNotifications?: { configured?: boolean; pending?: boolean; adminSent?: boolean; studentSent?: boolean };
       };
       if (!response.ok) {
         throw new Error(result.error || "حدث خطأ أثناء حفظ التسجيل");
       }
-      const notifications = result.emailNotifications;
-      setEmailNotice(
-        !notifications?.configured
-          ? "not-configured"
-          : notifications.pending
-            ? "pending"
-          : notifications.adminSent && notifications.studentSent
-            ? "sent"
-            : notifications.adminSent || notifications.studentSent
-              ? "partial"
-              : "failed",
-      );
       setDone(true);
       if (!coordinatorEntry) {
         const message = encodeURIComponent(
@@ -132,31 +117,9 @@ export default function RegistrationModal({
             <h3 className="text-xl font-black text-[#172238]">تم حفظ التسجيل بنجاح</h3>
             <p className="mx-auto mt-3 max-w-sm text-sm leading-7 text-slate-500">
               {coordinatorEntry
-                ? emailNotice === "sent"
-                  ? "تمت إضافة بيانات الطالب إلى لوحة التسجيلات، وأُرسل تأكيد إلى بريده الإلكتروني."
-                  : "تمت إضافة بيانات الطالب إلى لوحة التسجيلات بنجاح."
+                ? "تمت إضافة بيانات الطالب إلى لوحة التسجيلات بنجاح."
                 : "تم حفظ بياناتك وسيتم التواصل معك من فريق SRMA قريباً."}
             </p>
-            {coordinatorEntry && emailNotice === "sent" && (
-              <p className="mx-auto mt-3 max-w-sm rounded-xl bg-[#f3fbf8] px-4 py-3 text-xs font-semibold leading-6 text-[#28634f]">
-                تم إرسال إشعار للإدارة ورسالة تأكيد إلى بريد الطالب.
-              </p>
-            )}
-            {coordinatorEntry && emailNotice === "pending" && (
-              <p className="mx-auto mt-3 max-w-sm rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-xs font-semibold leading-6 text-blue-800">
-                حُفظ التسجيل، ويجري إرسال إشعار الإدارة ورسالة تأكيد الطالب في الخلفية.
-              </p>
-            )}
-            {coordinatorEntry && emailNotice === "not-configured" && (
-              <p className="mx-auto mt-3 max-w-sm rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold leading-6 text-amber-800">
-                حُفظ التسجيل بنجاح، لكن إعداد البريد غير مكتمل حالياً؛ لم تُرسل رسائل البريد.
-              </p>
-            )}
-            {coordinatorEntry && (emailNotice === "partial" || emailNotice === "failed") && (
-              <p className="mx-auto mt-3 max-w-sm rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-semibold leading-6 text-amber-800">
-                حُفظ التسجيل بنجاح، لكن تعذر إرسال إحدى رسائل البريد. راجع إعدادات البريد أو أعد المحاولة لاحقاً.
-              </p>
-            )}
             <button onClick={handleClose} className="mt-7 rounded-xl bg-[#0C3156] px-8 py-3 text-sm font-bold text-white transition hover:bg-[#092744]">إغلاق</button>
           </div>
         ) : (
