@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Plus, Pencil, Trash2, Eye, X, ChevronLeft, LogOut, Search, Users, BookOpen, TrendingUp, AlertCircle, UserPlus, GraduationCap, Award, Landmark } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, X, ChevronLeft, LogOut, Search, Users, BookOpen, TrendingUp, AlertCircle, UserPlus, GraduationCap, Award, Landmark, LayoutDashboard, CreditCard, Settings, ClipboardList } from "lucide-react";
 import { ResearchOpportunity, SPECIALTY_COLORS } from "@/lib/researchData";
 import RegistrationModal from "@/components/RegistrationModal";
 
@@ -589,9 +589,9 @@ export default function AdminDashboard() {
   const canManage = role === "owner";
 
   return (
-    <div className="min-h-screen bg-slate-50">
+      <div className="min-h-screen bg-[#f4f7fb]">
       {/* TOP BAR */}
-      <div className="bg-[#0C3156] text-white px-4 sm:px-6 lg:px-8 py-4">
+       <div className="bg-gradient-to-l from-[#0b2a4d] via-[#0C3156] to-[#164e78] text-white px-4 sm:px-6 lg:px-8 py-4 shadow-lg">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/" data-testid="link-admin-site"
@@ -600,8 +600,8 @@ export default function AdminDashboard() {
               الموقع
             </Link>
             <span className="text-blue-400">|</span>
-            <Link href="/admin/submissions" data-testid="link-admin-submissions"
-              className="flex items-center gap-1.5 text-[#E9A020] hover:text-white text-sm font-semibold transition-colors">
+              <Link href="/admin/submissions" data-testid="link-admin-submissions"
+               className="flex items-center gap-1.5 text-[#ffd47d] hover:text-white text-sm font-semibold transition-colors">
               <Users size={14} />
               {canManage ? "الطلاب وإدارة الطلبات" : "الطلاب المسجلون"}
             </Link>
@@ -617,12 +617,23 @@ export default function AdminDashboard() {
               <h1 className="text-lg font-black tracking-tight text-right">لوحة تحكم SRMA</h1>
               <p className="text-blue-300 text-xs text-right">{canManage ? "إدارة البرامج والفرص المشتركة" : "متابعة البرامج والطلاب المسجلين"}</p>
             </div>
-            <div className="w-9 h-9 bg-[#E9A020] rounded-full flex items-center justify-center font-black text-white text-sm">R</div>
+            <div className="w-10 h-10 border border-white/25 bg-white/10 rounded-xl flex items-center justify-center font-black text-[#ffd47d] text-sm">SR</div>
           </div>
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-6 flex flex-col gap-3 rounded-2xl border border-[#dbe8f2] bg-white px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-right">
+            <p className="text-xs font-bold text-[#117b59]">SRMA RESEARCH ACADEMY</p>
+            <h2 className="mt-1 text-xl font-black text-[#172238]">مرحباً بك في لوحة {canManage ? "المالك" : "المنسق"}</h2>
+            <p className="mt-1 text-sm text-slate-500">{canManage ? "أدر البرامج والتسجيلات والمستحقات من مكان واحد." : "تابع البرامج وسجّل الطلاب الجدد بسرعة ووضوح."}</p>
+          </div>
+          <div className="rounded-xl bg-[#f3fbf8] px-4 py-3 text-right text-sm text-[#28634f]">
+            <p className="font-bold">الصلاحية الحالية</p>
+            <p className="mt-1">{canManage ? "مالك المنصة" : "منسق معتمد"}</p>
+          </div>
+        </div>
         {/* STATS */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           {[
@@ -631,7 +642,7 @@ export default function AdminDashboard() {
             { label: "مشارك مسجل", value: stats.totalParticipants, icon: <Users size={20} className="text-orange-500" />, bg: "bg-orange-50" },
             { label: "الدراسات المنجزة", value: stats.completed, icon: <Award size={20} className="text-violet-600" />, bg: "bg-violet-50" },
           ].map((s) => (
-            <div key={s.label} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm text-right">
+             <div key={s.label} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-[0_8px_24px_rgba(15,43,76,.06)] text-right transition hover:-translate-y-0.5">
               <div className={`w-10 h-10 ${s.bg} rounded-xl flex items-center justify-center mb-3`}>{s.icon}</div>
               <div className="text-3xl font-black text-slate-900">{s.value}</div>
               <div className="text-sm text-slate-500 mt-1">{s.label}</div>
@@ -639,17 +650,18 @@ export default function AdminDashboard() {
           ))}
         </div>
 
-        <div className="mb-5 flex gap-2 overflow-x-auto">
+        <div className="mb-5 flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
           {[
-            { key: "programs", label: "الفرص والبرامج" },
-            { key: "payments", label: "المستحقات والتسديدات" },
-            { key: "settings", label: "الإعدادات" },
-          ].map(({ key, label }) => (
-            <button key={key} onClick={() => setView(key as typeof view)}
-              className={`whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-bold transition-colors ${
+            { key: "programs", label: "الفرص والبرامج", icon: LayoutDashboard },
+            { key: "students", label: "الطلاب المسجلون", icon: ClipboardList },
+            { key: "payments", label: "المستحقات والتسديدات", icon: CreditCard },
+            { key: "settings", label: "الإعدادات", icon: Settings },
+          ].map(({ key, label, icon: Icon }) => (
+            <button key={key} onClick={() => key === "students" ? setLocation("/admin/submissions") : setView(key as typeof view)}
+              className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-bold transition-colors ${
                 view === key ? "bg-[#117b59] text-white" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"
               }`}>
-              {label}
+              <Icon size={16} /> {label}
             </button>
           ))}
         </div>
@@ -896,6 +908,7 @@ export default function AdminDashboard() {
           onClose={() => setStudentResearch(null)}
           researchTitle={studentResearch.title}
           researchId={studentResearch.id}
+            coordinatorEntry
         />
       )}
     </div>

@@ -36,6 +36,9 @@ export async function sendRegistrationEmail(data: {
     return;
   }
 
+  const whatsappRow = data.whatsapp
+    ? `<tr style="background:#fff;"><td style="padding:8px; font-weight:bold; color:#0C3156;">واتساب:</td><td style="padding:8px;">${data.whatsapp}</td></tr>`
+    : "";
   const html = `
     <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
       <div style="background: #0C3156; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
@@ -46,7 +49,7 @@ export async function sendRegistrationEmail(data: {
           <tr><td style="padding:8px; font-weight:bold; color:#0C3156;">الاسم الكامل:</td><td style="padding:8px;">${data.fullName}</td></tr>
           <tr style="background:#fff;"><td style="padding:8px; font-weight:bold; color:#0C3156;">التخصص:</td><td style="padding:8px;">${data.specialization}</td></tr>
           <tr><td style="padding:8px; font-weight:bold; color:#0C3156;">البريد الإلكتروني:</td><td style="padding:8px;">${data.email}</td></tr>
-          <tr style="background:#fff;"><td style="padding:8px; font-weight:bold; color:#0C3156;">واتساب:</td><td style="padding:8px;">${data.whatsapp}</td></tr>
+          ${whatsappRow}
           <tr><td style="padding:8px; font-weight:bold; color:#0C3156;">جهة الانتساب:</td><td style="padding:8px;">${data.affiliation}</td></tr>
           <tr style="background:#fff;"><td style="padding:8px; font-weight:bold; color:#0C3156;">الدولة / المدينة:</td><td style="padding:8px;">${data.country} — ${data.city || "—"}</td></tr>
           <tr><td style="padding:8px; font-weight:bold; color:#0C3156;">ORCID:</td><td style="padding:8px;">${data.orcid || "—"}</td></tr>
@@ -65,6 +68,23 @@ export async function sendRegistrationEmail(data: {
       to: NOTIFY_EMAIL,
       subject: `[SRMA Research Academy] تسجيل جديد — ${data.fullName} — ${data.researchTitle.substring(0, 50)}`,
       html,
+    });
+    await transport.sendMail({
+      from: FROM_EMAIL,
+      to: data.email,
+      subject: `تم استلام تسجيلك في ${data.researchTitle} — SRMA Research Academy`,
+      html: `
+        <div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;">
+          <div style="background:#0C3156;color:#fff;padding:22px;border-radius:10px 10px 0 0;">
+            <h2 style="margin:0;">تم استلام تسجيلك بنجاح</h2>
+          </div>
+          <div style="padding:22px;border:1px solid #e2e8f0;border-top:0;border-radius:0 0 10px 10px;color:#334155;line-height:1.9;">
+            <p>مرحباً ${data.fullName}،</p>
+            <p>نؤكد استلام تسجيلك في الفرصة البحثية التالية:</p>
+            <p style="padding:12px;background:#f3fbf8;border-radius:8px;font-weight:bold;color:#117b59;">${data.researchTitle}</p>
+            <p>سيتم التواصل معك من فريق SRMA Research Academy بعد مراجعة بياناتك.</p>
+          </div>
+        </div>`,
     });
     logger.info({ to: NOTIFY_EMAIL }, "Registration email sent");
   } catch (err) {

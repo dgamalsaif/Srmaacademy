@@ -230,7 +230,7 @@ export default function AdminSubmissions() {
   return (
     <div className="min-h-screen bg-slate-50">
       {/* TOP BAR */}
-      <div className="bg-[#0C3156] text-white px-4 sm:px-6 lg:px-8 py-4">
+       <div className="bg-gradient-to-l from-[#0b2a4d] via-[#0C3156] to-[#164e78] text-white px-4 sm:px-6 lg:px-8 py-4 shadow-lg">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/admin" data-testid="link-submissions-dashboard"
@@ -250,7 +250,7 @@ export default function AdminSubmissions() {
               <h1 className="text-lg font-black tracking-tight">الطلبات والتسجيلات</h1>
               <p className="text-blue-300 text-xs">بيانات المستخدمين المسجلين</p>
             </div>
-            <div className="w-9 h-9 bg-[#E9A020] rounded-full flex items-center justify-center font-black text-white text-sm">R</div>
+            <div className="w-10 h-10 border border-white/25 bg-white/10 rounded-xl flex items-center justify-center font-black text-[#ffd47d] text-sm">SR</div>
           </div>
         </div>
       </div>
@@ -269,7 +269,7 @@ export default function AdminSubmissions() {
                 { label: "طلبات تم التواصل معها", value: registrations.filter((item) => item.status === "contacted").length, icon: <Phone size={20} className="text-orange-500" />, bg: "bg-orange-50", pending: null },
               ]),
           ].map((s) => (
-            <div key={s.label} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm text-right">
+            <div key={s.label} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-[0_8px_24px_rgba(15,43,76,.06)] text-right transition hover:-translate-y-0.5">
               <div className={`w-10 h-10 ${s.bg} rounded-xl flex items-center justify-center mb-3`}>{s.icon}</div>
               <div className="text-3xl font-black text-slate-900">{s.value}</div>
               <div className="text-sm text-slate-500 mt-1">{s.label}</div>
@@ -315,7 +315,7 @@ export default function AdminSubmissions() {
                 <div className="flex gap-2 overflow-x-auto pb-1">
                   {Object.values(registrationGroups).map((group) => (
                     <button key={group.id} onClick={() => setSelectedResearchId(group.id)}
-                      className={`min-w-52 rounded-xl border p-3 text-right transition-colors ${selectedResearchId === group.id ? "border-[#117b59] bg-[#f3fbf8]" : "border-slate-200 hover:bg-slate-50"}`}>
+                      className={`min-w-52 rounded-xl border p-3 text-right transition-all ${selectedResearchId === group.id ? "border-[#117b59] bg-[#f3fbf8] shadow-sm" : "border-slate-200 hover:border-[#b8dbce] hover:bg-slate-50"}`}>
                       <p className="line-clamp-2 text-xs font-bold text-slate-700">{group.title}</p>
                       <p className="mt-2 text-xs text-slate-500">{group.count} طالب — {group.pending} بانتظار المراجعة</p>
                     </button>
@@ -352,10 +352,12 @@ export default function AdminSubmissions() {
                           <a href={`mailto:${reg.email}`} className="flex items-center gap-1 text-xs text-slate-600 hover:text-[#0C3156] mb-1">
                             <Mail size={11} /> {reg.email}
                           </a>
-                          <a href={`https://wa.me/${reg.whatsapp.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-xs text-emerald-600 hover:underline">
-                            <Phone size={11} /> {reg.whatsapp}
-                          </a>
+                          {reg.whatsapp && (
+                            <a href={`https://wa.me/${reg.whatsapp.replace(/\D/g,"")}`} target="_blank" rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-xs text-emerald-600 hover:underline">
+                              <Phone size={11} /> {reg.whatsapp}
+                            </a>
+                          )}
                         </td>
                         <td className="px-4 py-4">
                           <p className="text-sm text-slate-700">{reg.affiliation}</p>
