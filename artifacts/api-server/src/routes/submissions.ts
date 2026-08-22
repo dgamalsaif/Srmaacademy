@@ -1,12 +1,12 @@
 import { Router, type Request, type Response } from "express";
-import { db, registrationsTable, researchProgramsTable, serviceRequestsTable, insertRegistrationSchema, insertServiceRequestSchema } from "@workspace/db";
+import { db, coordinatorsTable, registrationsTable, researchProgramsTable, serviceRequestsTable, insertRegistrationSchema, insertServiceRequestSchema } from "@workspace/db";
 import { desc, eq } from "drizzle-orm";
 import { sendServiceRequestEmail } from "../lib/mailer";
-import { requireCoordinator, requireOwner } from "../middlewares/coordinatorAuth";
+import { readSession, requireCoordinator, requireOwner } from "../middlewares/coordinatorAuth";
 
 const router = Router();
 
-async function createRegistration(req: Request, res: Response) {
+async function createRegistration(req: Request, res: Response, coordinatorId: number | null) {
   const parsed = insertRegistrationSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "بيانات غير صحيحة", details: parsed.error.issues });
@@ -20,7 +20,7 @@ async function createRegistration(req: Request, res: Response) {
   }
 
   const researchTitle = program.titleAr || program.titleEn;
-  const row = await db.insert(registrationsTable).values({ ...parsed.data, researchTitle }).returning();
+  const row = await db.insert(registrationsTable).values({ ...parsed.data, researchTitle, coordinatorId }).returning();
 
   res.status(201).json(row[0]);
 }
@@ -32,21 +32,42 @@ router.post("/registrations", async (req, res) => {
     res.status(400).json({ error: "رقم واتساب مطلوب للتسجيل العام." });
     return;
   }
-  await createRegistration(req, res);
+  await createRegistration(req, res, null);
 });
 
 /* ── POST /api/coordinator/registrations ── */
 router.post("/coordinator/registrations", requireCoordinator, async (req, res) => {
-  await createRegistration(req, res);
+  const session = readSession(req.cookies?.srma_coordinator_session);
+  const coordinatorId = session?.role === "coordinator" && session.coordinatorId ? session.coordinatorId : null;
+  await createRegistration(req, res, coordinatorId);
 });
 
 /* ── GET /api/registrations ── */
-router.get("/registrations", requireCoordinator, async (_req, res) => {
-  const rows = await db
-    .select()
-    .from(registrationsTable)
-    .orderBy(desc(registrationsTable.createdAt));
-  res.json(rows);
+router.get("/registrations", requireCoordinator, async (req, res) => {
+  const session = readSession(req.cookies?.srma_coordinator_session);
+  if (!session) {
+    res.status(401).json({ error: "يلزم تسجيل دخول المنسق" });
+    return;
+  }
+
+  const rows = session.role === "coordinator"
+    ? await db.select().from(registrationsTable)
+      .where(eq(registrationsTable.coordinatorId, session.coordinatorId))
+      .orderBy(desc(registrationsTable.createdAt))
+    : await db.select().from(registrationsTable).orderBy(desc(registrationsTable.createdAt));
+
+  const coordinators = session.role === "owner"
+    ? await db.select({ id: coordinatorsTable.id, fullName: coordinatorsTable.fullName }).from(coordinatorsTable)
+    : [];
+  const coordinatorNames = new Map(coordinators.map((coordinator) => [coordinator.id, coordinator.fullName]));
+
+  res.json(rows.map((registration) => ({
+    ...registration,
+    coordinatorName: session.role === "owner" && registration.coordinatorId
+      ? coordinatorNames.get(registration.coordinatorId) || "منسق سابق"
+      : null,
+    registrationSource: registration.coordinatorId ? "coordinator" : "public",
+  })));
 });
 
 /* ── PATCH /api/registrations/:id/status ── */

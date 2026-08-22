@@ -16,6 +16,9 @@ interface Registration {
   orcid: string;
   researchId: number;
   researchTitle: string;
+  coordinatorId: number | null;
+  coordinatorName: string | null;
+  registrationSource: "coordinator" | "public";
   status: string;
   createdAt: string;
 }
@@ -233,7 +236,7 @@ export default function AdminSubmissions() {
         year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
       });
       const rows = [
-        ["الاسم الكامل", "التخصص", "البريد الإلكتروني", "واتساب", "جهة الانتساب", "الدولة", "المدينة", "البرنامج / الفرصة", "الحالة", "تاريخ التسجيل"],
+        ["الاسم الكامل", "التخصص", "البريد الإلكتروني", "واتساب", "جهة الانتساب", "الدولة", "المدينة", "البرنامج / الفرصة", ...(canManageCoordinatorRequests ? ["المسجّل بواسطة"] : []), "الحالة", "تاريخ التسجيل"],
         ...filteredRegistrations.map((registration) => [
           registration.fullName,
           registration.specialization,
@@ -243,6 +246,7 @@ export default function AdminSubmissions() {
           registration.country,
           registration.city || "—",
           registration.researchTitle,
+          ...(canManageCoordinatorRequests ? [registration.coordinatorName || "تسجيل عام"] : []),
           STATUS_LABELS[registration.status] || registration.status,
           formatExportDate(registration.createdAt),
         ]),
@@ -290,7 +294,7 @@ export default function AdminSubmissions() {
         <div className="flex items-center gap-4">
            <div className="text-right">
              <h1 className="text-2xl font-black text-slate-800">الطلبات والتسجيلات</h1>
-             <p className="text-sm text-slate-500 mt-1 font-medium">بيانات المستخدمين المسجلين في البرامج</p>
+              <p className="text-sm text-slate-500 mt-1 font-medium">{canManageCoordinatorRequests ? "بيانات جميع المستخدمين المسجلين في البرامج" : "تسجيلات الطلاب التي أنشأتها من لوحة المنسق"}</p>
            </div>
         </div>
         <div className="flex items-center gap-3">
@@ -364,6 +368,11 @@ export default function AdminSubmissions() {
         {/* REGISTRATIONS TABLE */}
         {tab === "registrations" && (
           <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
+             {!canManageCoordinatorRequests && (
+               <div className="rounded-2xl border border-blue-100 bg-blue-50 px-5 py-4 text-right text-sm leading-6 text-blue-800">
+                 <span className="font-black">خصوصية التسجيلات:</span> تعرض هذه القائمة التسجيلات المرتبطة بحسابك فقط. أما السجلات التاريخية التي سبقت تفعيل هذا الفصل ولا يمكن إسنادها بأمان، فيراجعها مالك المنصة كتسجيل عام.
+               </div>
+             )}
             {registrations.length > 0 && (
               <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="mb-4 flex items-center justify-between">
@@ -399,7 +408,7 @@ export default function AdminSubmissions() {
                   <table className="w-full text-right">
                     <thead className="bg-slate-50 border-b border-slate-100">
                       <tr>
-                        {["الاسم والتخصص", "التواصل", "الجهة / المدينة", "الفرصة البحثية", "الحالة", "التاريخ", "إجراء"].map((h) => (
+                        {["الاسم والتخصص", "التواصل", "الجهة / المدينة", "الفرصة البحثية", ...(canManageCoordinatorRequests ? ["المسجّل بواسطة"] : []), "الحالة", "التاريخ", "إجراء"].map((h) => (
                           <th key={h} className="px-6 py-4 text-xs font-bold text-slate-500 whitespace-nowrap">{h}</th>
                         ))}
                       </tr>
@@ -431,6 +440,13 @@ export default function AdminSubmissions() {
                             <p className="text-xs font-bold text-slate-700 leading-5 line-clamp-2 max-w-[220px] mb-1">{reg.researchTitle}</p>
                             <p className="text-[11px] font-medium text-slate-400">ID: {reg.researchId}</p>
                           </td>
+                          {canManageCoordinatorRequests && (
+                            <td className="px-6 py-5">
+                              <span className={`inline-flex rounded-lg px-3 py-1.5 text-xs font-bold ${reg.coordinatorName ? "bg-[#e6f5ef] text-[#117b59]" : "bg-slate-100 text-slate-500"}`}>
+                                {reg.coordinatorName || "تسجيل عام"}
+                              </span>
+                            </td>
+                          )}
                           <td className="px-6 py-5">
                             <StatusBadge status={reg.status} />
                           </td>

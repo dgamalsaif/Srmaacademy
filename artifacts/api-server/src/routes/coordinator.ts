@@ -47,9 +47,42 @@ router.post("/coordinator/logout", (_req, res) => {
   res.json({ authenticated: false });
 });
 
-router.get("/coordinator/session", (req, res) => {
+router.get("/coordinator/session", async (req, res) => {
   const session = readSession(req.cookies?.srma_coordinator_session);
-  res.json({ authenticated: Boolean(session), role: session?.role || null, coordinatorId: session?.coordinatorId || null });
+  const [coordinator] = session?.role === "coordinator" && session.coordinatorId
+    ? await db.select({ fullName: coordinatorsTable.fullName })
+      .from(coordinatorsTable)
+      .where(eq(coordinatorsTable.id, session.coordinatorId))
+      .limit(1)
+    : [];
+  res.json({
+    authenticated: Boolean(session),
+    role: session?.role || null,
+    coordinatorId: session?.coordinatorId || null,
+    coordinatorName: coordinator?.fullName || null,
+  });
+});
+
+router.post("/coordinator/change-name", requireCoordinator, async (req, res) => {
+  const session = readSession(req.cookies?.srma_coordinator_session);
+  if (!session || session.role !== "coordinator" || !session.coordinatorId) {
+    res.status(403).json({ error: "تعديل اسم المالك يتم من إعدادات المنصة." });
+    return;
+  }
+  const fullName = typeof req.body?.fullName === "string" ? req.body.fullName.trim().replace(/\s+/g, " ") : "";
+  if (fullName.length < 3) {
+    res.status(400).json({ error: "يرجى إدخال اسم صحيح من 3 أحرف على الأقل." });
+    return;
+  }
+  const [coordinator] = await db.update(coordinatorsTable)
+    .set({ fullName })
+    .where(eq(coordinatorsTable.id, session.coordinatorId))
+    .returning({ fullName: coordinatorsTable.fullName });
+  if (!coordinator) {
+    res.status(404).json({ error: "حساب المنسق غير موجود." });
+    return;
+  }
+  res.json({ ok: true, fullName: coordinator.fullName });
 });
 
 router.post("/coordinator/change-access-code", requireCoordinator, async (req, res) => {

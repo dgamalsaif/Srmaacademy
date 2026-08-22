@@ -32,6 +32,7 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit }: { initial: Form
   const [form, setForm] = useState<FormData>({ ...initial, benefits: [...(initial.benefits || ["", "", ""])] });
   const [indexedStr, setIndexedStr] = useState((initial.indexedIn || []).join("، "));
   const [benefitsArr, setBenefitsArr] = useState<string[]>(initial.benefits?.length ? [...initial.benefits] : ["", "", ""]);
+  const isCompletedResearch = form.category === "completed";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +65,7 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit }: { initial: Form
       <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-slate-100" onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 bg-white/90 backdrop-blur-md border-b border-slate-100 px-6 py-5 rounded-t-3xl flex items-center justify-between z-10">
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 bg-slate-50 p-2 rounded-full transition-colors"><X size={20} /></button>
-          <h2 className="text-lg font-black text-slate-800">{isEdit ? "تعديل الفرصة البحثية" : "إضافة فرصة بحثية جديدة"}</h2>
+          <h2 className="text-lg font-black text-slate-800">{isEdit ? (isCompletedResearch ? "تعديل البحث المنجز" : "تعديل الفرصة البحثية") : (isCompletedResearch ? "إضافة بحث منجز أو منشور" : "إضافة فرصة بحثية جديدة")}</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-6 space-y-5">
@@ -81,7 +82,10 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit }: { initial: Form
 
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2 text-right">نوع البرنامج *</label>
-            <select value={form.category || "active"} onChange={(e) => setForm({ ...form, category: e.target.value as NonNullable<ResearchOpportunity["category"]> })} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50 text-right appearance-none">
+            <select value={form.category || "active"} onChange={(e) => {
+              const category = e.target.value as NonNullable<ResearchOpportunity["category"]>;
+              setForm({ ...form, category, status: category === "completed" ? "closed" : form.status, seatsLeft: category === "completed" ? 0 : form.seatsLeft, totalSeats: category === "completed" ? 0 : form.totalSeats });
+            }} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50 text-right appearance-none">
               <option value="active">فرصة وبرنامج بحثي</option>
               <option value="completed">دراسة منجزة</option>
               <option value="training">تدريب الباحث</option>
@@ -104,7 +108,7 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit }: { initial: Form
               </select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          {!isCompletedResearch && <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2 text-right">الحالة *</label>
               <select required value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as ResearchOpportunity["status"] })} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50 text-right appearance-none">
@@ -113,9 +117,9 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit }: { initial: Form
                 <option value="upcoming">قادم</option>
               </select>
             </div>
-          </div>
+          </div>}
 
-          <div className="grid grid-cols-2 gap-4">
+          {!isCompletedResearch && <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2 text-right">المقاعد الإجمالية *</label>
               <input required type="number" min={1} value={form.totalSeats} onChange={(e) => setForm({ ...form, totalSeats: parseInt(e.target.value) || 12 })} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] text-center bg-slate-50" />
@@ -124,7 +128,8 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit }: { initial: Form
               <label className="block text-sm font-bold text-slate-700 mb-2 text-right">المقاعد المتبقية *</label>
               <input required type="number" min={0} value={form.seatsLeft} onChange={(e) => setForm({ ...form, seatsLeft: parseInt(e.target.value) || 0 })} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] text-center bg-slate-50" />
             </div>
-          </div>
+          </div>}
+          {isCompletedResearch && <div className="rounded-2xl border border-[#cce8dd] bg-[#f1fbf6] px-4 py-3 text-right text-sm leading-6 text-[#28634f]">سيُعرض هذا السجل ضمن الدراسات المنجزة والمنشورة، ولن يظهر فيه زر تسجيل الطلاب أو بيانات المقاعد.</div>}
 
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2 text-right">وصف الدراسة (بالعربية) *</label>
@@ -137,7 +142,7 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit }: { initial: Form
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">المجلة المستهدفة *</label>
+              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">{isCompletedResearch ? "المجلة التي نُشر بها البحث *" : "المجلة المستهدفة *"}</label>
               <input required type="text" value={form.journalTarget} onChange={(e) => setForm({ ...form, journalTarget: e.target.value })} placeholder="Journal Name (Q1)" className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50" dir="ltr" />
             </div>
             <div>
@@ -178,7 +183,7 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit }: { initial: Form
               إلغاء
             </button>
             <button type="submit" className="flex-1 bg-[#117b59] text-white font-bold py-3.5 rounded-2xl hover:bg-[#0c6549] transition-colors text-sm shadow-sm">
-              {isEdit ? "حفظ التعديلات" : "إضافة الفرصة"}
+               {isEdit ? "حفظ التعديلات" : (isCompletedResearch ? "إضافة البحث المنجز" : "إضافة الفرصة")}
             </button>
           </div>
         </form>
@@ -266,42 +271,94 @@ function PaymentFormModal({ onClose, onSave }: { onClose: () => void; onSave: (d
   );
 }
 
-function SettingsPanel({ role }: { role: "owner" | "coordinator" | null }) {
+function SettingsPanel({ role, accountName, onNameUpdated }: { role: "owner" | "coordinator" | null; accountName: string; onNameUpdated: (name: string) => void }) {
+  const [fullName, setFullName] = useState(accountName);
   const [currentCode, setCurrentCode] = useState("");
   const [newCode, setNewCode] = useState("");
-  const [message, setMessage] = useState("");
+  const [confirmCode, setConfirmCode] = useState("");
+  const [nameMessage, setNameMessage] = useState("");
+  const [codeMessage, setCodeMessage] = useState("");
+
+  useEffect(() => setFullName(accountName), [accountName]);
+
+  const changeName = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setNameMessage("");
+    const response = await fetch("/api/coordinator/change-name", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fullName }),
+    });
+    const result = await response.json() as { fullName?: string; error?: string };
+    if (response.ok && result.fullName) {
+      setFullName(result.fullName);
+      onNameUpdated(result.fullName);
+      setNameMessage("تم تحديث الاسم بنجاح.");
+    } else {
+      setNameMessage(result.error || "تعذر تحديث الاسم.");
+    }
+  };
+
   const changeCode = async (event: React.FormEvent) => {
     event.preventDefault();
+    setCodeMessage("");
+    if (newCode !== confirmCode) {
+      setCodeMessage("تأكيد رمز الوصول لا يطابق الرمز الجديد.");
+      return;
+    }
     const response = await fetch("/api/coordinator/change-access-code", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ currentCode, newCode }),
     });
     const result = await response.json() as { error?: string };
-    setMessage(response.ok ? "تم تغيير رمز الدخول بنجاح." : result.error || "تعذر تغيير الرمز.");
-    if (response.ok) { setCurrentCode(""); setNewCode(""); }
+    setCodeMessage(response.ok ? "تم تغيير رمز الدخول بنجاح." : result.error || "تعذر تغيير الرمز.");
+    if (response.ok) { setCurrentCode(""); setNewCode(""); setConfirmCode(""); }
   };
   return (
-    <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-600 border border-slate-100">
-          <Settings size={24} />
-        </div>
-        <div>
-          <h2 className="text-right text-xl font-black text-slate-800">إعدادات الحساب</h2>
-          <p className="mt-1 text-right text-sm font-medium text-slate-500">
-            {role === "owner" ? "إدارة طلبات المنسقين والبرامج متاحة لك فقط." : "يمكنك تغيير رمز دخولك الشخصي."}
-          </p>
+    <section className="mx-auto max-w-2xl space-y-4">
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-slate-100 bg-[#e6f5ef] text-[#117b59]">
+            <Settings size={23} />
+          </div>
+          <div>
+            <h2 className="text-right text-xl font-black text-slate-800">إعدادات الحساب</h2>
+            <p className="mt-1 text-right text-sm font-medium text-slate-500">
+              {role === "owner" ? "إدارة طلبات المنسقين والبرامج متاحة لك فقط." : "حدّث بياناتك الشخصية ورمز الوصول بأمان."}
+            </p>
+          </div>
         </div>
       </div>
 
       {role === "coordinator" && (
-        <form onSubmit={changeCode} className="max-w-xl space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100">
-          <input value={currentCode} onChange={(e) => setCurrentCode(e.target.value)} required type="password" placeholder="رمز الدخول الحالي" className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-right text-sm outline-none focus:border-[#117b59] focus:ring-2 focus:ring-[#117b59]/20" />
-          <input value={newCode} onChange={(e) => setNewCode(e.target.value)} required minLength={8} type="password" placeholder="رمز الدخول الجديد (8 أحرف على الأقل)" className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-right text-sm outline-none focus:border-[#117b59] focus:ring-2 focus:ring-[#117b59]/20" />
-          {message && <p className="text-right text-sm font-bold text-[#117b59]">{message}</p>}
-          <button type="submit" className="rounded-2xl bg-[#117b59] px-6 py-3 text-sm font-bold text-white hover:bg-[#0c6549] transition-colors shadow-sm">تحديث رمز الدخول</button>
-        </form>
+        <>
+          <form onSubmit={changeName} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-5 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600"><Pencil size={19} /></div>
+              <div><h3 className="font-black text-slate-800">تعديل الاسم</h3><p className="mt-1 text-xs font-medium text-slate-500">استخدم الاسم الذي تريد ظهوره في لوحة المالك.</p></div>
+            </div>
+            <label className="mb-2 block text-right text-sm font-bold text-slate-700">الاسم الجديد</label>
+            <input value={fullName} onChange={(event) => setFullName(event.target.value)} required minLength={3} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-right text-sm outline-none transition focus:border-[#117b59] focus:ring-2 focus:ring-[#117b59]/15" />
+            <div className="mt-4 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-right text-xs leading-5 text-amber-800"><span className="font-black">ملاحظة مهمة:</span> سيظهر الاسم الجديد في جميع التسجيلات السابقة واللاحقة المرتبطة بحسابك.</div>
+            {nameMessage && <p className={`mt-3 text-right text-sm font-bold ${nameMessage.includes("بنجاح") ? "text-[#117b59]" : "text-red-600"}`}>{nameMessage}</p>}
+            <button type="submit" className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#117b59] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#0c6549]"><Pencil size={16} /> تحديث الاسم</button>
+          </form>
+
+          <form onSubmit={changeCode} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="mb-5 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#e6f5ef] text-[#117b59]"><Settings size={19} /></div>
+              <div><h3 className="font-black text-slate-800">تغيير رمز الوصول</h3><p className="mt-1 text-xs font-medium text-slate-500">رمز الوصول الحالي: محمي ولا يظهر في اللوحة.</p></div>
+            </div>
+            <div className="space-y-4">
+              <div><label className="mb-2 block text-right text-sm font-bold text-slate-700">رمز الوصول الحالي</label><input value={currentCode} onChange={(e) => setCurrentCode(e.target.value)} required type="password" placeholder="أدخل رمز الوصول الحالي" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-right text-sm outline-none focus:border-[#117b59] focus:ring-2 focus:ring-[#117b59]/15" /></div>
+              <div><label className="mb-2 block text-right text-sm font-bold text-slate-700">رمز الوصول الجديد</label><input value={newCode} onChange={(e) => setNewCode(e.target.value)} required minLength={8} type="password" placeholder="8 أحرف أو أرقام على الأقل" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-right text-sm outline-none focus:border-[#117b59] focus:ring-2 focus:ring-[#117b59]/15" /></div>
+              <div><label className="mb-2 block text-right text-sm font-bold text-slate-700">تأكيد رمز الوصول الجديد</label><input value={confirmCode} onChange={(e) => setConfirmCode(e.target.value)} required minLength={8} type="password" placeholder="أعد كتابة الرمز الجديد" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-right text-sm outline-none focus:border-[#117b59] focus:ring-2 focus:ring-[#117b59]/15" /></div>
+            </div>
+            {codeMessage && <p className={`mt-3 text-right text-sm font-bold ${codeMessage.includes("بنجاح") ? "text-[#117b59]" : "text-red-600"}`}>{codeMessage}</p>}
+            <button type="submit" className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-[#117b59] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#0c6549]"><Settings size={16} /> تغيير رمز الوصول</button>
+          </form>
+        </>
       )}
     </section>
   );
@@ -323,11 +380,13 @@ function ProgramCard({ research, onRegister, onEdit, onDelete, canManage }: any)
   }
 
   const isFull = research.seatsLeft === 0;
+  const isCompletedResearch = research.category === "completed";
   const statusColor = research.status === 'open' && !isFull ? 'bg-[#e6f5ef] text-[#117b59]'
     : research.status === 'closed' || isFull ? 'bg-red-50 text-red-600'
     : 'bg-amber-50 text-amber-600';
 
-  const statusLabel = research.status === 'open' && !isFull ? 'مفتوح للتسجيل'
+  const statusLabel = isCompletedResearch ? 'دراسة منجزة'
+    : research.status === 'open' && !isFull ? 'مفتوح للتسجيل'
     : isFull ? 'اكتملت المقاعد'
     : STATUS_MAP[research.status]?.label || research.status;
 
@@ -347,7 +406,9 @@ function ProgramCard({ research, onRegister, onEdit, onDelete, canManage }: any)
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-y-3 mb-6 px-1">
+      <p className="mb-4 line-clamp-3 text-xs leading-6 text-slate-500">{research.descriptionAr || research.description}</p>
+
+      <div className="grid grid-cols-2 gap-y-3 px-1">
         <div className="flex items-center gap-2 text-slate-500 text-xs font-medium">
           <Stethoscope size={14} className="text-slate-400" />
           <span className="truncate">{research.specialtyAr || research.specialty}</span>
@@ -358,25 +419,47 @@ function ProgramCard({ research, onRegister, onEdit, onDelete, canManage }: any)
             <span className="truncate">{research.supervisor}</span>
           </div>
         )}
-        <div className="flex items-center gap-2 text-slate-500 text-xs font-medium">
-          <Users size={14} className="text-slate-400" />
-          المقاعد: <span className="font-bold">{research.totalSeats}</span>
-        </div>
-        <div className="flex items-center gap-2 text-slate-500 text-xs font-medium">
-          <Clock size={14} className="text-slate-400" />
-          المتبقي: <span className="font-bold">{research.seatsLeft}</span>
-        </div>
+        {isCompletedResearch ? (
+          <>
+            <div className="flex items-center gap-2 text-slate-500 text-xs font-medium">
+              <Award size={14} className="text-slate-400" />
+              <span className="truncate">{research.journalTarget || "بحث منشور"}</span>
+            </div>
+            <div className="flex items-center gap-2 text-slate-500 text-xs font-medium">
+              <CheckCircle size={14} className="text-slate-400" />
+              <span className="truncate">{research.indexedIn?.join("، ") || "موثق"}</span>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex items-center gap-2 text-slate-500 text-xs font-medium">
+              <Users size={14} className="text-slate-400" />
+              المقاعد: <span className="font-bold">{research.totalSeats}</span>
+            </div>
+            <div className="flex items-center gap-2 text-slate-500 text-xs font-medium">
+              <Clock size={14} className="text-slate-400" />
+              المتبقي: <span className="font-bold">{research.seatsLeft}</span>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="mt-auto pt-4 border-t border-slate-100 flex items-center gap-3">
-        <button
-          onClick={() => onRegister(research)}
-          disabled={isFull || research.status !== 'open'}
-          className="flex-1 bg-[#117b59] hover:bg-[#0c6549] text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <UserPlus size={16} />
-          تسجيل طالب
-        </button>
+        {isCompletedResearch ? (
+          <Link href={`/research/${research.id}`} className="flex-1 bg-[#117b59] hover:bg-[#0c6549] text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2 shadow-sm">
+            <Eye size={16} />
+            عرض البحث
+          </Link>
+        ) : (
+          <button
+            onClick={() => onRegister(research)}
+            disabled={isFull || research.status !== 'open'}
+            className="flex-1 bg-[#117b59] hover:bg-[#0c6549] text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <UserPlus size={16} />
+            تسجيل طالب
+          </button>
+        )}
         <button
           onClick={copyLink}
           className="flex-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-4 py-2.5 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2 shadow-sm"
@@ -393,6 +476,7 @@ export default function AdminDashboard() {
   const [, setLocation] = useLocation();
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [role, setRole] = useState<"owner" | "coordinator" | null>(null);
+  const [accountName, setAccountName] = useState("");
   const [research, setResearch] = useState<ResearchOpportunity[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | ResearchOpportunity["status"]>("all");
@@ -402,17 +486,19 @@ export default function AdminDashboard() {
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [paymentFormOpen, setPaymentFormOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
+  const [newCategory, setNewCategory] = useState<NonNullable<ResearchOpportunity["category"]>>("active");
   const [editItem, setEditItem] = useState<ResearchOpportunity | null>(null);
   const [deleteItem, setDeleteItem] = useState<ResearchOpportunity | null>(null);
   const [studentResearch, setStudentResearch] = useState<ResearchOpportunity | null>(null);
 
   useEffect(() => {
     fetch("/api/coordinator/session")
-      .then((response) => response.json() as Promise<{ authenticated?: boolean; role?: "owner" | "coordinator" }>)
+      .then((response) => response.json() as Promise<{ authenticated?: boolean; role?: "owner" | "coordinator"; coordinatorName?: string | null }>)
       .then((result) => {
         if (result.authenticated && result.role) {
           setAuthorized(true);
           setRole(result.role);
+          setAccountName(result.coordinatorName || "");
         }
         else { setAuthorized(false); setLocation("/coordinator-portal"); }
       })
@@ -521,6 +607,11 @@ export default function AdminDashboard() {
     setLocation("/coordinator-portal");
   };
 
+  const openNewResearch = (category: NonNullable<ResearchOpportunity["category"]>) => {
+    setNewCategory(category);
+    setFormOpen(true);
+  };
+
   const filtered = research.filter((r) => {
     const matchSearch = !search || [r.title, r.titleAr, r.titleEn, r.specialty, r.specialtyAr, r.specialtyEn]
       .filter(Boolean).some((value) => value!.toLowerCase().includes(search.toLowerCase()));
@@ -559,7 +650,7 @@ export default function AdminDashboard() {
         <div className="flex items-center gap-4">
            <div className="text-right">
              <h1 className="text-2xl font-black text-slate-800">لوحة تحكم المنسق</h1>
-             <p className="text-sm text-slate-500 mt-1 font-medium">أهلاً بك، {role === "owner" ? "المدير العام" : "منسق البرامج"}</p>
+              <p className="text-sm text-slate-500 mt-1 font-medium">أهلاً بك، {accountName || (role === "owner" ? "المدير العام" : "منسق البرامج")}</p>
            </div>
         </div>
         <div className="flex items-center gap-3">
@@ -576,7 +667,7 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {/* STATS ROW */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
            <div className="bg-white rounded-3xl border border-slate-200 p-6 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
              <div>
                <p className="text-slate-500 text-sm font-bold mb-2">البرامج والدورات</p>
@@ -595,6 +686,15 @@ export default function AdminDashboard() {
                <FlaskConical size={28} />
              </div>
            </div>
+            <button type="button" onClick={() => { setView("programs"); setCategoryFilter("completed"); }} className="bg-white rounded-3xl border border-slate-200 p-6 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow text-right">
+              <div>
+                <p className="text-slate-500 text-sm font-bold mb-2">الدراسات المنجزة والمنشورة</p>
+                <p className="text-3xl font-black text-slate-800">{stats.completed}</p>
+              </div>
+              <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
+                <CheckCircle size={28} />
+              </div>
+            </button>
            <div className="bg-[#117b59] rounded-3xl border border-[#0c6549] p-6 flex items-center justify-between shadow-md text-white hover:shadow-lg transition-shadow">
              <div>
                <p className="text-emerald-50 text-sm font-bold mb-2">إجمالي الطلاب المسجلين</p>
@@ -656,9 +756,9 @@ export default function AdminDashboard() {
                   ))}
                 </div>
                 {canManage && (
-                  <button onClick={() => setFormOpen(true)} className="flex items-center gap-2 bg-[#117b59] text-white px-5 py-2.5 rounded-full text-sm font-bold hover:bg-[#0c6549] transition-colors shadow-sm whitespace-nowrap w-full md:w-auto justify-center">
+                   <button onClick={() => openNewResearch(categoryFilter)} className="flex items-center gap-2 bg-[#117b59] text-white px-5 py-2.5 rounded-full text-sm font-bold hover:bg-[#0c6549] transition-colors shadow-sm whitespace-nowrap w-full md:w-auto justify-center">
                     <Plus size={18} />
-                    إضافة فرصة
+                     {categoryFilter === "completed" ? "إضافة بحث منجز" : "إضافة فرصة"}
                   </button>
                 )}
               </div>
@@ -775,7 +875,7 @@ export default function AdminDashboard() {
           {/* SETTINGS VIEW */}
           {view === "settings" && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <SettingsPanel role={role} />
+              <SettingsPanel role={role} accountName={accountName} onNameUpdated={setAccountName} />
             </div>
           )}
 
@@ -785,7 +885,7 @@ export default function AdminDashboard() {
       {formOpen && (
         <ResearchFormModal
           isEdit={false}
-          initial={EMPTY_FORM}
+          initial={{ ...EMPTY_FORM, category: newCategory, status: newCategory === "completed" ? "closed" : "open", totalSeats: newCategory === "completed" ? 0 : 12, seatsLeft: newCategory === "completed" ? 0 : 12 }}
           onSave={handleAdd}
           onClose={() => setFormOpen(false)}
         />

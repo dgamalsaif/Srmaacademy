@@ -35,7 +35,8 @@ export default function ResearchDetail() {
   }
 
   const seatsUsed = research.totalSeats - research.seatsLeft;
-  const pct = Math.round((seatsUsed / research.totalSeats) * 100);
+  const pct = research.totalSeats > 0 ? Math.round((seatsUsed / research.totalSeats) * 100) : 0;
+  const isCompletedResearch = research.category === "completed";
 
   return (
     <div className="min-h-screen bg-white">
@@ -59,7 +60,11 @@ export default function ResearchDetail() {
                 <span className={`text-xs font-bold px-3 py-1 rounded-full bg-white/20 text-white`}>
                   {research.specialty}
                 </span>
-                {research.status === "open" && (
+                {isCompletedResearch ? (
+                  <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-400 text-[#0C3156]">
+                    بحث منجز ومنشور ✓
+                  </span>
+                ) : research.status === "open" && (
                   <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#E9A020] text-white">
                     مفتوح للتسجيل ✓
                   </span>
@@ -90,7 +95,7 @@ export default function ResearchDetail() {
 
             {/* Benefits */}
             <div className="bg-[#EFF6FF] border border-[#0C3156]/12 rounded-2xl p-6 text-right shadow-sm">
-              <h2 className="text-lg font-black text-slate-900 mb-4">مزايا وقيمة المشاركة 💡</h2>
+              <h2 className="text-lg font-black text-slate-900 mb-4">{isCompletedResearch ? "مخرجات وقيمة البحث" : "مزايا وقيمة المشاركة 💡"}</h2>
               <ul className="space-y-3">
                 {research.benefits.map((b) => (
                   <li key={b} className="flex items-center gap-3 flex-row-reverse">
@@ -116,73 +121,93 @@ export default function ResearchDetail() {
 
           {/* SIDEBAR */}
           <div className="space-y-5">
-            {/* Registration Card */}
-            <div className="bg-white border-2 border-[#0C3156]/15 rounded-2xl p-6 text-right shadow-md sticky top-20">
-              <h3 className="text-lg font-black text-slate-900 mb-4">تفاصيل الفرصة</h3>
-
-              <div className="space-y-3 mb-5">
-                <div className="flex items-center justify-between flex-row-reverse py-2 border-b border-slate-100">
-                  <span className="text-sm text-slate-500 flex items-center gap-1.5">
-                    <Users size={14} />
-                    المقاعد المتاحة
-                  </span>
-                  <span className="font-bold text-slate-900">
-                    {research.seatsLeft} / {research.totalSeats}
-                  </span>
+            {isCompletedResearch ? (
+              <div className="bg-white border-2 border-emerald-100 rounded-2xl p-6 text-right shadow-md sticky top-20">
+                <h3 className="text-lg font-black text-slate-900 mb-4">بيانات النشر</h3>
+                <div className="space-y-3">
+                  <div className="py-2 border-b border-slate-100 text-right">
+                    <span className="text-sm text-slate-500 block mb-1">المجلة الناشرة</span>
+                    <span className="font-semibold text-slate-800 text-sm">{research.journalTarget || "غير محددة"}</span>
+                  </div>
+                  <div className="flex items-center justify-between flex-row-reverse py-2 border-b border-slate-100">
+                    <span className="text-sm text-slate-500 flex items-center gap-1.5"><Clock size={14} /> مدة إنجاز الدراسة</span>
+                    <span className="font-bold text-slate-900">{research.duration || "—"}</span>
+                  </div>
+                  <div className="py-2 text-right">
+                    <span className="text-sm text-slate-500 block mb-1">المشرف</span>
+                    <span className="font-semibold text-[#0C3156] text-sm">{research.supervisor || "—"}</span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between flex-row-reverse py-2 border-b border-slate-100">
-                  <span className="text-sm text-slate-500 flex items-center gap-1.5">
-                    <Clock size={14} />
-                    مدة الدراسة
-                  </span>
-                  <span className="font-bold text-slate-900">{research.duration}</span>
-                </div>
-                <div className="py-2 border-b border-slate-100 text-right">
-                  <span className="text-sm text-slate-500 block mb-1">المجلة المستهدفة</span>
-                  <span className="font-semibold text-slate-800 text-sm">{research.journalTarget}</span>
-                </div>
-                <div className="py-2 text-right">
-                  <span className="text-sm text-slate-500 block mb-1">المشرف</span>
-                  <span className="font-semibold text-[#0C3156] text-sm">{research.supervisor}</span>
-                </div>
+                <div className="mt-5 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-800">هذه دراسة منجزة للعرض المعرفي؛ التسجيل غير متاح فيها.</div>
               </div>
+            ) : (
+              <div className="bg-white border-2 border-[#0C3156]/15 rounded-2xl p-6 text-right shadow-md sticky top-20">
+                <h3 className="text-lg font-black text-slate-900 mb-4">تفاصيل الفرصة</h3>
 
-              {/* Progress */}
-              <div className="mb-5">
-                <div className="flex justify-between text-xs text-slate-500 mb-2 flex-row-reverse">
-                  <span>تبقى {research.seatsLeft} من أصل {research.totalSeats}</span>
-                  <span>{pct}% ممتلئ</span>
+                <div className="space-y-3 mb-5">
+                  <div className="flex items-center justify-between flex-row-reverse py-2 border-b border-slate-100">
+                    <span className="text-sm text-slate-500 flex items-center gap-1.5">
+                      <Users size={14} />
+                      المقاعد المتاحة
+                    </span>
+                    <span className="font-bold text-slate-900">
+                      {research.seatsLeft} / {research.totalSeats}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between flex-row-reverse py-2 border-b border-slate-100">
+                    <span className="text-sm text-slate-500 flex items-center gap-1.5">
+                      <Clock size={14} />
+                      مدة الدراسة
+                    </span>
+                    <span className="font-bold text-slate-900">{research.duration}</span>
+                  </div>
+                  <div className="py-2 border-b border-slate-100 text-right">
+                    <span className="text-sm text-slate-500 block mb-1">المجلة المستهدفة</span>
+                    <span className="font-semibold text-slate-800 text-sm">{research.journalTarget}</span>
+                  </div>
+                  <div className="py-2 text-right">
+                    <span className="text-sm text-slate-500 block mb-1">المشرف</span>
+                    <span className="font-semibold text-[#0C3156] text-sm">{research.supervisor}</span>
+                  </div>
                 </div>
-                <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-l from-[#0C3156] to-[#1A5FAE] rounded-full transition-all" style={{ width: `${pct}%` }} />
-                </div>
-              </div>
 
-              {research.status === "open" ? (
-                <button
-                  data-testid="button-detail-register"
-                  onClick={() => setModalOpen(true)}
-                  className="w-full bg-[#0C3156] text-white font-bold py-3.5 rounded-xl hover:bg-[#0a2847] transition-colors text-base shadow-sm mb-3"
+                {/* Progress */}
+                <div className="mb-5">
+                  <div className="flex justify-between text-xs text-slate-500 mb-2 flex-row-reverse">
+                    <span>تبقى {research.seatsLeft} من أصل {research.totalSeats}</span>
+                    <span>{pct}% ممتلئ</span>
+                  </div>
+                  <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-l from-[#0C3156] to-[#1A5FAE] rounded-full transition-all" style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+
+                {research.status === "open" ? (
+                  <button
+                    data-testid="button-detail-register"
+                    onClick={() => setModalOpen(true)}
+                    className="w-full bg-[#0C3156] text-white font-bold py-3.5 rounded-xl hover:bg-[#0a2847] transition-colors text-base shadow-sm mb-3"
+                  >
+                    سجل الآن 👤
+                  </button>
+                ) : (
+                  <div className="w-full bg-slate-100 text-slate-500 font-bold py-3.5 rounded-xl text-center text-base mb-3">
+                    🔒 مغلق التسجيل
+                  </div>
+                )}
+
+                <a
+                  href="https://wa.me/966562159258"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="link-detail-whatsapp"
+                  className="w-full border border-[#0C3156]/25 text-[#0C3156] font-semibold py-2.5 rounded-xl text-sm text-center hover:bg-[#0C3156]/5 transition-colors flex items-center justify-center gap-2"
                 >
-                  سجل الآن 👤
-                </button>
-              ) : (
-                <div className="w-full bg-slate-100 text-slate-500 font-bold py-3.5 rounded-xl text-center text-base mb-3">
-                  🔒 مغلق التسجيل
-                </div>
-              )}
-
-              <a
-                href="https://wa.me/966562159258"
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="link-detail-whatsapp"
-                className="w-full border border-[#0C3156]/25 text-[#0C3156] font-semibold py-2.5 rounded-xl text-sm text-center hover:bg-[#0C3156]/5 transition-colors flex items-center justify-center gap-2"
-              >
-                <ExternalLink size={14} />
-                تواصل لمعرفة السعر
-              </a>
-            </div>
+                  <ExternalLink size={14} />
+                  تواصل لمعرفة السعر
+                </a>
+              </div>
+            )}
           </div>
         </div>
 

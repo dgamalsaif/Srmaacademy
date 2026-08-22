@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, timestamp, integer, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -14,15 +14,19 @@ export const registrationsTable = pgTable("registrations", {
   orcid: text("orcid").default(""),
   researchId: integer("research_id").notNull(),
   researchTitle: text("research_title").notNull(),
+  coordinatorId: integer("coordinator_id"),
   status: text("status").notNull().default("pending"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+}, (table) => [
+  index("registrations_coordinator_id_idx").on(table.coordinatorId),
+]);
 
 export const insertRegistrationSchema = createInsertSchema(registrationsTable).omit({
   id: true,
   createdAt: true,
   status: true,
   researchTitle: true,
+  coordinatorId: true,
 });
 
 export type InsertRegistration = z.infer<typeof insertRegistrationSchema>;
