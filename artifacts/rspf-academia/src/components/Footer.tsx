@@ -4,7 +4,7 @@ import { Microscope, Phone, Send, Radio } from "lucide-react";
 const quickLinks = [
   { href: "/", label: "الرئيسية" },
   { href: "/participant-portal", label: "بوابة المشارك" },
-  { href: "/coordinator-portal", label: "بوابة المنسق" },
+  { href: "/coordinator", label: "بوابة المنسق" },
   { href: "/special-requests", label: "الطلبات الخاصة" },
   { href: "/knowledge-center", label: "مركز المعرفة" },
   { href: "/about", label: "عن المنصة" },

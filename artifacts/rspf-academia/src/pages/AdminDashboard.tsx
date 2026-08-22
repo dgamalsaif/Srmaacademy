@@ -33,6 +33,7 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit }: { initial: Form
   const [indexedStr, setIndexedStr] = useState((initial.indexedIn || []).join("، "));
   const [benefitsArr, setBenefitsArr] = useState<string[]>(initial.benefits?.length ? [...initial.benefits] : ["", "", ""]);
   const isCompletedResearch = form.category === "completed";
+  const completedStatus = ["seats_full", "submitted", "accepted", "published"].includes(form.status) ? form.status : "seats_full";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +57,7 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit }: { initial: Form
       indexedIn,
       benefits,
       specialtyColor,
+       status: isCompletedResearch ? completedStatus as ResearchOpportunity["status"] : form.status,
     });
   };
 
@@ -65,7 +67,7 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit }: { initial: Form
       <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-slate-100" onClick={(e) => e.stopPropagation()}>
         <div className="sticky top-0 bg-white/90 backdrop-blur-md border-b border-slate-100 px-6 py-5 rounded-t-3xl flex items-center justify-between z-10">
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 bg-slate-50 p-2 rounded-full transition-colors"><X size={20} /></button>
-          <h2 className="text-lg font-black text-slate-800">{isEdit ? (isCompletedResearch ? "تعديل البحث المنجز" : "تعديل الفرصة البحثية") : (isCompletedResearch ? "إضافة بحث منجز أو منشور" : "إضافة فرصة بحثية جديدة")}</h2>
+          <h2 className="text-lg font-black text-slate-800">{isEdit ? (isCompletedResearch ? "تعديل دراسة في الفهرس" : "تعديل الفرصة البحثية") : (isCompletedResearch ? "إضافة دراسة إلى الفهرس" : "إضافة فرصة بحثية جديدة")}</h2>
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-6 space-y-5">
@@ -84,7 +86,7 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit }: { initial: Form
             <label className="block text-sm font-bold text-slate-700 mb-2 text-right">نوع البرنامج *</label>
             <select value={form.category || "active"} onChange={(e) => {
               const category = e.target.value as NonNullable<ResearchOpportunity["category"]>;
-              setForm({ ...form, category, status: category === "completed" ? "closed" : form.status, seatsLeft: category === "completed" ? 0 : form.seatsLeft, totalSeats: category === "completed" ? 0 : form.totalSeats });
+              setForm({ ...form, category, status: category === "completed" ? "seats_full" : form.status, seatsLeft: category === "completed" ? 0 : form.seatsLeft, totalSeats: category === "completed" ? Math.max(form.totalSeats, 1) : form.totalSeats });
             }} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50 text-right appearance-none">
               <option value="active">فرصة وبرنامج بحثي</option>
               <option value="completed">دراسة منجزة</option>
@@ -108,18 +110,27 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit }: { initial: Form
               </select>
             </div>
           </div>
-          {!isCompletedResearch && <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2 text-right">الحالة *</label>
-              <select required value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as ResearchOpportunity["status"] })} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50 text-right appearance-none">
-                <option value="open">مفتوح</option>
-                <option value="closed">مغلق</option>
-                <option value="upcoming">قادم</option>
-              </select>
+              {isCompletedResearch ? (
+                <select required value={completedStatus} onChange={(e) => setForm({ ...form, status: e.target.value as ResearchOpportunity["status"], seatsLeft: e.target.value === "seats_full" ? 0 : form.seatsLeft })} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50 text-right appearance-none">
+                  <option value="seats_full">اكتملت المقاعد</option>
+                  <option value="submitted">تم الرفع في المجلة</option>
+                  <option value="accepted">مقبولة</option>
+                  <option value="published">تم النشر</option>
+                </select>
+              ) : (
+                <select required value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as ResearchOpportunity["status"] })} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50 text-right appearance-none">
+                  <option value="open">مفتوح</option>
+                  <option value="closed">مغلق</option>
+                  <option value="upcoming">قادم</option>
+                </select>
+              )}
             </div>
-          </div>}
+          </div>
 
-          {!isCompletedResearch && <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2 text-right">المقاعد الإجمالية *</label>
               <input required type="number" min={1} value={form.totalSeats} onChange={(e) => setForm({ ...form, totalSeats: parseInt(e.target.value) || 12 })} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] text-center bg-slate-50" />
@@ -128,8 +139,7 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit }: { initial: Form
               <label className="block text-sm font-bold text-slate-700 mb-2 text-right">المقاعد المتبقية *</label>
               <input required type="number" min={0} value={form.seatsLeft} onChange={(e) => setForm({ ...form, seatsLeft: parseInt(e.target.value) || 0 })} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] text-center bg-slate-50" />
             </div>
-          </div>}
-          {isCompletedResearch && <div className="rounded-2xl border border-[#cce8dd] bg-[#f1fbf6] px-4 py-3 text-right text-sm leading-6 text-[#28634f]">سيُعرض هذا السجل ضمن الدراسات المنجزة والمنشورة، ولن يظهر فيه زر تسجيل الطلاب أو بيانات المقاعد.</div>}
+          </div>
 
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2 text-right">وصف الدراسة (بالعربية) *</label>
@@ -142,7 +152,7 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit }: { initial: Form
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">{isCompletedResearch ? "المجلة التي نُشر بها البحث *" : "المجلة المستهدفة *"}</label>
+              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">{isCompletedResearch ? "المجلة المستهدفة أو التي رُفع إليها البحث *" : "المجلة المستهدفة *"}</label>
               <input required type="text" value={form.journalTarget} onChange={(e) => setForm({ ...form, journalTarget: e.target.value })} placeholder="Journal Name (Q1)" className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50" dir="ltr" />
             </div>
             <div>
@@ -183,7 +193,7 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit }: { initial: Form
               إلغاء
             </button>
             <button type="submit" className="flex-1 bg-[#117b59] text-white font-bold py-3.5 rounded-2xl hover:bg-[#0c6549] transition-colors text-sm shadow-sm">
-               {isEdit ? "حفظ التعديلات" : (isCompletedResearch ? "إضافة البحث المنجز" : "إضافة الفرصة")}
+               {isEdit ? "حفظ التعديلات" : (isCompletedResearch ? "إضافة الدراسة" : "إضافة الفرصة")}
             </button>
           </div>
         </form>
@@ -369,6 +379,10 @@ const STATUS_MAP: Record<string, { label: string, className: string }> = {
   closed: { label: "مغلق", className: "bg-red-50 text-red-600" },
   draft: { label: "مسودة", className: "bg-slate-100 text-slate-600" },
   upcoming: { label: "قادم", className: "bg-amber-50 text-amber-600" },
+  seats_full: { label: "اكتملت المقاعد", className: "bg-teal-50 text-teal-700" },
+  submitted: { label: "تم الرفع في المجلة", className: "bg-sky-50 text-sky-700" },
+  accepted: { label: "مقبولة", className: "bg-violet-50 text-violet-700" },
+  published: { label: "تم النشر", className: "bg-[#e6f5ef] text-[#117b59]" },
 };
 
 function ProgramCard({ research, onRegister, onEdit, onDelete, canManage }: any) {
@@ -381,11 +395,12 @@ function ProgramCard({ research, onRegister, onEdit, onDelete, canManage }: any)
 
   const isFull = research.seatsLeft === 0;
   const isCompletedResearch = research.category === "completed";
-  const statusColor = research.status === 'open' && !isFull ? 'bg-[#e6f5ef] text-[#117b59]'
+  const statusColor = isCompletedResearch && STATUS_MAP[research.status] ? STATUS_MAP[research.status].className
+    : research.status === 'open' && !isFull ? 'bg-[#e6f5ef] text-[#117b59]'
     : research.status === 'closed' || isFull ? 'bg-red-50 text-red-600'
     : 'bg-amber-50 text-amber-600';
 
-  const statusLabel = isCompletedResearch ? 'دراسة منجزة'
+  const statusLabel = isCompletedResearch ? STATUS_MAP[research.status]?.label || 'دراسة منجزة'
     : research.status === 'open' && !isFull ? 'مفتوح للتسجيل'
     : isFull ? 'اكتملت المقاعد'
     : STATUS_MAP[research.status]?.label || research.status;
@@ -422,8 +437,16 @@ function ProgramCard({ research, onRegister, onEdit, onDelete, canManage }: any)
         {isCompletedResearch ? (
           <>
             <div className="flex items-center gap-2 text-slate-500 text-xs font-medium">
+              <Users size={14} className="text-slate-400" />
+              المقاعد: <span className="font-bold">{research.totalSeats}</span>
+            </div>
+            <div className="flex items-center gap-2 text-slate-500 text-xs font-medium">
+              <Clock size={14} className="text-slate-400" />
+              المتبقي: <span className="font-bold">{research.seatsLeft}</span>
+            </div>
+            <div className="flex items-center gap-2 text-slate-500 text-xs font-medium">
               <Award size={14} className="text-slate-400" />
-              <span className="truncate">{research.journalTarget || "بحث منشور"}</span>
+              <span className="truncate">{research.journalTarget || "المجلة المستهدفة"}</span>
             </div>
             <div className="flex items-center gap-2 text-slate-500 text-xs font-medium">
               <CheckCircle size={14} className="text-slate-400" />
@@ -448,7 +471,7 @@ function ProgramCard({ research, onRegister, onEdit, onDelete, canManage }: any)
         {isCompletedResearch ? (
           <Link href={`/research/${research.id}`} className="flex-1 bg-[#117b59] hover:bg-[#0c6549] text-white px-4 py-2.5 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2 shadow-sm">
             <Eye size={16} />
-            عرض البحث
+             عرض التفاصيل
           </Link>
         ) : (
           <button
@@ -500,9 +523,9 @@ export default function AdminDashboard() {
           setRole(result.role);
           setAccountName(result.coordinatorName || "");
         }
-        else { setAuthorized(false); setLocation("/coordinator-portal"); }
+        else { setAuthorized(false); setLocation("/coordinator"); }
       })
-      .catch(() => { setAuthorized(false); setLocation("/coordinator-portal"); });
+      .catch(() => { setAuthorized(false); setLocation("/coordinator"); });
   }, [setLocation]);
 
   useEffect(() => {
@@ -604,7 +627,7 @@ export default function AdminDashboard() {
 
   const handleLogout = async () => {
     await fetch("/api/coordinator/logout", { method: "POST" });
-    setLocation("/coordinator-portal");
+    setLocation("/coordinator");
   };
 
   const openNewResearch = (category: NonNullable<ResearchOpportunity["category"]>) => {
@@ -688,7 +711,7 @@ export default function AdminDashboard() {
            </div>
             <button type="button" onClick={() => { setView("programs"); setCategoryFilter("completed"); }} className="bg-white rounded-3xl border border-slate-200 p-6 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow text-right">
               <div>
-                <p className="text-slate-500 text-sm font-bold mb-2">الدراسات المنجزة والمنشورة</p>
+                <p className="text-slate-500 text-sm font-bold mb-2">الدراسات المنجزة</p>
                 <p className="text-3xl font-black text-slate-800">{stats.completed}</p>
               </div>
               <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
@@ -762,6 +785,27 @@ export default function AdminDashboard() {
                   </button>
                 )}
               </div>
+
+              {categoryFilter === "completed" && (
+                <section className="mb-7 rounded-[2rem] border-2 border-emerald-100 bg-gradient-to-l from-[#f8fffc] to-[#ecfbf4] p-6 text-right shadow-sm sm:p-8">
+                  <div className="flex flex-col items-start justify-between gap-5 sm:flex-row">
+                    <div>
+                      <p className="text-sm font-black text-[#117b59]">فهرس مراحل الدراسات البحثية</p>
+                      <h2 className="mt-1 text-2xl font-black text-slate-800">الدراسات المنجزة</h2>
+                      <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-600">يعرض هذا الفهرس الدراسات التي اكتملت مقاعدها أو وصلت إلى مراحل الرفع والقبول والنشر في المجلات العلمية.</p>
+                    </div>
+                    <div className="rounded-2xl bg-white px-5 py-3 text-center shadow-sm ring-1 ring-emerald-100">
+                      <p className="text-3xl font-black text-[#117b59]">{stats.completed}</p>
+                      <p className="mt-1 text-xs font-bold text-slate-500">دراسة في الفهرس</p>
+                    </div>
+                  </div>
+                  <div className="mt-6 flex flex-wrap gap-2">
+                    {["اكتملت المقاعد", "تم الرفع في المجلة", "مقبولة", "تم النشر"].map((stage) => (
+                      <span key={stage} className="rounded-full border border-emerald-200 bg-white/90 px-4 py-2 text-sm font-black text-[#117b59]">{stage}</span>
+                    ))}
+                  </div>
+                </section>
+              )}
 
               <div className="relative mb-10">
                 <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
@@ -885,7 +929,7 @@ export default function AdminDashboard() {
       {formOpen && (
         <ResearchFormModal
           isEdit={false}
-          initial={{ ...EMPTY_FORM, category: newCategory, status: newCategory === "completed" ? "closed" : "open", totalSeats: newCategory === "completed" ? 0 : 12, seatsLeft: newCategory === "completed" ? 0 : 12 }}
+          initial={{ ...EMPTY_FORM, category: newCategory, status: newCategory === "completed" ? "seats_full" : "open", totalSeats: 12, seatsLeft: newCategory === "completed" ? 0 : 12 }}
           onSave={handleAdd}
           onClose={() => setFormOpen(false)}
         />

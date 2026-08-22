@@ -114,7 +114,7 @@ function CoordinatorApproval({ requestId, fullName, phone, status, onUpdate }: {
       if (!response.ok || !result.accessCode) throw new Error(result.error || "تعذر إصدار الرمز");
       setMessage(`تم الإصدار: ${result.accessCode}`);
       const text = encodeURIComponent(
-        `مرحباً ${fullName}\nتم اعتمادك كمنسق في SRMA Research Academy.\n\nرمز الدخول الخاص بك: ${result.accessCode}\nبوابة المنسق: ${window.location.origin}/coordinator-portal\n\nاحتفظ بالرمز ولا تشاركه مع الآخرين.`
+        `مرحباً ${fullName}\nتم اعتمادك كمنسق في SRMA Research Academy.\n\nرمز الدخول الخاص بك: ${result.accessCode}\nبوابة المنسق: ${window.location.origin}/coordinator\n\nاحتفظ بالرمز ولا تشاركه مع الآخرين.`
       );
       window.open(`https://wa.me/${phone.replace(/\D/g, "")}?text=${text}`, "_blank");
       onUpdate();
@@ -160,9 +160,9 @@ export default function AdminSubmissions() {
           setAuthorized(true);
           setRole(result.role);
         }
-        else { setAuthorized(false); setLocation("/coordinator-portal"); }
+        else { setAuthorized(false); setLocation("/coordinator"); }
       })
-      .catch(() => { setAuthorized(false); setLocation("/coordinator-portal"); });
+      .catch(() => { setAuthorized(false); setLocation("/coordinator"); });
   }, [setLocation]);
 
   const fetchData = useCallback(async () => {
@@ -182,7 +182,7 @@ export default function AdminSubmissions() {
 
   const handleLogout = async () => {
     await fetch("/api/coordinator/logout", { method: "POST" });
-    setLocation("/coordinator-portal");
+    setLocation("/coordinator");
   };
 
   useEffect(() => { void fetchData(); }, [fetchData]);

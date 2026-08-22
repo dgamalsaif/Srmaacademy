@@ -7,7 +7,7 @@ const navLinks = [
   { href: "/knowledge-center", label: "مركز المعرفة" },
   { href: "/about", label: "عن المنصة" },
   { href: "/participant-portal", label: "بوابة المشارك", highlight: true },
-  { href: "/coordinator-portal", label: "بوابة المنسق" },
+  { href: "/coordinator", label: "بوابة المنسق" },
   { href: "/special-requests", label: "الطلبات الخاصة ⭐" },
 ];
 

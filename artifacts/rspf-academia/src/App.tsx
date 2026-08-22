@@ -23,14 +23,16 @@ const queryClient = new QueryClient();
 function Router() {
   const [location] = useLocation();
   const isAdmin = location === "/admin" || location === "/admin/submissions";
+  const isCoordinatorPortal = location === "/coordinator" || location === "/coordinator-portal";
 
   return (
     <div className="flex flex-col min-h-screen" style={{ fontFamily: "'Tajawal', sans-serif" }}>
-      {!isAdmin && <Navbar />}
+      {!isAdmin && !isCoordinatorPortal && <Navbar />}
       <main className="flex-1">
         <Switch>
           <Route path="/" component={Home} />
           <Route path="/participant-portal" component={ParticipantPortal} />
+          <Route path="/coordinator" component={CoordinatorPortal} />
           <Route path="/coordinator-portal" component={CoordinatorPortal} />
           <Route path="/special-requests" component={SpecialRequests} />
           <Route path="/knowledge-center" component={KnowledgeCenter} />
@@ -42,8 +44,8 @@ function Router() {
           <Route component={NotFound} />
         </Switch>
       </main>
-      {!isAdmin && <Footer />}
-      {!isAdmin && <FloatingButtons />}
+      {!isAdmin && !isCoordinatorPortal && <Footer />}
+      {!isAdmin && !isCoordinatorPortal && <FloatingButtons />}
     </div>
   );
 }

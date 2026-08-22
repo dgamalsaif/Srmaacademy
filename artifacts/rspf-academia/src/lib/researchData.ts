@@ -13,7 +13,7 @@ export interface ResearchOpportunity {
   descriptionEn?: string;
   seatsLeft: number;
   totalSeats: number;
-  status: "open" | "closed" | "draft" | "upcoming";
+  status: "open" | "closed" | "draft" | "upcoming" | "seats_full" | "submitted" | "accepted" | "published";
   journalTarget: string;
   indexedIn: string[];
   benefits: string[];

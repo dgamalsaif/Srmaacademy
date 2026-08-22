@@ -1,11 +1,91 @@
 import { useState } from "react";
-import { Shield, Eye, EyeOff, ArrowLeft, Headphones, X, CheckCircle2, Loader2, UserRound, Mail, Phone, Building2 } from "lucide-react";
-import { useLocation } from "wouter";
+import { Link, useLocation } from "wouter";
+import { Shield, Headphones, X, CheckCircle2, Loader2, UserRound, Mail, Phone, Building2, Menu, Microscope, Home, BookOpen, Info, GraduationCap, UsersRound, FileText } from "lucide-react";
 import CountrySelector from "@/components/CountrySelector";
+import FloatingButtons from "@/components/FloatingButtons";
+
+function CoordinatorHeader() {
+  const [location] = useLocation();
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const navLinks = [
+    { href: "/", label: "الرئيسية", icon: Home },
+    { href: "/knowledge-center", label: "مركز المعرفة", icon: BookOpen },
+    { href: "/about", label: "عن المنصة", icon: Info },
+    { href: "/participant-portal", label: "بوابة المشارك", icon: GraduationCap, portal: true },
+    { href: "/coordinator", label: "بوابة المنسق", icon: UsersRound, portal: true },
+    { href: "/special-requests", label: "الطلبات الخاصة", icon: FileText },
+  ];
+
+  return (
+    <header className="relative z-50 border-b border-slate-100 bg-white shadow-[0_2px_12px_rgba(22,48,67,0.05)]">
+      <div className="mx-auto flex h-[78px] max-w-[1450px] items-center justify-between gap-6 px-5 sm:px-8">
+        <Link href="/" data-testid="link-coordinator-logo" className="flex shrink-0 items-center gap-2.5">
+          <div className="text-right leading-none">
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-black text-[#e2a229]">2026</span>
+              <span className="text-[19px] font-black tracking-tight text-[#193d37]">SRMA</span>
+            </div>
+            <span className="mt-1 block text-[9px] font-medium tracking-wide text-slate-500">Research Academy</span>
+          </div>
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0d765c] text-white shadow-[0_5px_12px_rgba(13,118,92,0.22)]">
+            <Microscope size={20} />
+          </div>
+        </Link>
+
+        <nav className="hidden flex-1 items-center justify-center gap-1.5 lg:flex" aria-label="التنقل الرئيسي">
+          {navLinks.map(({ href, label, icon: Icon, portal }) => {
+            const active = location === href || (href === "/coordinator" && location === "/coordinator-portal");
+            return (
+              <Link
+                key={href}
+                href={href}
+                data-testid={`link-coordinator-nav-${label}`}
+                className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2.5 text-[13px] font-bold transition-all ${
+                  portal
+                    ? "bg-[#0d765c] text-white shadow-[0_7px_16px_rgba(13,118,92,0.16)] hover:bg-[#09634d]"
+                    : active
+                      ? "text-[#0d765c]"
+                      : "text-[#1e2b3a] hover:bg-slate-50 hover:text-[#0d765c]"
+                }`}
+              >
+                <Icon size={15} strokeWidth={2.2} />
+                {label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <button
+          type="button"
+          data-testid="button-coordinator-mobile-menu"
+          onClick={() => setMobileOpen((open) => !open)}
+          className="rounded-xl p-2 text-slate-700 transition hover:bg-slate-100 lg:hidden"
+          aria-label={mobileOpen ? "إغلاق القائمة" : "فتح القائمة"}
+        >
+          <Menu size={23} />
+        </button>
+      </div>
+      {mobileOpen && (
+        <nav className="border-t border-slate-100 bg-white px-5 pb-4 pt-2 lg:hidden" aria-label="التنقل للجوال">
+          {navLinks.map(({ href, label, icon: Icon, portal }) => (
+            <Link
+              key={href}
+              href={href}
+              onClick={() => setMobileOpen(false)}
+              className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-bold ${portal ? "text-[#0d765c]" : "text-slate-700"}`}
+            >
+              <Icon size={17} />
+              {label}
+            </Link>
+          ))}
+        </nav>
+      )}
+    </header>
+  );
+}
 
 export default function CoordinatorPortal() {
   const [password, setPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [requestOpen, setRequestOpen] = useState(false);
   const [, setLocation] = useLocation();
@@ -31,78 +111,56 @@ export default function CoordinatorPortal() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f8fa] flex items-center justify-center px-4 py-16">
-      <div className="w-full max-w-[430px]">
-        <div className="text-center mb-7">
-          <p className="text-sm font-bold text-[#0C3156] mb-2">بوابة المنسق — SRMA Research Academy</p>
-          <h1 className="text-2xl font-black text-[#172238]">بوابة المنسقين</h1>
-          <p className="text-sm text-slate-500 mt-2">سجّل دخولك برمز الوصول الخاص بك</p>
-        </div>
-
-        <div className="page-enter bg-white rounded-2xl shadow-[0_18px_45px_rgba(17,38,59,0.10)] border border-slate-200/80 p-8 text-center">
-          <div className="w-14 h-14 bg-[#e7f3ef] rounded-full flex items-center justify-center mx-auto mb-5">
-            <Shield size={27} className="text-[#117b59]" strokeWidth={2.2} />
+    <div className="min-h-screen bg-[#f5f7fa] text-[#172238]" dir="rtl">
+      <CoordinatorHeader />
+      <main className="flex min-h-[calc(100vh-78px)] justify-center px-4 pb-28 pt-20 sm:pt-40 lg:pt-[260px]">
+        <div className="w-full max-w-[448px]">
+          <div className="mb-7 text-center">
+            <p className="text-[17px] font-black text-[#172238]">SRMA Research Academy — بوابة المنسق</p>
           </div>
-          <h2 className="text-xl font-black text-[#172238] mb-2">دخول المنسق</h2>
-          <p className="text-slate-500 text-sm mb-7">أدخل رمز الدخول للوصول إلى لوحة إدارة الفرص والطلاب</p>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-             <input type="text" name="username" autoComplete="username" tabIndex={-1} aria-hidden="true" className="absolute h-0 w-0 opacity-0 pointer-events-none" />
-            <div className="relative">
-              <label htmlFor="coordinator-password" className="block text-right text-sm font-semibold text-[#263447] mb-2">
-                رمز الدخول
-              </label>
-              <input
-                id="coordinator-password"
-                data-testid="input-coordinator-password"
-                type={showPassword ? "text" : "password"}
-                required
-                autoComplete="current-password"
-                placeholder="أدخل الرمز هنا..."
-                value={password}
-                onChange={(e) => { setPassword(e.target.value); setError(""); }}
-                className={`w-full border rounded-xl px-5 py-3.5 text-right text-sm bg-white focus:outline-none focus:ring-2 transition-colors ${
-                  error ? "border-red-300 focus:ring-red-200" : "border-slate-200 focus:ring-[#117b59]/20 focus:border-[#117b59]"
-                }`}
-              />
-              <button
-                type="button"
-                data-testid="button-toggle-password"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
+          <div className="page-enter rounded-2xl border border-slate-200/80 bg-white p-8 text-center shadow-[0_16px_30px_rgba(17,38,59,0.12)]">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#e7f3ef]">
+              <Shield size={27} className="text-[#117b59]" strokeWidth={2.2} />
             </div>
-            {error && (
-              <p className="text-red-500 text-sm text-right bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
-            )}
-            <button
-              data-testid="button-coordinator-login"
-              type="submit"
-              className="w-full bg-[#117b59] text-white font-bold py-3.5 rounded-xl hover:bg-[#0c6549] transition-colors text-base shadow-[0_8px_18px_rgba(17,123,89,0.18)] flex items-center justify-center gap-2"
-            >
-              دخول
-              <ArrowLeft size={17} />
-            </button>
-          </form>
+            <h1 className="mb-2 text-xl font-black text-[#172238]">بوابة المنسقين</h1>
+            <p className="mb-7 text-sm text-slate-500">سجّل دخولك برمز الوصول الخاص بك</p>
 
-          <div className="mt-6 pt-5 border-t border-slate-100">
-            <p className="text-sm text-slate-500">
-              لا تملك حساباً؟{" "}
-              <button type="button" onClick={() => setRequestOpen(true)}
-                data-testid="link-coordinator-help"
-                className="text-[#117b59] font-bold hover:underline inline-flex items-center gap-1">
-                سجّل الآن
-                <Headphones size={14} />
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <input type="text" name="username" autoComplete="username" tabIndex={-1} aria-hidden="true" className="absolute h-0 w-0 opacity-0 pointer-events-none" />
+              <div>
+                <label htmlFor="coordinator-password" className="mb-2 block text-right text-sm font-semibold text-[#263447]">رمز الدخول</label>
+                <input
+                  id="coordinator-password"
+                  data-testid="input-coordinator-password"
+                  type="password"
+                  required
+                  autoComplete="current-password"
+                  placeholder="أدخل الرمز هنا..."
+                  value={password}
+                  onChange={(e) => { setPassword(e.target.value); setError(""); }}
+                  className={`w-full rounded-xl border bg-white px-5 py-3.5 text-right text-sm outline-none transition-colors ${error ? "border-red-300 focus:ring-2 focus:ring-red-200" : "border-slate-200 focus:border-[#117b59] focus:ring-2 focus:ring-[#117b59]/20"}`}
+                />
+              </div>
+              {error && <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-right text-sm text-red-500">{error}</p>}
+              <button data-testid="button-coordinator-login" type="submit" className="w-full rounded-xl bg-[#117b59] py-3.5 text-base font-bold text-white shadow-[0_8px_18px_rgba(17,123,89,0.18)] transition-colors hover:bg-[#0c6549]">
+                دخول
               </button>
-            </p>
+            </form>
+
+            <div className="mt-5 border-t border-slate-100 pt-5">
+              <p className="text-sm text-slate-500">
+                لا تملك حساباً؟{" "}
+                <button type="button" onClick={() => setRequestOpen(true)} data-testid="link-coordinator-help" className="font-bold text-[#117b59] hover:underline">
+                  سجّل الآن
+                </button>
+              </p>
+            </div>
           </div>
+          <p className="mt-6 text-center text-xs text-slate-400">البوابة مخصصة للمنسقين المعتمدين فقط</p>
         </div>
-        <p className="text-center text-xs text-slate-400 mt-6">
-          البوابة مخصصة للمنسقين المعتمدين فقط
-        </p>
-      </div>
+      </main>
+      <FloatingButtons />
       {requestOpen && <CoordinatorRequestModal onClose={() => setRequestOpen(false)} />}
     </div>
   );

@@ -6,7 +6,7 @@ export default function FloatingButtons() {
         target="_blank"
         rel="noopener noreferrer"
         data-testid="button-float-telegram"
-        className="w-12 h-12 rounded-full bg-[#0C3156] flex items-center justify-center shadow-xl hover:scale-110 transition-transform"
+        className="w-12 h-12 rounded-full bg-[#0C765C] flex items-center justify-center shadow-xl hover:scale-110 transition-transform"
         title="Telegram - SRMA Academy"
       >
         <svg viewBox="0 0 24 24" fill="white" className="w-6 h-6">
