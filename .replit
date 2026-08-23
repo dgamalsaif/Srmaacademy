@@ -42,3 +42,6 @@ channel = "stable-25_05"
 
 [userenv.production]
 OWNER_BOOTSTRAP_EMAIL = "srmaacademy@gmail.com"
+
+[objectStorage]
+defaultBucketID = "replit-objstore-442cdd4b-4c2b-4e0c-8cd7-66ed9b315524"

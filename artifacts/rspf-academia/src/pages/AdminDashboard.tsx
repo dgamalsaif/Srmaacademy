@@ -653,23 +653,23 @@ export default function AdminDashboard() {
   const ownerWorkspace = location === "/admin";
 
   useEffect(() => {
-    fetch("/api/coordinator/session", { cache: "no-store", credentials: "same-origin" })
+    const workspace = ownerWorkspace ? "owner" : "coordinator";
+    fetch(`/api/coordinator/session?workspace=${workspace}`, { cache: "no-store", credentials: "same-origin" })
       .then((response) => {
         if (!response.ok) throw new Error("Unable to verify staff session");
         return response.json() as Promise<{ authenticated?: boolean; role?: "owner" | "coordinator"; coordinatorName?: string | null }>;
       })
       .then((result) => {
-        if (result.authenticated && result.role) {
-          if (ownerWorkspace && result.role !== "owner") {
-            setAuthorized(false);
-            setLocation("/coordinator/dashboard");
-            return;
-          }
+        const expectedRole = ownerWorkspace ? "owner" : "coordinator";
+        if (result.authenticated && result.role === expectedRole) {
           setAuthorized(true);
           setRole(result.role);
           setAccountName(result.coordinatorName || "");
         }
-        else { setAuthorized(false); setLocation(ownerWorkspace ? "/sign-in" : "/coordinator"); }
+        else {
+          setAuthorized(false);
+          setLocation(ownerWorkspace ? "/sign-in" : "/coordinator");
+        }
       })
       .catch(() => { setAuthorized(false); setLocation(ownerWorkspace ? "/sign-in" : "/coordinator"); });
   }, [ownerWorkspace, setLocation]);
@@ -979,7 +979,7 @@ export default function AdminDashboard() {
             <Landmark size={18} className={view === 'programs' ? 'text-emerald-100' : 'text-slate-400'} />
             إدارة البرامج
           </button>
-            <Link href="/admin/submissions" className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
+             <Link href={canManage ? "/admin/submissions" : "/coordinator/submissions"} className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
              <Users size={18} className="text-slate-400" />
               {canManage ? "الطلاب المسجلون" : "طلابي المسجلون"}
             </Link>

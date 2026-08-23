@@ -78,16 +78,28 @@ router.get("/coordinator/session", async (req, res) => {
   res.setHeader("Cache-Control", "no-store, max-age=0");
   res.setHeader("Vary", "Cookie");
 
-  const owner = await getManagedOwner(req);
-  if (owner) {
-    res.json({
-      authenticated: true,
-      role: "owner",
-      coordinatorId: null,
-      coordinatorName: owner.fullName,
-    });
+  const requestedWorkspace = typeof req.query.workspace === "string" ? req.query.workspace : null;
+  const allowsOwner = requestedWorkspace !== "coordinator";
+  const allowsCoordinator = requestedWorkspace !== "owner";
+
+  if (allowsOwner) {
+    const owner = await getManagedOwner(req);
+    if (owner) {
+      res.json({
+        authenticated: true,
+        role: "owner",
+        coordinatorId: null,
+        coordinatorName: owner.fullName,
+      });
+      return;
+    }
+  }
+
+  if (!allowsCoordinator) {
+    res.json({ authenticated: false, role: null, coordinatorId: null, coordinatorName: null });
     return;
   }
+
   const session = readSession(req.cookies?.srma_coordinator_session);
   const [coordinator] = session?.role === "coordinator" && session.coordinatorId
     ? await db.select({ fullName: coordinatorsTable.fullName })

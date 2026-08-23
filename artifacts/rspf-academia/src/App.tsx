@@ -55,7 +55,7 @@ const clerkAppearance = {
 function Router() {
   const [location] = useLocation();
   const { language } = useLanguage();
-  const isAdmin = location === "/admin" || location === "/admin/submissions" || location === "/owner-admin" || location === "/sign-in" || location.startsWith("/sign-in/") || location === "/sign-up" || location.startsWith("/sign-up/") || location === "/coordinator/dashboard";
+  const isAdmin = location === "/admin" || location === "/admin/submissions" || location === "/owner-admin" || location === "/sign-in" || location.startsWith("/sign-in/") || location === "/sign-up" || location.startsWith("/sign-up/") || location === "/coordinator/dashboard" || location === "/coordinator/submissions";
   const isCoordinatorPortal = location === "/coordinator" || location === "/coordinator-portal";
   const isPrivate = isAdmin || isCoordinatorPortal;
 
@@ -82,6 +82,7 @@ function Router() {
             <Route path="/sign-in/*?" component={OwnerSignIn} />
             <Route path="/sign-up/*?" component={OwnerSignUp} />
             <Route path="/coordinator/dashboard" component={AdminDashboard} />
+            <Route path="/coordinator/submissions" component={AdminSubmissions} />
             <Route path="/research/:id" component={ResearchDetail} />
             <Route component={NotFound} />
           </Switch>

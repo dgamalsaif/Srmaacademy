@@ -242,7 +242,7 @@ export default function AdminSubmissions() {
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState("");
   const [selectedResearchId, setSelectedResearchId] = useState<number | "all">("all");
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { signOut } = useClerk();
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [role, setRole] = useState<"owner" | "coordinator" | null>(null);
@@ -251,17 +251,19 @@ export default function AdminSubmissions() {
   const [mutationError, setMutationError] = useState("");
 
   useEffect(() => {
-    fetch("/api/coordinator/session")
+    const workspace = location.startsWith("/coordinator/") ? "coordinator" : "owner";
+    fetch(`/api/coordinator/session?workspace=${workspace}`, { cache: "no-store", credentials: "same-origin" })
       .then((response) => response.json() as Promise<{ authenticated?: boolean; role?: "owner" | "coordinator" }>)
       .then((result) => {
-        if (result.authenticated && result.role) {
+        const expectedRole = workspace === "owner" ? "owner" : "coordinator";
+        if (result.authenticated && result.role === expectedRole) {
           setAuthorized(true);
           setRole(result.role);
         }
-        else { setAuthorized(false); setLocation(result.authenticated ? "/coordinator/dashboard" : "/sign-in"); }
+        else { setAuthorized(false); setLocation(workspace === "owner" ? "/sign-in" : "/coordinator"); }
       })
-      .catch(() => { setAuthorized(false); setLocation("/sign-in"); });
-  }, [setLocation]);
+      .catch(() => { setAuthorized(false); setLocation(workspace === "owner" ? "/sign-in" : "/coordinator"); });
+  }, [location, setLocation]);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
