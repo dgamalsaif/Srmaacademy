@@ -15,6 +15,10 @@ export interface ResearchOpportunity {
   totalSeats: number;
   status: "open" | "closed" | "draft" | "upcoming" | "seats_full" | "submitted" | "accepted" | "published";
   journalTarget: string;
+  journalIssn?: string;
+  journalPubmed?: string;
+  journalScopus?: string;
+  journalWos?: string;
   indexedIn: string[];
   benefits: string[];
   duration: string;

@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, insertResearchProgramSchema, programCatalogBootstrapTable, researchProgramsTable } from "@workspace/db";
 import { desc, eq, sql } from "drizzle-orm";
 import { requireCoordinator, requireOwner } from "../middlewares/coordinatorAuth";
+import { getSiteContentSettings, OpportunityFieldId } from "../lib/siteContentSettings";
 
 const router = Router();
 
@@ -91,6 +92,15 @@ function toClient(row: typeof researchProgramsTable.$inferSelect) {
   };
 }
 
+async function validateRequiredProgramFields(data: Record<string, unknown>): Promise<OpportunityFieldId[]> {
+  const { requiredOpportunityFields } = await getSiteContentSettings();
+  return requiredOpportunityFields.filter((field) => {
+    const value = data[field];
+    if (Array.isArray(value)) return value.length === 0;
+    return typeof value === "string" ? value.trim().length === 0 : value === null || value === undefined;
+  });
+}
+
 router.get("/programs", async (_req, res) => {
   const rows = await listPrograms();
   res.json(rows.map(toClient));
@@ -105,6 +115,11 @@ router.post("/programs", requireOwner, async (req, res) => {
   const parsed = insertResearchProgramSchema.safeParse(body);
   if (!parsed.success) {
     res.status(400).json({ error: "بيانات الفرصة غير صحيحة", details: parsed.error.issues });
+    return;
+  }
+  const missingFields = await validateRequiredProgramFields(parsed.data as Record<string, unknown>);
+  if (missingFields.length) {
+    res.status(400).json({ error: "يرجى تعبئة الحقول الإلزامية للفرصة", fields: missingFields });
     return;
   }
   const [row] = await db.insert(researchProgramsTable).values(parsed.data).returning();
@@ -124,11 +139,17 @@ router.patch("/programs/:id", requireOwner, async (req, res) => {
     res.status(400).json({ error: "بيانات الفرصة غير صحيحة", details: parsed.error.issues });
     return;
   }
-  const [row] = await db.update(researchProgramsTable).set(parsed.data).where(eq(researchProgramsTable.id, id)).returning();
-  if (!row) {
+  const [current] = await db.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, id)).limit(1);
+  if (!current) {
     res.status(404).json({ error: "الفرصة غير موجودة" });
     return;
   }
+  const missingFields = await validateRequiredProgramFields({ ...current, ...parsed.data });
+  if (missingFields.length) {
+    res.status(400).json({ error: "يرجى تعبئة الحقول الإلزامية للفرصة", fields: missingFields });
+    return;
+  }
+  const [row] = await db.update(researchProgramsTable).set(parsed.data).where(eq(researchProgramsTable.id, id)).returning();
   res.json(toClient(row));
 });
 

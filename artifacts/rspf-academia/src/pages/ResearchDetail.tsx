@@ -158,7 +158,16 @@ export default function ResearchDetail() {
                 <div className="py-2 border-b border-slate-100 text-right">
                   <span className="text-sm text-slate-500 block mb-1">{isCompletedResearch ? "المجلة أو جهة النشر" : "المجلة المستهدفة"}</span>
                   <span className="font-semibold text-slate-800 text-sm">{research.journalTarget || "—"}</span>
+                  {research.journalIssn && <span className="mt-1 block text-xs font-medium text-slate-500" dir="ltr">ISSN: {research.journalIssn}</span>}
                 </div>
+                {(research.journalPubmed || research.journalScopus || research.journalWos) && <div className="py-2 border-b border-slate-100 text-right">
+                  <span className="text-sm text-slate-500 block mb-2">الفهرسة والتصنيف</span>
+                  <div className="flex flex-wrap justify-end gap-2">
+                    {research.journalPubmed && <span className="rounded-lg bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">PubMed: {research.journalPubmed}</span>}
+                    {research.journalScopus && <span className="rounded-lg bg-orange-50 px-2 py-1 text-xs font-bold text-orange-700">Scopus: {research.journalScopus}</span>}
+                    {research.journalWos && <span className="rounded-lg bg-violet-50 px-2 py-1 text-xs font-bold text-violet-700">WOS: {research.journalWos}</span>}
+                  </div>
+                </div>}
                 <div className="py-2 text-right">
                   <span className="text-sm text-slate-500 block mb-1">المشرف</span>
                   <span className="font-semibold text-[#0C3156] text-sm">{research.supervisor || "—"}</span>

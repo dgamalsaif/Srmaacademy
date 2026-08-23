@@ -132,7 +132,7 @@ export default function ParticipantPortal() {
                             if (part === "description") return <p key={part}>{opp.descriptionAr || opp.description}</p>;
                             if (part === "duration" && opp.duration) return <p key={part}><strong>المدة:</strong> {opp.duration}</p>;
                             if (part === "supervisor" && opp.supervisor) return <p key={part}><strong>المشرف:</strong> {opp.supervisor}</p>;
-                            if (part === "journal" && opp.journalTarget) return <p key={part}><strong>المجلة المستهدفة:</strong> {opp.journalTarget}</p>;
+                            if (part === "journal" && opp.journalTarget) return <div key={part} className="space-y-1"><p><strong>المجلة المستهدفة:</strong> {opp.journalTarget}</p>{opp.journalIssn && <p className="text-xs"><strong>ISSN:</strong> {opp.journalIssn}</p>}</div>;
                             return null;
                           })}
                         </div>

@@ -6,7 +6,7 @@ import RegistrationModal from "@/components/RegistrationModal";
 import CoordinatorPortalSettingsPanel from "@/components/CoordinatorPortalSettingsPanel";
 import { CoordinatorPortalSettings, DEFAULT_COORDINATOR_PORTAL_SETTINGS } from "@/lib/coordinatorPortalSettings";
 import ContentControlPanel from "@/components/ContentControlPanel";
-import { DEFAULT_SITE_CONTENT_SETTINGS, SiteContentSettings } from "@/lib/siteContentSettings";
+import { DEFAULT_SITE_CONTENT_SETTINGS, OpportunityFieldId, SiteContentSettings } from "@/lib/siteContentSettings";
 
 const EMPTY_FORM: Omit<ResearchOpportunity, "id" | "createdAt"> = {
   category: "active",
@@ -24,6 +24,10 @@ const EMPTY_FORM: Omit<ResearchOpportunity, "id" | "createdAt"> = {
   totalSeats: 12,
   status: "open",
   journalTarget: "",
+  journalIssn: "",
+  journalPubmed: "",
+  journalScopus: "",
+  journalWos: "",
   indexedIn: [],
   benefits: ["", "", ""],
   duration: "",
@@ -32,12 +36,30 @@ const EMPTY_FORM: Omit<ResearchOpportunity, "id" | "createdAt"> = {
 
 type FormData = Omit<ResearchOpportunity, "id" | "createdAt">;
 
-function ResearchFormModal({ initial, onSave, onClose, isEdit }: { initial: FormData; onSave: (data: FormData) => void; onClose: () => void; isEdit: boolean; }) {
+function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, settings }: { initial: FormData; onSave: (data: FormData) => void; onClose: () => void; isEdit: boolean; requiredFields: OpportunityFieldId[]; settings: SiteContentSettings; }) {
   const [form, setForm] = useState<FormData>({ ...initial, benefits: [...(initial.benefits || ["", "", ""])] });
   const [indexedStr, setIndexedStr] = useState((initial.indexedIn || []).join("، "));
   const [benefitsArr, setBenefitsArr] = useState<string[]>(initial.benefits?.length ? [...initial.benefits] : ["", "", ""]);
+  const [formError, setFormError] = useState("");
   const isCompletedResearch = form.category === "completed";
   const completedStatus = ["seats_full", "submitted", "accepted", "published"].includes(form.status) ? form.status : "seats_full";
+  const isRequired = (field: OpportunityFieldId) => requiredFields.includes(field);
+  const applySpecialty = (value: string, language: "ar" | "en") => {
+    const selected = settings.specialtyOptions.find((option) => language === "ar" ? option.nameAr === value : option.nameEn === value);
+    setForm(selected ? { ...form, specialtyAr: selected.nameAr, specialtyEn: selected.nameEn, specialty: selected.nameEn || selected.nameAr } : { ...form, [language === "ar" ? "specialtyAr" : "specialtyEn"]: value, specialty: language === "en" ? value : form.specialty });
+  };
+  const applyJournal = (value: string) => {
+    const selected = settings.journalOptions.find((journal) => journal.nameAr === value || journal.nameEn === value);
+    if (!selected) {
+      setForm({ ...form, journalTarget: value });
+      return;
+    }
+    const indexed = [["PubMed", selected.pubmed], ["Scopus", selected.scopus], ["WOS", selected.wos]]
+      .filter(([, classification]) => classification)
+      .map(([name]) => name);
+    setForm({ ...form, journalTarget: selected.nameEn || selected.nameAr, journalIssn: selected.issn, journalPubmed: selected.pubmed, journalScopus: selected.scopus, journalWos: selected.wos, indexedIn: indexed });
+    setIndexedStr(indexed.join("، "));
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +69,7 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit }: { initial: Form
     const title = form.titleEn || form.title;
     const description = form.descriptionAr || form.description;
     const specialtyColor = SPECIALTY_COLORS[specialty] || SPECIALTY_COLORS["Other"];
-    onSave({
+    const nextForm = {
       ...form,
       title,
       specialty,
@@ -61,8 +83,18 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit }: { initial: Form
       indexedIn,
       benefits,
       specialtyColor,
-       status: isCompletedResearch ? completedStatus as ResearchOpportunity["status"] : form.status,
+      status: isCompletedResearch ? completedStatus as ResearchOpportunity["status"] : form.status,
+    };
+    const missingRequiredField = requiredFields.some((field) => {
+      const value = nextForm[field];
+      return Array.isArray(value) ? value.length === 0 : typeof value === "string" ? value.trim().length === 0 : value === null || value === undefined;
     });
+    if (missingRequiredField) {
+      setFormError("يرجى تعبئة الحقول التي تم تحديدها كحقول إلزامية.");
+      return;
+    }
+    setFormError("");
+    onSave(nextForm);
   };
 
   return (
@@ -77,17 +109,17 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit }: { initial: Form
         <form onSubmit={handleSubmit} className="px-6 py-6 space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">عنوان البرنامج (بالعربية) *</label>
-              <input required type="text" value={form.titleAr || ""} onChange={(e) => setForm({ ...form, titleAr: e.target.value })} placeholder="عنوان البرنامج بالعربية" className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] text-right bg-slate-50" />
+              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">عنوان البرنامج (بالعربية){isRequired("titleAr") && " *"}</label>
+              <input required={isRequired("titleAr")} type="text" value={form.titleAr || ""} onChange={(e) => setForm({ ...form, titleAr: e.target.value })} placeholder="عنوان البرنامج بالعربية (اختياري)" className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] text-right bg-slate-50" />
             </div>
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">عنوان البرنامج (بالإنجليزية) *</label>
-              <input required type="text" value={form.titleEn || form.title} onChange={(e) => setForm({ ...form, titleEn: e.target.value, title: e.target.value })} placeholder="Program title..." className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50" dir="ltr" />
+              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">عنوان البرنامج (بالإنجليزية){isRequired("titleEn") && " *"}</label>
+              <input required={isRequired("titleEn")} type="text" value={form.titleEn || form.title} onChange={(e) => setForm({ ...form, titleEn: e.target.value, title: e.target.value })} placeholder="Program title (optional)" className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50" dir="ltr" />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2 text-right">نوع البرنامج *</label>
+            <label className="block text-sm font-bold text-slate-700 mb-2 text-right">نوع البرنامج</label>
             <select value={form.category || "active"} onChange={(e) => {
               const category = e.target.value as NonNullable<ResearchOpportunity["category"]>;
               setForm({ ...form, category, status: category === "completed" ? "seats_full" : form.status, seatsLeft: category === "completed" ? 0 : form.seatsLeft, totalSeats: category === "completed" ? Math.max(form.totalSeats, 1) : form.totalSeats });
@@ -101,31 +133,28 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit }: { initial: Form
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">التخصص (بالعربية) *</label>
-              <input required value={form.specialtyAr || ""} onChange={(e) => setForm({ ...form, specialtyAr: e.target.value })} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] text-right bg-slate-50" />
+              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">التخصص (بالعربية){isRequired("specialtyAr") && " *"}</label>
+              <input required={isRequired("specialtyAr")} list="specialties-ar" value={form.specialtyAr || ""} onChange={(e) => applySpecialty(e.target.value, "ar")} placeholder="اكتب أو اختر تخصصاً" className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] text-right bg-slate-50" />
+              <datalist id="specialties-ar">{settings.specialtyOptions.filter((option) => option.nameAr).map((option) => <option key={option.id} value={option.nameAr} />)}</datalist>
             </div>
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">التخصص (بالإنجليزية) *</label>
-              <select required value={form.specialtyEn || form.specialty} onChange={(e) => setForm({ ...form, specialtyEn: e.target.value, specialty: e.target.value })} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50 text-right appearance-none">
-                <option value="">اختر التخصص...</option>
-                {Object.keys(SPECIALTY_COLORS).map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
+              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">التخصص (بالإنجليزية){isRequired("specialtyEn") && " *"}</label>
+              <input required={isRequired("specialtyEn")} list="specialties-en" value={form.specialtyEn || form.specialty} onChange={(e) => applySpecialty(e.target.value, "en")} placeholder="Type or choose a specialty" className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50" dir="ltr" />
+              <datalist id="specialties-en">{[...new Set([...settings.specialtyOptions.map((option) => option.nameEn), ...Object.keys(SPECIALTY_COLORS)])].filter(Boolean).map((name) => <option key={name} value={name} />)}</datalist>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">الحالة *</label>
+              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">الحالة{isRequired("status") && " *"}</label>
               {isCompletedResearch ? (
-                <select required value={completedStatus} onChange={(e) => setForm({ ...form, status: e.target.value as ResearchOpportunity["status"], seatsLeft: e.target.value === "seats_full" ? 0 : form.seatsLeft })} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50 text-right appearance-none">
+                <select required={isRequired("status")} value={completedStatus} onChange={(e) => setForm({ ...form, status: e.target.value as ResearchOpportunity["status"], seatsLeft: e.target.value === "seats_full" ? 0 : form.seatsLeft })} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50 text-right appearance-none">
                   <option value="seats_full">اكتملت المقاعد</option>
                   <option value="submitted">تم الرفع في المجلة</option>
                   <option value="accepted">مقبولة</option>
                   <option value="published">تم النشر</option>
                 </select>
               ) : (
-                <select required value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as ResearchOpportunity["status"] })} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50 text-right appearance-none">
+                <select required={isRequired("status")} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as ResearchOpportunity["status"] })} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50 text-right appearance-none">
                   <option value="open">مفتوح</option>
                   <option value="closed">مغلق</option>
                   <option value="upcoming">قادم</option>
@@ -136,54 +165,74 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit }: { initial: Form
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">المقاعد الإجمالية *</label>
-              <input required type="number" min={1} value={form.totalSeats} onChange={(e) => setForm({ ...form, totalSeats: parseInt(e.target.value) || 12 })} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] text-center bg-slate-50" />
+              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">المقاعد الإجمالية{isRequired("totalSeats") && " *"}</label>
+              <input required={isRequired("totalSeats")} type="number" min={0} value={form.totalSeats} onChange={(e) => setForm({ ...form, totalSeats: parseInt(e.target.value) || 0 })} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] text-center bg-slate-50" />
             </div>
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">المقاعد المتبقية *</label>
-              <input required type="number" min={0} value={form.seatsLeft} onChange={(e) => setForm({ ...form, seatsLeft: parseInt(e.target.value) || 0 })} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] text-center bg-slate-50" />
+              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">المقاعد المتبقية{isRequired("seatsLeft") && " *"}</label>
+              <input required={isRequired("seatsLeft")} type="number" min={0} value={form.seatsLeft} onChange={(e) => setForm({ ...form, seatsLeft: parseInt(e.target.value) || 0 })} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] text-center bg-slate-50" />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2 text-right">وصف الدراسة (بالعربية) *</label>
-            <textarea required rows={4} value={form.descriptionAr || form.description} onChange={(e) => setForm({ ...form, descriptionAr: e.target.value, description: e.target.value })} placeholder="وصف شامل للدراسة البحثية..." className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] text-right resize-none bg-slate-50" />
+            <label className="block text-sm font-bold text-slate-700 mb-2 text-right">وصف الدراسة (بالعربية){isRequired("descriptionAr") && " *"}</label>
+            <textarea required={isRequired("descriptionAr")} rows={4} value={form.descriptionAr || form.description} onChange={(e) => setForm({ ...form, descriptionAr: e.target.value, description: e.target.value })} placeholder="وصف شامل للدراسة البحثية (اختياري)..." className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] text-right resize-none bg-slate-50" />
           </div>
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2 text-right">Description (English)</label>
-            <textarea rows={3} value={form.descriptionEn || ""} onChange={(e) => setForm({ ...form, descriptionEn: e.target.value })} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] resize-none bg-slate-50" dir="ltr" />
+            <label className="block text-sm font-bold text-slate-700 mb-2 text-right">Description (English){isRequired("descriptionEn") && " *"}</label>
+            <textarea required={isRequired("descriptionEn")} rows={3} value={form.descriptionEn || ""} onChange={(e) => setForm({ ...form, descriptionEn: e.target.value })} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] resize-none bg-slate-50" dir="ltr" />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">{isCompletedResearch ? "المجلة المستهدفة أو التي رُفع إليها البحث *" : "المجلة المستهدفة *"}</label>
-              <input required type="text" value={form.journalTarget} onChange={(e) => setForm({ ...form, journalTarget: e.target.value })} placeholder="Journal Name (Q1)" className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50" dir="ltr" />
+              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">{isCompletedResearch ? "المجلة المستهدفة أو التي رُفع إليها البحث" : "المجلة المستهدفة"}{isRequired("journalTarget") && " *"}</label>
+              <input required={isRequired("journalTarget")} list="journal-options" type="text" value={form.journalTarget} onChange={(e) => applyJournal(e.target.value)} placeholder="Type or choose a journal" className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50" dir="ltr" />
+              <datalist id="journal-options">{settings.journalOptions.flatMap((journal) => [journal.nameAr, journal.nameEn].filter(Boolean).map((name) => <option key={`${journal.id}-${name}`} value={name} />))}</datalist>
             </div>
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">مدة الدراسة *</label>
-              <input required type="text" value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} placeholder="8 أشهر" className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] text-right bg-slate-50" />
+              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">مدة الدراسة{isRequired("duration") && " *"}</label>
+              <input required={isRequired("duration")} type="text" value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} placeholder="8 أشهر (اختياري)" className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] text-right bg-slate-50" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">ISSN / eISSN{isRequired("journalIssn") && " *"}</label>
+              <input required={isRequired("journalIssn")} type="text" value={form.journalIssn || ""} onChange={(e) => setForm({ ...form, journalIssn: e.target.value })} placeholder="1234-5678" className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50" dir="ltr" />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">تصنيف PubMed{isRequired("journalPubmed") && " *"}</label>
+              <input required={isRequired("journalPubmed")} type="text" value={form.journalPubmed || ""} onChange={(e) => setForm({ ...form, journalPubmed: e.target.value })} placeholder="Indexed / PMC / Q1" className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50" dir="ltr" />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">تصنيف Scopus{isRequired("journalScopus") && " *"}</label>
+              <input required={isRequired("journalScopus")} type="text" value={form.journalScopus || ""} onChange={(e) => setForm({ ...form, journalScopus: e.target.value })} placeholder="Q1 / Q2 / Indexed" className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50" dir="ltr" />
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">تصنيف Web of Science{isRequired("journalWos") && " *"}</label>
+              <input required={isRequired("journalWos")} type="text" value={form.journalWos || ""} onChange={(e) => setForm({ ...form, journalWos: e.target.value })} placeholder="Q1 / ESCI / SCIE" className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50" dir="ltr" />
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2 text-right">المشرف</label>
-            <input type="text" value={form.supervisor} onChange={(e) => setForm({ ...form, supervisor: e.target.value })} placeholder="د. الاسم — التخصص" className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] text-right bg-slate-50" />
+            <label className="block text-sm font-bold text-slate-700 mb-2 text-right">المشرف{isRequired("supervisor") && " *"}</label>
+            <input required={isRequired("supervisor")} type="text" value={form.supervisor} onChange={(e) => setForm({ ...form, supervisor: e.target.value })} placeholder="د. الاسم — التخصص" className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] text-right bg-slate-50" />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2 text-right">قواعد البيانات (مفصولة بفاصلة)</label>
-            <input type="text" value={indexedStr} onChange={(e) => setIndexedStr(e.target.value)} placeholder="PubMed, Scopus, WoS" className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50" dir="ltr" />
+            <label className="block text-sm font-bold text-slate-700 mb-2 text-right">قواعد البيانات (مفصولة بفاصلة){isRequired("indexedIn") && " *"}</label>
+            <input required={isRequired("indexedIn")} type="text" value={indexedStr} onChange={(e) => setIndexedStr(e.target.value)} placeholder="PubMed, Scopus, WoS" className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50" dir="ltr" />
           </div>
 
           <div>
-            <label className="block text-sm font-bold text-slate-700 mb-2 text-right">مزايا المشاركة</label>
+            <label className="block text-sm font-bold text-slate-700 mb-2 text-right">مزايا المشاركة{isRequired("benefits") && " *"}</label>
             <div className="space-y-2">
               {benefitsArr.map((b, i) => (
                 <div key={i} className="flex gap-2 items-center">
                   <button type="button" onClick={() => setBenefitsArr((prev) => prev.filter((_, idx) => idx !== i))} className="text-red-400 hover:text-red-600 bg-red-50 p-2 rounded-xl flex-shrink-0 transition-colors">
                     <X size={16} />
                   </button>
-                  <input type="text" value={b} onChange={(e) => setBenefitsArr((prev) => prev.map((x, idx) => idx === i ? e.target.value : x))} placeholder={`الميزة ${i + 1}`} className="flex-1 border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] text-right bg-slate-50" />
+                  <input required={isRequired("benefits") && i === 0} type="text" value={b} onChange={(e) => setBenefitsArr((prev) => prev.map((x, idx) => idx === i ? e.target.value : x))} placeholder={`الميزة ${i + 1}`} className="flex-1 border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] text-right bg-slate-50" />
                 </div>
               ))}
               <button type="button" onClick={() => setBenefitsArr((prev) => [...prev, ""])} className="text-sm text-[#117b59] font-bold hover:bg-[#117b59]/5 px-4 py-2 rounded-xl transition-colors flex items-center gap-1 mt-2 border border-transparent hover:border-[#117b59]/20">
@@ -192,6 +241,7 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit }: { initial: Form
             </div>
           </div>
 
+          {formError && <p className="rounded-xl bg-red-50 px-4 py-3 text-center text-sm font-bold text-red-600">{formError}</p>}
           <div className="flex gap-3 pt-4 border-t border-slate-100">
             <button type="button" onClick={onClose} className="flex-1 border border-slate-200 text-slate-600 font-bold py-3.5 rounded-2xl hover:bg-slate-50 transition-colors text-sm shadow-sm">
               إلغاء
@@ -613,6 +663,10 @@ export default function AdminDashboard() {
     totalSeats: form.totalSeats,
     status: form.status === "draft" ? "upcoming" : form.status,
     journalTarget: form.journalTarget,
+    journalIssn: form.journalIssn || "",
+    journalPubmed: form.journalPubmed || "",
+    journalScopus: form.journalScopus || "",
+    journalWos: form.journalWos || "",
     indexedIn: form.indexedIn,
     benefits: form.benefits,
     duration: form.duration,
@@ -1056,6 +1110,8 @@ export default function AdminDashboard() {
           initial={{ ...EMPTY_FORM, category: newCategory, status: newCategory === "completed" ? "seats_full" : "open", totalSeats: 12, seatsLeft: newCategory === "completed" ? 0 : 12 }}
           onSave={handleAdd}
           onClose={() => setFormOpen(false)}
+          requiredFields={contentSettings.requiredOpportunityFields}
+          settings={contentSettings}
         />
       )}
 
@@ -1065,6 +1121,8 @@ export default function AdminDashboard() {
           initial={editItem}
           onSave={handleEdit}
           onClose={() => setEditItem(null)}
+          requiredFields={contentSettings.requiredOpportunityFields}
+          settings={contentSettings}
         />
       )}
 

@@ -29,6 +29,20 @@
       "when": 1787437500000,
       "tag": "0003_registration_custom_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1787572800000,
+      "tag": "0004_optional_program_metadata",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1787576400000,
+      "tag": "0005_journal_metadata",
+      "breakpoints": true
     }
   ]
 }

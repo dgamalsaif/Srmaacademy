@@ -4,6 +4,9 @@ import { eq } from "drizzle-orm";
 export type Audience = "participant" | "coordinator";
 type TitleLanguage = "arabic" | "english" | "both";
 type FieldId = "fullName" | "specialization" | "email" | "affiliation" | "whatsapp" | "city" | "orcid" | "country";
+export type OpportunityFieldId = "titleAr" | "titleEn" | "specialtyAr" | "specialtyEn" | "status" | "totalSeats" | "seatsLeft" | "descriptionAr" | "descriptionEn" | "journalTarget" | "journalIssn" | "journalPubmed" | "journalScopus" | "journalWos" | "duration" | "supervisor" | "indexedIn" | "benefits";
+export interface SpecialtyOption { id: string; nameAr: string; nameEn: string; }
+export interface JournalOption { id: string; nameAr: string; nameEn: string; issn: string; pubmed: string; scopus: string; wos: string; }
 type FieldType = "text" | "email" | "tel";
 
 export interface RegistrationFieldSetting {
@@ -32,12 +35,16 @@ export interface SiteContentSettings {
   coordinatorCardOrder: string[];
   visibleParticipantCardParts: string[];
   visibleCoordinatorCardParts: string[];
+  requiredOpportunityFields: OpportunityFieldId[];
+  specialtyOptions: SpecialtyOption[];
+  journalOptions: JournalOption[];
   registrationFields: RegistrationFieldSetting[];
 }
 
 export const SITE_CONTENT_KEY = "site-content";
 const IDS: FieldId[] = ["fullName", "specialization", "email", "affiliation", "whatsapp", "city", "orcid", "country"];
 const PARTS = ["description", "specialty", "seats", "duration", "supervisor", "journal", "benefits"];
+const OPPORTUNITY_FIELD_IDS: OpportunityFieldId[] = ["titleAr", "titleEn", "specialtyAr", "specialtyEn", "status", "totalSeats", "seatsLeft", "descriptionAr", "descriptionEn", "journalTarget", "journalIssn", "journalPubmed", "journalScopus", "journalWos", "duration", "supervisor", "indexedIn", "benefits"];
 
 export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
   participantTitle: "بوابة المشارك",
@@ -53,6 +60,9 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
   coordinatorCardOrder: ["specialty", "supervisor", "seats", "duration", "journal", "benefits", "description"],
   visibleParticipantCardParts: [...PARTS],
   visibleCoordinatorCardParts: [...PARTS],
+  requiredOpportunityFields: [],
+  specialtyOptions: [],
+  journalOptions: [],
   registrationFields: [
     { id: "fullName", label: "الاسم الكامل / Full Name", placeholder: "د. أحمد محمد", type: "text", requiredParticipant: true, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#117b59" },
     { id: "specialization", label: "التخصص الدقيق / Specialization", placeholder: "مثال: طب القلب", type: "text", requiredParticipant: true, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#117b59" },
@@ -87,6 +97,30 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
     return [...new Set(items)].length ? [...new Set(items)] : DEFAULT_SITE_CONTENT_SETTINGS[key];
   };
   const rawFields = Array.isArray(input.registrationFields) ? input.registrationFields : [];
+  const requiredOpportunityFields = Array.isArray(input.requiredOpportunityFields)
+    ? [...new Set(input.requiredOpportunityFields.filter((field): field is OpportunityFieldId => typeof field === "string" && OPPORTUNITY_FIELD_IDS.includes(field as OpportunityFieldId)))]
+    : DEFAULT_SITE_CONTENT_SETTINGS.requiredOpportunityFields;
+  const specialtyOptions = Array.isArray(input.specialtyOptions)
+    ? input.specialtyOptions.flatMap((item) => {
+      if (!item || typeof item !== "object") return [];
+      const value = item as Record<string, unknown>;
+      const nameAr = typeof value.nameAr === "string" ? value.nameAr.trim().slice(0, 120) : "";
+      const nameEn = typeof value.nameEn === "string" ? value.nameEn.trim().slice(0, 120) : "";
+      const id = typeof value.id === "string" && value.id.trim() ? value.id.trim().slice(0, 80) : `${nameAr}-${nameEn}`;
+      return nameAr || nameEn ? [{ id, nameAr, nameEn }] : [];
+    }).slice(0, 100)
+    : DEFAULT_SITE_CONTENT_SETTINGS.specialtyOptions;
+  const journalOptions = Array.isArray(input.journalOptions)
+    ? input.journalOptions.flatMap((item) => {
+      if (!item || typeof item !== "object") return [];
+      const value = item as Record<string, unknown>;
+      const get = (key: string, max = 120) => typeof value[key] === "string" ? (value[key] as string).trim().slice(0, max) : "";
+      const nameAr = get("nameAr");
+      const nameEn = get("nameEn");
+      const id = get("id", 80) || `${nameAr}-${nameEn}`;
+      return nameAr || nameEn ? [{ id, nameAr, nameEn, issn: get("issn", 30), pubmed: get("pubmed", 40), scopus: get("scopus", 40), wos: get("wos", 40) }] : [];
+    }).slice(0, 100)
+    : DEFAULT_SITE_CONTENT_SETTINGS.journalOptions;
   const suppliedIds = rawFields
     .map((field) => field && typeof field === "object" ? (field as Record<string, unknown>).id : null)
     .filter((id): id is FieldId => typeof id === "string" && IDS.includes(id as FieldId));
@@ -114,6 +148,9 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
     coordinatorCardOrder: parts("coordinatorCardOrder"),
     visibleParticipantCardParts: parts("visibleParticipantCardParts"),
     visibleCoordinatorCardParts: parts("visibleCoordinatorCardParts"),
+    requiredOpportunityFields,
+    specialtyOptions,
+    journalOptions,
     registrationFields: fields,
   };
 }

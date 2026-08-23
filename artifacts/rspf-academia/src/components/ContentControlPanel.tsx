@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronUp, Eye, EyeOff, Palette, Save, SlidersHorizontal } from "lucide-react";
-import { CARD_PARTS, RegistrationFieldSetting, SiteContentSettings } from "@/lib/siteContentSettings";
+import { useState } from "react";
+import { CARD_PARTS, OPPORTUNITY_FIELDS, OpportunityFieldId, RegistrationFieldSetting, SiteContentSettings, SpecialtyOption, JournalOption } from "@/lib/siteContentSettings";
 
 interface Props {
   settings: SiteContentSettings;
@@ -10,6 +11,8 @@ interface Props {
 }
 
 export default function ContentControlPanel({ settings, onChange, onSave, saving, message }: Props) {
+  const [specialtyDraft, setSpecialtyDraft] = useState({ nameAr: "", nameEn: "" });
+  const [journalDraft, setJournalDraft] = useState({ nameAr: "", nameEn: "", issn: "", pubmed: "", scopus: "", wos: "" });
   const update = <K extends keyof SiteContentSettings>(key: K, value: SiteContentSettings[K]) => onChange({ ...settings, [key]: value });
   const updateField = (index: number, changes: Partial<RegistrationFieldSetting>) => {
     const fields = [...settings.registrationFields];
@@ -35,6 +38,22 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
     if (target < 0 || target >= order.length) return;
     [order[index], order[target]] = [order[target], order[index]];
     update(key, order);
+  };
+  const toggleOpportunityFieldRequired = (fieldId: OpportunityFieldId) => {
+    const fields = settings.requiredOpportunityFields;
+    update("requiredOpportunityFields", fields.includes(fieldId) ? fields.filter((id) => id !== fieldId) : [...fields, fieldId]);
+  };
+  const addSpecialty = () => {
+    if (!specialtyDraft.nameAr.trim() && !specialtyDraft.nameEn.trim()) return;
+    const option: SpecialtyOption = { id: `specialty-${Date.now()}`, nameAr: specialtyDraft.nameAr.trim(), nameEn: specialtyDraft.nameEn.trim() };
+    update("specialtyOptions", [...settings.specialtyOptions, option]);
+    setSpecialtyDraft({ nameAr: "", nameEn: "" });
+  };
+  const addJournal = () => {
+    if (!journalDraft.nameAr.trim() && !journalDraft.nameEn.trim()) return;
+    const option: JournalOption = { id: `journal-${Date.now()}`, nameAr: journalDraft.nameAr.trim(), nameEn: journalDraft.nameEn.trim(), issn: journalDraft.issn.trim(), pubmed: journalDraft.pubmed.trim(), scopus: journalDraft.scopus.trim(), wos: journalDraft.wos.trim() };
+    update("journalOptions", [...settings.journalOptions, option]);
+    setJournalDraft({ nameAr: "", nameEn: "", issn: "", pubmed: "", scopus: "", wos: "" });
   };
 
   return (
@@ -70,6 +89,52 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
             </div>
           </Panel>
 
+          <Panel title="التخصصات المتاحة" icon={SlidersHorizontal}>
+            <p className="mb-5 text-sm leading-6 text-slate-500">أضف التخصصات التي تريد أن تظهر في نموذج الفرصة. يمكنك إدخال الاسم بالعربية أو الإنجليزية أو كليهما.</p>
+            <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+              <TextField label="التخصص بالعربية" value={specialtyDraft.nameAr} onChange={(value) => setSpecialtyDraft({ ...specialtyDraft, nameAr: value })} />
+              <TextField label="Specialty in English" value={specialtyDraft.nameEn} onChange={(value) => setSpecialtyDraft({ ...specialtyDraft, nameEn: value })} />
+              <button type="button" onClick={addSpecialty} className="mt-6 h-11 rounded-xl bg-[#117b59] px-4 text-sm font-black text-white transition hover:bg-[#0c6549]">إضافة تخصص</button>
+            </div>
+            <div className="mt-5 space-y-2">
+              {settings.specialtyOptions.length === 0 ? <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-500">لم تُضف تخصصات بعد.</p> : settings.specialtyOptions.map((option) => (
+                <div key={option.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <div><p className="font-bold text-slate-800">{option.nameAr || option.nameEn}</p>{option.nameAr && option.nameEn && <p className="mt-1 text-xs text-slate-500" dir="ltr">{option.nameEn}</p>}</div>
+                  <button type="button" onClick={() => update("specialtyOptions", settings.specialtyOptions.filter((item) => item.id !== option.id))} className="rounded-lg px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50">حذف</button>
+                </div>
+              ))}
+            </div>
+          </Panel>
+
+          <Panel title="المجلات والفهرسة العلمية" icon={SlidersHorizontal}>
+            <p className="mb-5 text-sm leading-6 text-slate-500">أضف اسم المجلة ورقم ISSN وتصنيفها أو حالتها في PubMed وScopus وWeb of Science. ستظهر في نموذج الفرصة لتختارها وتُملأ بياناتها تلقائياً.</p>
+            <div className="grid gap-3 md:grid-cols-2">
+              <TextField label="اسم المجلة بالعربية" value={journalDraft.nameAr} onChange={(value) => setJournalDraft({ ...journalDraft, nameAr: value })} />
+              <TextField label="Journal name in English" value={journalDraft.nameEn} onChange={(value) => setJournalDraft({ ...journalDraft, nameEn: value })} />
+              <TextField label="ISSN / eISSN" value={journalDraft.issn} onChange={(value) => setJournalDraft({ ...journalDraft, issn: value })} />
+              <TextField label="تصنيف PubMed" value={journalDraft.pubmed} onChange={(value) => setJournalDraft({ ...journalDraft, pubmed: value })} />
+              <TextField label="تصنيف Scopus" value={journalDraft.scopus} onChange={(value) => setJournalDraft({ ...journalDraft, scopus: value })} />
+              <TextField label="تصنيف Web of Science" value={journalDraft.wos} onChange={(value) => setJournalDraft({ ...journalDraft, wos: value })} />
+            </div>
+            <button type="button" onClick={addJournal} className="mt-4 rounded-xl bg-[#117b59] px-5 py-3 text-sm font-black text-white transition hover:bg-[#0c6549]">إضافة مجلة</button>
+            <div className="mt-5 space-y-3">
+              {settings.journalOptions.length === 0 ? <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-500">لم تُضف مجلات بعد.</p> : settings.journalOptions.map((journal) => (
+                <div key={journal.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div><p className="font-black text-slate-800">{journal.nameAr || journal.nameEn}</p>{journal.nameAr && journal.nameEn && <p className="mt-1 text-xs text-slate-500" dir="ltr">{journal.nameEn}</p>}</div>
+                    <button type="button" onClick={() => update("journalOptions", settings.journalOptions.filter((item) => item.id !== journal.id))} className="rounded-lg px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-100">حذف</button>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold text-slate-600">
+                    {journal.issn && <span className="rounded-lg bg-white px-2 py-1">ISSN: {journal.issn}</span>}
+                    {journal.pubmed && <span className="rounded-lg bg-white px-2 py-1">PubMed: {journal.pubmed}</span>}
+                    {journal.scopus && <span className="rounded-lg bg-white px-2 py-1">Scopus: {journal.scopus}</span>}
+                    {journal.wos && <span className="rounded-lg bg-white px-2 py-1">WOS: {journal.wos}</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Panel>
+
           <Panel title="حقول التسجيل" icon={SlidersHorizontal}>
             <p className="mb-5 text-sm leading-6 text-slate-500">يمكنك تغيير التسمية والنص المساعد واللون، وتحديد ظهور الحقل وإلزاميته بشكل مستقل للمشترك والمنسق. الأسهم تغيّر ترتيب الحقول في النموذج.</p>
             <div className="space-y-4">
@@ -99,6 +164,15 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                   </div>
                 </article>
               ))}
+            </div>
+          </Panel>
+          <Panel title="حقول إضافة وتعديل الفرص" icon={SlidersHorizontal}>
+            <p className="mb-5 text-sm leading-6 text-slate-500">حدّد الحقول التي تريد إلزام المالك بإدخالها عند إضافة أو تعديل فرصة. جميعها اختيارية حالياً.</p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {OPPORTUNITY_FIELDS.map((field) => {
+                const required = settings.requiredOpportunityFields.includes(field.id);
+                return <AudienceToggle key={field.id} label={required ? `${field.label} — إلزامي` : `${field.label} — اختياري`} active={required} onClick={() => toggleOpportunityFieldRequired(field.id)} />;
+              })}
             </div>
           </Panel>
         </div>
