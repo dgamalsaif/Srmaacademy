@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useClerk } from "@clerk/react";
 import { Link, useLocation } from "wouter";
-import { Plus, Pencil, Trash2, Eye, X, ChevronRight, LogOut, Search, Users, BookOpen, TrendingUp, AlertCircle, UserPlus, GraduationCap, Award, Landmark, LayoutDashboard, CreditCard, Settings, ClipboardList, CheckCircle, FlaskConical, Stethoscope, User, Clock, Copy, Check, Edit } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, X, ChevronRight, LogOut, Search, Users, BookOpen, TrendingUp, AlertCircle, UserPlus, GraduationCap, Award, Landmark, LayoutDashboard, CreditCard, Settings, ClipboardList, CheckCircle, FlaskConical, Stethoscope, User, Clock, Copy, Check, Edit, FileSpreadsheet } from "lucide-react";
 import { ResearchOpportunity, SPECIALTY_COLORS } from "@/lib/researchData";
 import RegistrationModal from "@/components/RegistrationModal";
 import CoordinatorPortalSettingsPanel from "@/components/CoordinatorPortalSettingsPanel";
@@ -14,6 +14,7 @@ import ResearchImagePicker from "@/components/ResearchImagePicker";
 import OpportunityMedia from "@/components/OpportunityMedia";
 import SpecialtyFilter, { buildSpecialtyOptions, specialtyMatches } from "@/components/SpecialtyFilter";
 import OwnerSecurityPanel from "@/components/OwnerSecurityPanel";
+import OpportunityImportModal from "@/components/OpportunityImportModal";
 
 const EMPTY_FORM: Omit<ResearchOpportunity, "id" | "createdAt"> = {
   category: "active",
@@ -192,7 +193,20 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, s
               <span className="rounded-xl bg-white px-2 py-2 text-amber-700">كاتب أول: 1</span>
               <span className="rounded-xl bg-white px-2 py-2 text-emerald-700">مؤلفون مشاركون: 14</span>
             </div>
-            {isEdit && <p className="mt-3 text-xs text-slate-500">المتاح حالياً: {form.seatsLeft} من 15. يُحدَّث تلقائياً بعد التسجيل أو الحذف.</p>}
+            {isEdit ? (
+              <div className="mt-4 rounded-xl border border-amber-200 bg-white p-3">
+                <label className="mb-2 block text-right text-xs font-black text-slate-700">المقاعد المتبقية فقط (من 15)</label>
+                <input
+                  type="number"
+                  min={0}
+                  max={15}
+                  value={form.seatsLeft}
+                  onChange={(event) => setForm({ ...form, seatsLeft: Math.max(0, Math.min(15, Number(event.target.value) || 0)) })}
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-center text-sm font-black text-[#0C3156] outline-none focus:border-[#117b59] focus:ring-2 focus:ring-[#117b59]/20"
+                />
+                <p className="mt-2 text-right text-[11px] leading-5 text-slate-500">لا يمكن تعديل إجمالي المقاعد. يتحقق النظام من أي تسجيلات محجوزة قبل الحفظ.</p>
+              </div>
+            ) : <p className="mt-3 text-xs text-slate-500">تبدأ الفرصة الجديدة بـ15 مقعداً متاحاً. يُحدَّث المتبقي تلقائياً بعد التسجيل أو الحذف.</p>}
           </div>
 
           <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4">
@@ -635,6 +649,7 @@ export default function AdminDashboard() {
   const [contentSettings, setContentSettings] = useState<SiteContentSettings>(DEFAULT_SITE_CONTENT_SETTINGS);
   const [contentSettingsSaving, setContentSettingsSaving] = useState(false);
   const [contentSettingsMessage, setContentSettingsMessage] = useState("");
+  const [importOpen, setImportOpen] = useState(false);
   const ownerWorkspace = location === "/admin";
 
   useEffect(() => {
@@ -755,6 +770,11 @@ export default function AdminDashboard() {
       setResearch((items) => items.filter((item) => item.id !== deleteItem.id));
       setDeleteItem(null);
     }
+  };
+
+  const handleImportComplete = (programs: ResearchOpportunity[], specialtyOptions: SiteContentSettings["specialtyOptions"]) => {
+    if (programs.length) setResearch((items) => [...programs, ...items]);
+    if (specialtyOptions.length) setContentSettings((settings) => ({ ...settings, specialtyOptions }));
   };
 
   const handlePaymentAdd = async (payment: Omit<PaymentRecord, "id">) => {
@@ -1012,10 +1032,16 @@ export default function AdminDashboard() {
                   ))}
                 </div>
                 {canManage && (
-                   <button onClick={() => openNewResearch(categoryFilter)} className="flex items-center gap-2 bg-[#117b59] text-white px-5 py-2.5 rounded-full text-sm font-bold hover:bg-[#0c6549] transition-colors shadow-sm whitespace-nowrap w-full md:w-auto justify-center">
-                    <Plus size={18} />
-                     {categoryFilter === "completed" ? "إضافة بحث منجز" : "إضافة فرصة"}
-                  </button>
+                  <div className="flex w-full flex-col gap-2 sm:flex-row md:w-auto">
+                    <button onClick={() => setImportOpen(true)} className="flex items-center justify-center gap-2 rounded-full border border-[#117b59]/25 bg-white px-5 py-2.5 text-sm font-bold text-[#117b59] shadow-sm transition-colors hover:bg-[#e6f5ef]">
+                      <FileSpreadsheet size={18} />
+                      استيراد Excel
+                    </button>
+                    <button onClick={() => openNewResearch(categoryFilter)} className="flex items-center justify-center gap-2 rounded-full bg-[#117b59] px-5 py-2.5 text-sm font-bold text-white shadow-sm transition-colors hover:bg-[#0c6549] whitespace-nowrap">
+                      <Plus size={18} />
+                       {categoryFilter === "completed" ? "إضافة بحث منجز" : "إضافة فرصة"}
+                    </button>
+                  </div>
                 )}
               </div>
 
@@ -1218,6 +1244,12 @@ export default function AdminDashboard() {
         <PaymentFormModal
           onSave={handlePaymentAdd}
           onClose={() => setPaymentFormOpen(false)}
+        />
+      )}
+      {importOpen && canManage && (
+        <OpportunityImportModal
+          onClose={() => setImportOpen(false)}
+          onImported={handleImportComplete}
         />
       )}
 

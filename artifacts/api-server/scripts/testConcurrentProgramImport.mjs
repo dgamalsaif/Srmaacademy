@@ -1,19 +1,10 @@
 const baseUrl = process.env.API_BASE_URL
   ?? (process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : "http://localhost:8080");
-const password = process.env.OWNER_ADMIN_PASSWORD;
+const cookie = process.env.TEST_OWNER_SESSION_COOKIE;
 
-if (!password) throw new Error("OWNER_ADMIN_PASSWORD must be available to run the import concurrency test.");
-
-async function signIn() {
-  const response = await fetch(`${baseUrl}/api/owner/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ password }),
-  });
-  if (!response.ok) throw new Error(`Owner sign-in failed with ${response.status}.`);
-  const cookie = response.headers.get("set-cookie");
-  if (!cookie) throw new Error("Owner sign-in did not return a session cookie.");
-  return cookie;
+if (!cookie) {
+  console.log("Skipped import concurrency test: provide TEST_OWNER_SESSION_COOKIE from a Clerk owner test session.");
+  process.exit(0);
 }
 
 async function importRows(cookie, rows) {
@@ -31,12 +22,12 @@ const title = `Concurrent import verification ${marker}`;
 const rows = [{
   specialtyAr: "اختبار التزامن",
   specialtyEn: "Concurrency Testing",
-  title,
-  totalSeats: 12,
+  titleAr: title,
+  titleEn: title,
   seatsLeft: 12,
 }];
 
-const cookies = await Promise.all([signIn(), signIn()]);
+  const cookies = [cookie, cookie];
 let importedId;
 try {
   const results = await Promise.all(cookies.map((cookie) => importRows(cookie, rows)));

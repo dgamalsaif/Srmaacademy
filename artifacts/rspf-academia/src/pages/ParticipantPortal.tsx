@@ -127,7 +127,7 @@ export default function ParticipantPortal() {
 
       <section className="py-10 px-4">
         <div className="max-w-5xl mx-auto">
-          <section data-testid="participant-welcome" className="srma-welcome-card mb-8 rounded-3xl border border-emerald-100 bg-gradient-to-l from-[#f3fbf8] via-white to-[#eff6ff] p-6 text-right shadow-sm sm:p-8">
+          <section data-testid="participant-welcome" className="srma-welcome-card mb-8 rounded-3xl border border-emerald-100 bg-gradient-to-l from-[#f3fbf8] via-white to-[#eff6ff] p-6 text-start shadow-sm sm:p-8">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-black text-[#117b59]">{localize("مرحباً بك في SRMA 👋", "Welcome to SRMA 👋")}</p>
@@ -144,7 +144,7 @@ export default function ParticipantPortal() {
           </section>
           {activeTab === 0 && (
             <>
-              <div className="flex items-center justify-between mb-6 flex-row-reverse">
+              <div className={`mb-6 flex items-center justify-between ${contentFlow}`}>
                 <h2 className="text-xl font-black text-slate-900">✨ {localize("الفرص البحثية المتاحة للتسجيل", "Research opportunities open for registration")}</h2>
                 <span className="bg-[#0C3156]/8 text-[#0C3156] text-xs font-bold px-3 py-1.5 rounded-full border border-[#0C3156]/12">
                    {localize(`${visibleOpportunities.length} فرصة متاحة`, `${visibleOpportunities.length} opportunities available`)}
@@ -246,7 +246,7 @@ export default function ParticipantPortal() {
                         </div>
                         <button data-testid={`button-copy-link-${opp.id}`}
                           className="w-full text-xs text-slate-400 hover:text-slate-600 py-2 mt-1"
-                          onClick={() => { navigator.clipboard.writeText(window.location.origin + `/api/programs/${opp.id}/share`); alert(localize("تم نسخ رابط المعاينة", "Preview link copied")); }}>
+                          onClick={() => { navigator.clipboard.writeText(window.location.origin + `/api/programs/${opp.id}/share?lang=${language}`); alert(localize("تم نسخ رابط المعاينة", "Preview link copied")); }}>
                           {localize("نسخ رابط المعاينة 🔗", "Copy preview link 🔗")}
                         </button>
                       </div>

@@ -7,3 +7,10 @@ uri = "file://attached_assets/generated_images/srma-opportunity-images-1600x1200
 type = "unspecified"
 title = "صور الفرص البحثية — 1600×1200"
 description = "45 صورة JPEG بنسبة 4:3، مرتبطة بفرص SRMA البحثية ومهيأة للاستخدام المستقبلي."
+
+[[outputs]]
+id = "-bqbvVif77zOwd24sn8Gj"
+uri = "file://exports/srma-research-opportunities-template.xlsx"
+type = "table"
+title = "قالب Excel لفرص SRMA"
+description = "قالب جاهز لاستيراد الفرص، مع صف مثال وتعليمات الحقول."

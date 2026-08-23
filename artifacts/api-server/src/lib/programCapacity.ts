@@ -3,8 +3,9 @@ import { eq, sql } from "drizzle-orm";
 
 const CAPACITY_MIGRATION_KEY = "program-capacity-and-author-roles-v1";
 const CAPACITY_MIGRATION_LOCK_ID = 4_218_999;
+export const PROGRAM_CAPACITY_LOCK_NAMESPACE = 4_219_000;
 
-type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+export type DatabaseTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /**
  * Applies the one-time legacy allocation model before any seats can be reserved.

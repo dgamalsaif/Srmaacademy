@@ -1,12 +1,12 @@
 import { raw, Router, type Request } from "express";
-import { db, insertResearchProgramSchema, programCatalogBootstrapTable, researchProgramsTable } from "@workspace/db";
+import { db, insertResearchProgramSchema, programCatalogBootstrapTable, registrationsTable, researchProgramsTable } from "@workspace/db";
 import { desc, eq, sql } from "drizzle-orm";
 import { readSession, requireOwner } from "../middlewares/coordinatorAuth";
 import { getManagedOwner } from "../middlewares/ownerAuth";
 import { getSiteContentSettings, OpportunityFieldId } from "../lib/siteContentSettings";
-import { importResearchOpportunities, PROGRAM_CATALOG_LOCK_ID, type ResearchOpportunityImportRow } from "../lib/researchOpportunityImport";
+import { addImportedSpecialties, importResearchOpportunities, PROGRAM_CATALOG_LOCK_ID, type ResearchOpportunityImportRow } from "../lib/researchOpportunityImport";
 import { getResearchImageUrl, ResearchImageValidationError, resolveResearchImageUploadToken, uploadResearchImage } from "../lib/researchImageStorage";
-import { ensureProgramCapacityModel } from "../lib/programCapacity";
+import { ensureProgramCapacityModel, PROGRAM_CAPACITY_LOCK_NAMESPACE, type DatabaseTransaction } from "../lib/programCapacity";
 
 const router = Router();
 
@@ -122,7 +122,7 @@ function toClient(row: typeof researchProgramsTable.$inferSelect) {
     supervisor: row.supervisor,
     specialtyColor: "bg-emerald-100 text-emerald-700",
     createdAt: row.createdAt.toISOString().slice(0, 10),
-    imageUrl: row.imagePath ? `/api/programs/${row.id}/image` : "",
+    imageUrl: row.imagePath ? `/api/programs/${row.id}/image` : `/api/programs/${row.id}/poster.svg`,
   };
 }
 
@@ -222,6 +222,20 @@ router.get("/programs/:id/image", async (req, res) => {
   }
 });
 
+router.get("/programs/:id/poster.svg", async (req, res) => {
+  const id = Number(req.params["id"]);
+  const [program] = await db.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, id)).limit(1);
+  const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session)) || Boolean(await getManagedOwner(req));
+  if (!program || (!isStaff && !isPublicProgram(program))) {
+    res.status(404).end();
+    return;
+  }
+  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Content-Disposition", "inline; filename=\"research-opportunity-poster.svg\"");
+  res.type("image/svg+xml").send(buildOpportunityPoster(program));
+});
+
 router.get("/programs/:id/share", async (req, res) => {
   const id = Number(req.params["id"]);
   const [program] = await db.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, id)).limit(1);
@@ -232,30 +246,32 @@ router.get("/programs/:id/share", async (req, res) => {
   }
 
   const origin = requestOrigin(req);
-  const destination = `${origin}/research/${program.id}`;
-  const title = program.titleAr || program.titleEn || "فرصة بحثية من SRMA";
-  const description = program.descriptionAr || program.descriptionEn || "اكتشف فرصة بحثية جديدة من SRMA Research Academy.";
+  const english = req.query.lang === "en";
+  const destination = `${origin}/research/${program.id}${english ? "?lang=en" : ""}`;
+  const title = (english ? program.titleEn : program.titleAr) || program.titleEn || program.titleAr || "Research opportunity from SRMA";
+  const specialty = (english ? program.specialtyEn : program.specialtyAr) || program.specialtyEn || program.specialtyAr;
+  const description = (english ? program.descriptionEn : program.descriptionAr) || program.descriptionEn || program.descriptionAr || "Discover a new research opportunity from SRMA Research Academy.";
   const image = program.imagePath ? `${origin}/api/programs/${program.id}/image` : `${origin}/srma-logo.jpg`;
 
   res.setHeader("Cache-Control", "no-store");
   res.type("html").send(`<!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="${english ? "en" : "ar"}" dir="${english ? "ltr" : "rtl"}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>${escapeHtml(title)} | SRMA Research Academy</title>
-  <meta name="description" content="${escapeHtml(description.slice(0, 180))}">
+  <title>${escapeHtml(title)}${specialty ? ` | ${escapeHtml(specialty)}` : ""} | SRMA Research Academy</title>
+  <meta name="description" content="${escapeHtml(`${specialty ? `${specialty} — ` : ""}${description}`.slice(0, 180))}">
   <link rel="canonical" href="${escapeHtml(destination)}">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="SRMA Research Academy">
-  <meta property="og:locale" content="ar_SA">
-  <meta property="og:title" content="${escapeHtml(title)}">
-  <meta property="og:description" content="${escapeHtml(description.slice(0, 180))}">
+  <meta property="og:locale" content="${english ? "en_US" : "ar_SA"}">
+  <meta property="og:title" content="${escapeHtml(`${title}${specialty ? ` | ${specialty}` : ""}`)}">
+  <meta property="og:description" content="${escapeHtml(`${specialty ? `${specialty} — ` : ""}${description}`.slice(0, 180))}">
   <meta property="og:url" content="${escapeHtml(destination)}">
   <meta property="og:image" content="${escapeHtml(image)}">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${escapeHtml(title)}">
-  <meta name="twitter:description" content="${escapeHtml(description.slice(0, 180))}">
+  <meta name="twitter:title" content="${escapeHtml(`${title}${specialty ? ` | ${specialty}` : ""}`)}">
+  <meta name="twitter:description" content="${escapeHtml(`${specialty ? `${specialty} — ` : ""}${description}`.slice(0, 180))}">
   <meta name="twitter:image" content="${escapeHtml(image)}">
   <meta http-equiv="refresh" content="0;url=${escapeHtml(destination)}">
 </head>
@@ -299,20 +315,18 @@ router.post("/programs/import", requireOwner, async (req, res) => {
     res.status(400).json({ error: "يرجى إرسال قائمة الفرص للاستيراد." });
     return;
   }
-  const rows: ResearchOpportunityImportRow[] = req.body.rows.flatMap((row: unknown) => {
+  const rows: ResearchOpportunityImportRow[] = req.body.rows.flatMap((row: unknown, index: number) => {
     if (!row || typeof row !== "object") return [];
     const value = row as Record<string, unknown>;
-    const totalSeats = Number(value.totalSeats);
-    const seatsLeft = Number(value.seatsLeft);
-    if (typeof value.specialtyAr !== "string" || typeof value.specialtyEn !== "string" || typeof value.title !== "string" || !Number.isFinite(totalSeats) || !Number.isFinite(seatsLeft)) return [];
-    return [{ specialtyAr: value.specialtyAr, specialtyEn: value.specialtyEn, title: value.title, totalSeats, seatsLeft }];
+    return [{ ...value, sourceRow: Number(value.sourceRow) || index + 2 }];
   });
   if (!rows.length) {
     res.status(400).json({ error: "لم يتم العثور على صفوف صالحة للاستيراد." });
     return;
   }
   const result = await importResearchOpportunities(rows);
-  res.status(201).json({ ...result, received: req.body.rows.length });
+  const specialtyOptions = await addImportedSpecialties(result.insertedSpecialties);
+  res.status(201).json({ ...result, inserted: result.inserted.map(toClient), specialtyOptions, received: req.body.rows.length });
 });
 
 router.patch("/programs/:id", requireOwner, async (req, res) => {
@@ -328,28 +342,41 @@ router.patch("/programs/:id", requireOwner, async (req, res) => {
     res.status(400).json({ error: "بيانات الفرصة غير صحيحة", details: parsed.error.issues });
     return;
   }
-  const [current] = await db.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, id)).limit(1);
-  if (!current) {
-    res.status(404).json({ error: "الفرصة غير موجودة" });
-    return;
-  }
   if (parsed.data.status && !isProgramStatus(parsed.data.status)) {
     res.status(400).json({ error: "حالة البحث غير معتمدة." });
     return;
   }
-  const priceOriginalSar = parsed.data.priceOriginalSar ?? current.priceOriginalSar;
-  const priceDiscountedSar = parsed.data.priceDiscountedSar ?? current.priceDiscountedSar;
-  if (priceOriginalSar < priceDiscountedSar || priceDiscountedSar < 0) {
-    res.status(400).json({ error: "يجب أن يكون السعر المخفض موجباً وأقل من السعر الأساسي." });
-    return;
+  try {
+    const row = await db.transaction(async (tx) => {
+      await ensureProgramCapacityModel(tx);
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(${PROGRAM_CAPACITY_LOCK_NAMESPACE + id})`);
+      const [current] = await tx.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, id)).limit(1);
+      if (!current) throw new ProgramUpdateError("الفرصة غير موجودة", 404);
+      const priceOriginalSar = parsed.data.priceOriginalSar ?? current.priceOriginalSar;
+      const priceDiscountedSar = parsed.data.priceDiscountedSar ?? current.priceDiscountedSar;
+      if (priceOriginalSar < priceDiscountedSar || priceDiscountedSar < 0) {
+        throw new ProgramUpdateError("يجب أن يكون السعر المخفض موجباً وأقل من السعر الأساسي.");
+      }
+      const seatOverride = await getSeatsLeftOverride(req.body?.seatsLeft, current, id, tx);
+      if (seatOverride.error) throw new ProgramUpdateError(seatOverride.error);
+      const missingFields = await validateRequiredProgramFields({ ...current, ...parsed.data });
+      if (missingFields.length) {
+        throw new ProgramUpdateError("يرجى تعبئة الحقول الإلزامية للفرصة", 400, missingFields);
+      }
+      const [row] = await tx.update(researchProgramsTable)
+        .set({ ...parsed.data, ...seatOverride.value, totalSeats: 15, firstAuthorSeats: 1, coAuthorSeats: 14 })
+        .where(eq(researchProgramsTable.id, id)).returning();
+      return row;
+    });
+    res.json(toClient(row));
+  } catch (error) {
+    if (error instanceof ProgramUpdateError) {
+      res.status(error.status).json({ error: error.message, ...(error.fields?.length ? { fields: error.fields } : {}) });
+      return;
+    }
+    req.log.error({ err: error, programId: id }, "Could not safely update research opportunity");
+    res.status(500).json({ error: "تعذر تحديث الفرصة الآن. يرجى المحاولة مرة أخرى." });
   }
-  const missingFields = await validateRequiredProgramFields({ ...current, ...parsed.data });
-  if (missingFields.length) {
-    res.status(400).json({ error: "يرجى تعبئة الحقول الإلزامية للفرصة", fields: missingFields });
-    return;
-  }
-  const [row] = await db.update(researchProgramsTable).set(parsed.data).where(eq(researchProgramsTable.id, id)).returning();
-  res.json(toClient(row));
 });
 
 router.delete("/programs/:id", requireOwner, async (req, res) => {
@@ -410,6 +437,84 @@ async function normalizeProgramPayload(source: Record<string, unknown>, mode: "c
 function numberOrDefault(value: unknown, fallback: number) {
   const number = typeof value === "number" ? value : Number(value);
   return Number.isInteger(number) && number >= 0 ? number : fallback;
+}
+
+class ProgramUpdateError extends Error {
+  constructor(message: string, readonly status = 400, readonly fields?: OpportunityFieldId[]) {
+    super(message);
+  }
+}
+
+async function getSeatsLeftOverride(value: unknown, current: typeof researchProgramsTable.$inferSelect, programId: number, tx: DatabaseTransaction) {
+  if (value === undefined || value === null || value === "") return { value: {} };
+  const requested = typeof value === "number" ? value : Number(value);
+  if (!Number.isInteger(requested) || requested < 0 || requested > 15) {
+    return { error: "المقاعد المتبقية يجب أن تكون رقماً صحيحاً بين 0 و15." };
+  }
+  const registrations = await tx.select({ authorRole: registrationsTable.authorRole })
+    .from(registrationsTable).where(eq(registrationsTable.researchId, programId));
+  const firstAuthorUsed = registrations.filter((registration) => registration.authorRole === "first_author").length;
+  const coAuthorUsed = registrations.length - firstAuthorUsed;
+  const maximumRemaining = Math.max(0, 15 - registrations.length);
+  if (requested > maximumRemaining) {
+    return { error: `لا يمكن ضبط المقاعد المتبقية على ${requested}؛ يوجد ${registrations.length} تسجيل محجوز بالفعل.` };
+  }
+  const firstAuthorCapacity = Math.max(0, 1 - firstAuthorUsed);
+  const firstAuthorSeatsLeft = Math.min(firstAuthorCapacity, requested);
+  const coAuthorSeatsLeft = Math.min(Math.max(0, 14 - coAuthorUsed), requested - firstAuthorSeatsLeft);
+  const seatsLeft = firstAuthorSeatsLeft + coAuthorSeatsLeft;
+  return {
+    value: {
+      seatsLeft,
+      firstAuthorSeatsLeft,
+      coAuthorSeatsLeft,
+      status: seatsLeft === 0 ? "seats_full" : current.status === "seats_full" && current.category !== "completed" ? "open" : current.status,
+    },
+  };
+}
+
+function buildOpportunityPoster(program: typeof researchProgramsTable.$inferSelect) {
+  const title = program.titleEn || program.titleAr || "Research opportunity";
+  const specialty = program.specialtyAr || program.specialtyEn || "SRMA Research Academy";
+  const titleLines = splitPosterText(title, 39, 3);
+  const specialtyLines = splitPosterText(specialty, 30, 2);
+  const titleSvg = titleLines.map((line, index) => `<text x="90" y="${365 + index * 58}" fill="#ffffff" font-family="Arial, sans-serif" font-size="38" font-weight="700">${escapeXml(line)}</text>`).join("");
+  const specialtySvg = specialtyLines.map((line, index) => `<text x="90" y="${245 + index * 42}" fill="#83e6c4" font-family="Arial, sans-serif" font-size="27" font-weight="700">${escapeXml(line)}</text>`).join("");
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" role="img" aria-label="${escapeXml(title)}">
+    <defs>
+      <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#061b31"/><stop offset=".55" stop-color="#0c3156"/><stop offset="1" stop-color="#092640"/></linearGradient>
+      <radialGradient id="glow"><stop stop-color="#13a879" stop-opacity=".7"/><stop offset="1" stop-color="#13a879" stop-opacity="0"/></radialGradient>
+      <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse"><path d="M 48 0 L 0 0 0 48" fill="none" stroke="#8ee0c3" stroke-opacity=".12" stroke-width="1"/></pattern>
+    </defs>
+    <rect width="1200" height="900" fill="url(#bg)"/><rect width="1200" height="900" fill="url(#grid)"/>
+    <circle cx="935" cy="330" r="300" fill="url(#glow)"/><circle cx="935" cy="330" r="190" fill="none" stroke="#8ee0c3" stroke-opacity=".45" stroke-width="3"/><circle cx="935" cy="330" r="132" fill="none" stroke="#8ee0c3" stroke-opacity=".26" stroke-width="2"/>
+    <path d="M935 160v340M765 330h340M815 210l240 240M1055 210L815 450" stroke="#8ee0c3" stroke-opacity=".18" stroke-width="2"/>
+    <rect x="70" y="70" width="430" height="74" rx="20" fill="#0f725a" fill-opacity=".88"/><text x="105" y="118" fill="#ffffff" font-family="Arial, sans-serif" font-size="30" font-weight="800">SRMA RESEARCH ACADEMY</text>
+    <text x="90" y="195" fill="#d8f7ed" font-family="Arial, sans-serif" font-size="22" font-weight="700">RESEARCH OPPORTUNITY</text>
+    ${specialtySvg}${titleSvg}
+    <rect x="90" y="650" width="430" height="118" rx="24" fill="#0b503f" stroke="#8ee0c3" stroke-opacity=".65" stroke-width="2"/>
+    <text x="126" y="699" fill="#c8f7e8" font-family="Arial, sans-serif" font-size="24" font-weight="700">AVAILABLE SEATS</text>
+    <text x="126" y="747" fill="#ffffff" font-family="Arial, sans-serif" font-size="42" font-weight="800">${program.seatsLeft} / 15</text>
+    <text x="90" y="840" fill="#8ee0c3" font-family="Arial, sans-serif" font-size="20">SRMA • Research Academy</text>
+  </svg>`;
+}
+
+function splitPosterText(value: string, maxLength: number, maxLines: number) {
+  const words = value.trim().split(/\s+/);
+  const lines: string[] = [];
+  let line = "";
+  for (const word of words) {
+    const next = line ? `${line} ${word}` : word;
+    if (next.length > maxLength && line) {
+      lines.push(line);
+      line = word;
+      if (lines.length === maxLines - 1) break;
+    } else line = next;
+  }
+  if (line && lines.length < maxLines) lines.push(line);
+  const used = lines.join(" ").trim();
+  if (used.length < value.trim().length && lines.length) lines[lines.length - 1] = `${lines[lines.length - 1].slice(0, Math.max(1, maxLength - 1)).trim()}…`;
+  return lines;
 }
 
 function requestOrigin(req: Request) {

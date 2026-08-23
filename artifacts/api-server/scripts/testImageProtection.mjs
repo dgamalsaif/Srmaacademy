@@ -12,7 +12,7 @@ for (const program of programs) {
     assert.equal(Object.hasOwn(program, key), false, `Public catalog must not expose ${key}.`);
   }
   assert.ok(
-    program.imageUrl === "" || /^\/api\/programs\/\d+\/image$/.test(program.imageUrl),
+    program.imageUrl === "" || /^\/api\/programs\/\d+\/(?:image|poster\.svg)$/.test(program.imageUrl),
     "Public catalog image URLs must remain same-origin application routes.",
   );
   assert.equal(JSON.stringify(program).includes("/objects/"), false, "Public catalog must not expose object storage paths.");
@@ -36,7 +36,7 @@ if (imageProgram) {
   assert.match(imageResponse.headers.get("cache-control") || "", /no-store/, "Protected images must not be stored in browser caches.");
   assert.equal(imageResponse.headers.get("x-content-type-options"), "nosniff");
   assert.match(imageResponse.headers.get("content-disposition") || "", /^inline;/, "Protected images must use inline display.");
-  assert.ok(["image/jpeg", "image/png", "image/webp"].includes(imageResponse.headers.get("content-type") || ""));
+  assert.ok(["image/jpeg", "image/png", "image/webp", "image/svg+xml"].some((type) => (imageResponse.headers.get("content-type") || "").startsWith(type)));
   console.log("Verified protected image response headers.");
 } else {
   console.log("No public image is available in this environment; skipped response-header assertion.");

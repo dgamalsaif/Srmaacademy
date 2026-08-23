@@ -68,7 +68,7 @@ export default function ResearchDetail() {
       <div className="min-h-screen bg-white" dir={direction}>
       {/* BREADCRUMB */}
       <div className="bg-slate-50 border-b border-slate-200 px-4 py-3">
-        <div className="max-w-5xl mx-auto flex items-center gap-2 text-sm text-slate-500 flex-row-reverse">
+        <div className={`mx-auto flex max-w-5xl items-center gap-2 text-sm text-slate-500 ${contentFlow}`}>
           <span className="text-slate-400">›</span>
           <Link href="/participant-portal" className="hover:text-[#0C3156] transition-colors">{localize("بوابة المشارك", "Participant Portal")}</Link>
           <span className="text-slate-400">›</span>
@@ -235,7 +235,7 @@ export default function ResearchDetail() {
         {/* RELATED */}
         {allResearch.filter((r) => r.id !== research.id && r.status === "open").length > 0 && (
           <div className="mt-12">
-            <h2 className="text-xl font-black text-slate-900 text-right mb-5">{localize("فرص بحثية أخرى", "Other research opportunities")}</h2>
+            <h2 className="mb-5 text-start text-xl font-black text-slate-900">{localize("فرص بحثية أخرى", "Other research opportunities")}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {allResearch.filter((r) => r.id !== research.id && r.status === "open").slice(0, 3).map((r) => (
                 <Link key={r.id} href={`/research/${r.id}`} data-testid={`card-related-${r.id}`}
@@ -243,8 +243,8 @@ export default function ResearchDetail() {
                   <span className={`text-xs font-bold px-2.5 py-1 rounded-full inline-block mb-3 ${r.specialtyColor}`}>
                     {localize(r.specialtyAr, r.specialtyEn, r.specialty)}
                   </span>
-                  <p className="font-semibold text-slate-800 text-sm line-clamp-2 text-right mb-3" dir="ltr">{r.titleEn || r.title}</p>
-                  <div className="flex items-center justify-between flex-row-reverse text-xs text-slate-500">
+                  <p className="mb-3 text-left text-sm font-semibold text-slate-800 line-clamp-2" dir="ltr">{r.titleEn || r.title}</p>
+                  <div className={`flex items-center justify-between text-xs text-slate-500 ${contentFlow}`}>
                     <span>{localize(`${r.seatsLeft} مقعد متبقي`, `${r.seatsLeft} seats remaining`)}</span>
                     <span className="text-[#0C3156] font-semibold flex items-center gap-1">
                       {localize("عرض التفاصيل", "View details")} <ChevronLeft size={12} />

@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "sync:research-catalog": "node ./scripts/runCatalogSync.mjs",
     "test:import-concurrency": "node ./scripts/testConcurrentProgramImport.mjs",
+    "test:seat-override-concurrency": "node ./scripts/testSeatOverrideConcurrency.mjs",
     "test:image-protection": "node ./scripts/testImageProtection.mjs"
   },
   "dependencies": {

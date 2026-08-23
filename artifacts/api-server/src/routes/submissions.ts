@@ -4,10 +4,9 @@ import { desc, eq, sql } from "drizzle-orm";
 import { sendServiceRequestEmail } from "../lib/mailer";
 import { type StaffSession, requireCoordinator, requireOwner } from "../middlewares/coordinatorAuth";
 import { getSiteContentSettings } from "../lib/siteContentSettings";
-import { ensureProgramCapacityModel } from "../lib/programCapacity";
+import { ensureProgramCapacityModel, PROGRAM_CAPACITY_LOCK_NAMESPACE } from "../lib/programCapacity";
 
 const router = Router();
-const REGISTRATION_LOCK_NAMESPACE = 4_219_000;
 const AUTHOR_ROLES = new Set(["first_author", "co_author"]);
 
 class RegistrationCapacityError extends Error {
@@ -62,7 +61,7 @@ async function createRegistration(req: Request, res: Response, coordinatorId: nu
   try {
     const row = await db.transaction(async (tx) => {
       await ensureProgramCapacityModel(tx);
-      await tx.execute(sql`SELECT pg_advisory_xact_lock(${REGISTRATION_LOCK_NAMESPACE + parsed.data.researchId})`);
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(${PROGRAM_CAPACITY_LOCK_NAMESPACE + parsed.data.researchId})`);
       const [program] = await tx.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, parsed.data.researchId)).limit(1);
       if (!program || program.status !== "open") {
         throw new RegistrationCapacityError("هذه الفرصة غير متاحة للتسجيل حالياً.");
@@ -208,7 +207,7 @@ router.delete("/registrations/:id", requireCoordinator, async (req, res) => {
       const [candidate] = await tx.select().from(registrationsTable).where(eq(registrationsTable.id, id)).limit(1);
       if (!candidate) throw new RegistrationCapacityError("الطالب غير موجود", 404);
       await ensureProgramCapacityModel(tx);
-      await tx.execute(sql`SELECT pg_advisory_xact_lock(${REGISTRATION_LOCK_NAMESPACE + candidate.researchId})`);
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(${PROGRAM_CAPACITY_LOCK_NAMESPACE + candidate.researchId})`);
       const [current] = await tx.select().from(registrationsTable).where(eq(registrationsTable.id, id)).limit(1);
       if (!current) throw new RegistrationCapacityError("الطالب غير موجود", 404);
       if (staff.role === "coordinator" && current.coordinatorId !== staff.coordinatorId) {
