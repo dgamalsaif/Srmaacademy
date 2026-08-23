@@ -78,3 +78,10 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+.srma-protected-image,
+.srma-protected-image img {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+}

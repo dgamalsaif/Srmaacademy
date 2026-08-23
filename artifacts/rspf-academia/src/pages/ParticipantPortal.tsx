@@ -123,6 +123,12 @@ export default function ParticipantPortal() {
                             {displayTitle(opp)}
                           </h3>
                         </Link>
+                        {opp.imageUrl && (
+                          <div className="srma-protected-image relative mb-4 overflow-hidden rounded-xl border border-slate-100 bg-slate-100" onContextMenu={(event) => event.preventDefault()} onDragStart={(event) => event.preventDefault()}>
+                            <img src={opp.imageUrl} alt={`صورة ${displayTitle(opp)}`} draggable={false} className="h-48 w-full object-cover" />
+                            <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/5 text-sm font-black tracking-[0.2em] text-white/80 drop-shadow">SRMA</span>
+                          </div>
+                        )}
 
                         <p className="text-[#0C3156] text-sm italic text-right mb-3 font-medium">
                           🏆 نحن في SRMA – نبني ملفك البحثي ونصنع الفارق
@@ -178,8 +184,8 @@ export default function ParticipantPortal() {
                         </div>
                         <button data-testid={`button-copy-link-${opp.id}`}
                           className="w-full text-xs text-slate-400 hover:text-slate-600 py-2 mt-1"
-                          onClick={() => { navigator.clipboard.writeText(window.location.origin + `/research/${opp.id}`); alert("تم نسخ الرابط"); }}>
-                          نسخ رابط الفرصة 🔗
+                          onClick={() => { navigator.clipboard.writeText(window.location.origin + `/api/programs/${opp.id}/share`); alert("تم نسخ رابط المعاينة"); }}>
+                          نسخ رابط المعاينة 🔗
                         </button>
                       </div>
                     );

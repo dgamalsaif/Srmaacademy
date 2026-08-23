@@ -1,9 +1,10 @@
-import { Router } from "express";
+import { Router, type Request } from "express";
 import { db, insertResearchProgramSchema, programCatalogBootstrapTable, researchProgramsTable } from "@workspace/db";
 import { desc, eq, sql } from "drizzle-orm";
-import { requireCoordinator, requireOwner } from "../middlewares/coordinatorAuth";
+import { readSession, requireOwner } from "../middlewares/coordinatorAuth";
 import { getSiteContentSettings, OpportunityFieldId } from "../lib/siteContentSettings";
 import { importResearchOpportunities, PROGRAM_CATALOG_LOCK_ID, type ResearchOpportunityImportRow } from "../lib/researchOpportunityImport";
+import { getResearchImageUrl, requestResearchImageUpload, ResearchImageValidationError } from "../lib/researchImageStorage";
 
 const router = Router();
 
@@ -82,14 +83,32 @@ async function listPrograms() {
 
 function toClient(row: typeof researchProgramsTable.$inferSelect) {
   return {
-    ...row,
+    id: row.id,
+    category: row.category,
     title: row.titleEn,
+    titleAr: row.titleAr,
+    titleEn: row.titleEn,
     specialty: row.specialtyEn,
+    specialtyAr: row.specialtyAr,
+    specialtyEn: row.specialtyEn,
     description: row.descriptionAr,
+    descriptionAr: row.descriptionAr,
+    descriptionEn: row.descriptionEn,
+    seatsLeft: row.seatsLeft,
+    totalSeats: row.totalSeats,
+    status: row.status,
+    journalTarget: row.journalTarget,
+    journalIssn: row.journalIssn,
+    journalPubmed: row.journalPubmed,
+    journalScopus: row.journalScopus,
+    journalWos: row.journalWos,
     indexedIn: row.indexedIn.split("|").map((item) => item.trim()).filter(Boolean),
     benefits: row.benefits.split("|").map((item) => item.trim()).filter(Boolean),
+    duration: row.duration,
+    supervisor: row.supervisor,
     specialtyColor: "bg-emerald-100 text-emerald-700",
     createdAt: row.createdAt.toISOString().slice(0, 10),
+    imageUrl: row.imagePath ? `/api/programs/${row.id}/image` : "",
   };
 }
 
@@ -105,6 +124,84 @@ async function validateRequiredProgramFields(data: Record<string, unknown>): Pro
 router.get("/programs", async (_req, res) => {
   const rows = await listPrograms();
   res.json(rows.map(toClient));
+});
+
+router.post("/program-images/request-upload", requireOwner, async (req, res) => {
+  try {
+    const upload = await requestResearchImageUpload({
+      size: req.body?.size,
+      contentType: req.body?.contentType,
+    });
+    res.status(201).json(upload);
+  } catch (error) {
+    if (error instanceof ResearchImageValidationError) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
+    req.log.error({ err: error }, "Failed to create research image upload URL");
+    res.status(500).json({ error: "تعذر تجهيز رفع الصورة. حاول مرة أخرى." });
+  }
+});
+
+router.get("/programs/:id/image", async (req, res) => {
+  const id = Number(req.params["id"]);
+  const [program] = await db.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, id)).limit(1);
+  const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session));
+  if (!program || !program.imagePath || (!isStaff && !isPublicProgram(program))) {
+    res.status(404).end();
+    return;
+  }
+
+  try {
+    const imageUrl = await getResearchImageUrl(program.imagePath);
+    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.redirect(302, imageUrl);
+  } catch (error) {
+    req.log.error({ err: error, programId: id }, "Failed to serve research image");
+    res.status(404).end();
+  }
+});
+
+router.get("/programs/:id/share", async (req, res) => {
+  const id = Number(req.params["id"]);
+  const [program] = await db.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, id)).limit(1);
+  const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session));
+  if (!program || (!isStaff && !isPublicProgram(program))) {
+    res.status(404).type("html").send("<!doctype html><title>Not found</title>");
+    return;
+  }
+
+  const origin = requestOrigin(req);
+  const destination = `${origin}/research/${program.id}`;
+  const title = program.titleAr || program.titleEn || "فرصة بحثية من SRMA";
+  const description = program.descriptionAr || program.descriptionEn || "اكتشف فرصة بحثية جديدة من SRMA Research Academy.";
+  const image = program.imagePath ? `${origin}/api/programs/${program.id}/image` : `${origin}/srma-logo.jpg`;
+
+  res.setHeader("Cache-Control", "no-store");
+  res.type("html").send(`<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>${escapeHtml(title)} | SRMA Research Academy</title>
+  <meta name="description" content="${escapeHtml(description.slice(0, 180))}">
+  <link rel="canonical" href="${escapeHtml(destination)}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="SRMA Research Academy">
+  <meta property="og:locale" content="ar_SA">
+  <meta property="og:title" content="${escapeHtml(title)}">
+  <meta property="og:description" content="${escapeHtml(description.slice(0, 180))}">
+  <meta property="og:url" content="${escapeHtml(destination)}">
+  <meta property="og:image" content="${escapeHtml(image)}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${escapeHtml(title)}">
+  <meta name="twitter:description" content="${escapeHtml(description.slice(0, 180))}">
+  <meta name="twitter:image" content="${escapeHtml(image)}">
+  <meta http-equiv="refresh" content="0;url=${escapeHtml(destination)}">
+</head>
+<body><p>جارٍ فتح الفرصة… <a href="${escapeHtml(destination)}">اضغط هنا إن لم يتم التحويل</a></p></body>
+</html>`);
 });
 
 router.post("/programs", requireOwner, async (req, res) => {
@@ -186,3 +283,23 @@ router.delete("/programs/:id", requireOwner, async (req, res) => {
 });
 
 export default router;
+
+function isPublicProgram(program: typeof researchProgramsTable.$inferSelect) {
+  return program.category === "active" && program.status === "open";
+}
+
+function requestOrigin(req: Request) {
+  const forwardedProtocol = req.get("x-forwarded-proto")?.split(",")[0]?.trim();
+  const protocol = forwardedProtocol || req.protocol || "https";
+  return `${protocol}://${req.get("host")}`;
+}
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
+  })[character] || character);
+}

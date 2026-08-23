@@ -9,6 +9,7 @@ import ContentControlPanel from "@/components/ContentControlPanel";
 import { DEFAULT_SITE_CONTENT_SETTINGS, OpportunityFieldId, SiteContentSettings } from "@/lib/siteContentSettings";
 import Footer from "@/components/Footer";
 import { SRMA_LOGO } from "@/components/BrandBackground";
+import ResearchImagePicker from "@/components/ResearchImagePicker";
 
 const EMPTY_FORM: Omit<ResearchOpportunity, "id" | "createdAt"> = {
   category: "active",
@@ -38,11 +39,13 @@ const EMPTY_FORM: Omit<ResearchOpportunity, "id" | "createdAt"> = {
 
 type FormData = Omit<ResearchOpportunity, "id" | "createdAt">;
 
-function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, settings }: { initial: FormData; onSave: (data: FormData) => void; onClose: () => void; isEdit: boolean; requiredFields: OpportunityFieldId[]; settings: SiteContentSettings; }) {
+function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, settings }: { initial: FormData; onSave: (data: FormData, imagePath: string | null) => void; onClose: () => void; isEdit: boolean; requiredFields: OpportunityFieldId[]; settings: SiteContentSettings; }) {
   const [form, setForm] = useState<FormData>({ ...initial, benefits: [...(initial.benefits || ["", "", ""])] });
   const [indexedStr, setIndexedStr] = useState((initial.indexedIn || []).join("، "));
   const [benefitsArr, setBenefitsArr] = useState<string[]>(initial.benefits?.length ? [...initial.benefits] : ["", "", ""]);
   const [formError, setFormError] = useState("");
+  const [imagePath, setImagePath] = useState<string | null>(null);
+  const [imageUploading, setImageUploading] = useState(false);
   const isCompletedResearch = form.category === "completed";
   const completedStatus = ["seats_full", "submitted", "accepted", "published"].includes(form.status) ? form.status : "seats_full";
   const isRequired = (field: OpportunityFieldId) => requiredFields.includes(field);
@@ -65,6 +68,10 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, s
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (imageUploading) {
+      setFormError("انتظر حتى يكتمل رفع الصورة قبل حفظ الفرصة.");
+      return;
+    }
     const indexedIn = indexedStr.split(/[،,]/).map((s) => s.trim()).filter(Boolean);
     const benefits = benefitsArr.filter(Boolean);
     const specialty = form.specialtyEn || form.specialty;
@@ -96,7 +103,7 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, s
       return;
     }
     setFormError("");
-    onSave(nextForm);
+    onSave(nextForm, imagePath);
   };
 
   return (
@@ -109,6 +116,7 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, s
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-6 space-y-5">
+          <ResearchImagePicker initialImageUrl={initial.imageUrl} onImagePathChange={setImagePath} onUploadingChange={setImageUploading} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2 text-right">عنوان البرنامج (بالعربية){isRequired("titleAr") && " *"}</label>
@@ -657,7 +665,7 @@ export default function AdminDashboard() {
       .catch(() => setPayments([]));
   }, [role]);
 
-  const toPayload = (form: FormData) => ({
+  const toPayload = (form: FormData, imagePath: string | null) => ({
     category: form.category || "active",
     titleAr: form.titleAr || form.title,
     titleEn: form.titleEn || form.title,
@@ -677,13 +685,14 @@ export default function AdminDashboard() {
     benefits: form.benefits,
     duration: form.duration,
     supervisor: form.supervisor,
+    ...(typeof imagePath === "string" ? { imagePath } : {}),
   });
 
-  const handleAdd = async (form: FormData) => {
+  const handleAdd = async (form: FormData, imagePath: string | null) => {
     const response = await fetch("/api/programs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(toPayload(form)),
+      body: JSON.stringify(toPayload(form, imagePath)),
     });
     const saved = await response.json() as ResearchOpportunity;
     if (!response.ok) return;
@@ -691,12 +700,12 @@ export default function AdminDashboard() {
     setFormOpen(false);
   };
 
-  const handleEdit = async (form: FormData) => {
+  const handleEdit = async (form: FormData, imagePath: string | null) => {
     if (!editItem) return;
     const response = await fetch(`/api/programs/${editItem.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(toPayload(form)),
+      body: JSON.stringify(toPayload(form, imagePath)),
     });
     const saved = await response.json() as ResearchOpportunity;
     if (response.ok) setResearch((items) => items.map((item) => item.id === saved.id ? saved : item));

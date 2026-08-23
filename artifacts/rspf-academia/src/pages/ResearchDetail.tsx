@@ -97,6 +97,12 @@ export default function ResearchDetail() {
               <h1 className="text-xl sm:text-2xl font-black leading-snug mb-2 whitespace-pre-line">{contentSettings.participantTitleLanguage === "arabic" ? (research.titleAr || research.title) : contentSettings.participantTitleLanguage === "both" ? `${research.titleAr || research.title}\n${research.titleEn || research.title}` : (research.titleEn || research.title)}</h1>
               <p className="text-blue-200 text-sm">تاريخ الإضافة: {research.createdAt}</p>
             </div>
+            {research.imageUrl && (
+              <div className="srma-protected-image relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-sm" onContextMenu={(event) => event.preventDefault()} onDragStart={(event) => event.preventDefault()}>
+                <img src={research.imageUrl} alt={`صورة ${research.titleAr || research.title}`} draggable={false} className="h-auto max-h-[420px] w-full object-cover" />
+                <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/5 text-lg font-black tracking-[0.25em] text-white/85 drop-shadow">SRMA RESEARCH ACADEMY</span>
+              </div>
+            )}
 
             {/* Description */}
             <div className="bg-white border border-slate-200 rounded-2xl p-6 text-right shadow-sm">

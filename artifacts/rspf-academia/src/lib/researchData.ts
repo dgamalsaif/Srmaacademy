@@ -24,6 +24,7 @@ export interface ResearchOpportunity {
   duration: string;
   supervisor: string;
   createdAt: string;
+  imageUrl?: string;
 }
 
 const DEFAULT_RESEARCH: ResearchOpportunity[] = [
