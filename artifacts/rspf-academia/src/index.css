@@ -85,3 +85,50 @@
   -webkit-user-select: none;
   -webkit-user-drag: none;
 }
+
+.srma-media-stage {
+  perspective: 1100px;
+  isolation: isolate;
+}
+
+.srma-media-surface {
+  transform: rotateX(var(--srma-tilt-y, 0deg)) rotateY(var(--srma-tilt-x, 0deg));
+  transition: transform 420ms cubic-bezier(.16, 1, .3, 1), box-shadow 420ms ease;
+  transform-style: preserve-3d;
+}
+
+.srma-media-stage:hover .srma-media-surface,
+.srma-media-stage:focus-within .srma-media-surface {
+  box-shadow: 0 22px 42px -25px hsl(210 58% 13% / .7);
+}
+
+.srma-media-image {
+  object-fit: contain;
+  transform: translateZ(10px);
+}
+
+.srma-media-copy {
+  transform: translateZ(32px);
+}
+
+.srma-media-chip {
+  background: hsl(210 58% 13% / .86);
+  border: 1px solid hsl(195 40% 98% / .28);
+  color: hsl(195 40% 98%);
+  box-shadow: 0 3px 14px hsl(210 58% 13% / .2);
+}
+
+.srma-media-open {
+  background: hsl(195 40% 98% / .95);
+  color: hsl(210 58% 15%);
+  box-shadow: 0 8px 20px hsl(210 58% 13% / .28);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .srma-media-surface,
+  .srma-media-image,
+  .srma-media-copy {
+    transition: none !important;
+    transform: none !important;
+  }
+}
