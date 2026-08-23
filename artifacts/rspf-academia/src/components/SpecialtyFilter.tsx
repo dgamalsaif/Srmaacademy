@@ -1,4 +1,5 @@
-import { Stethoscope } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Search, Stethoscope, X } from "lucide-react";
 import type { ResearchOpportunity } from "@/lib/researchData";
 import type { SpecialtyOption } from "@/lib/siteContentSettings";
 import { useLanguage } from "@/lib/i18n";
@@ -48,6 +49,13 @@ export default function SpecialtyFilter({
   className = "",
 }: SpecialtyFilterProps) {
   const { direction, localize } = useLanguage();
+  const [query, setQuery] = useState("");
+  const normalizedQuery = normalizeSearchText(query);
+  const visibleOptions = useMemo(() => {
+    if (!normalizedQuery) return options;
+    return options.filter((option) => [option.nameAr, option.nameEn]
+      .some((name) => normalizeSearchText(name).includes(normalizedQuery)));
+  }, [normalizedQuery, options]);
 
   if (options.length === 0) return null;
 
@@ -61,6 +69,28 @@ export default function SpecialtyFilter({
         <Stethoscope size={16} className="text-[#117b59]" />
         <span>{localize("التخصصات الدقيقة", "Specialties")}</span>
       </div>
+      <label className="relative mb-3 block">
+        <span className="sr-only">{localize("ابحث عن تخصص", "Search specialties")}</span>
+        <Search size={17} className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-slate-400" />
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          data-testid="input-specialty-search"
+          placeholder={localize("ابحث عن التخصص بالعربية أو الإنجليزية", "Search specialties in Arabic or English")}
+          className="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pe-10 ps-10 text-sm text-slate-800 outline-none transition focus:border-[#117b59] focus:bg-white focus:ring-2 focus:ring-[#117b59]/15"
+        />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery("")}
+            aria-label={localize("مسح بحث التخصص", "Clear specialty search")}
+            className="absolute end-2 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-slate-400 transition hover:bg-white hover:text-slate-700"
+          >
+            <X size={15} />
+          </button>
+        )}
+      </label>
       <div className="flex gap-2 overflow-x-auto pb-1">
         <button
           type="button"
@@ -75,7 +105,7 @@ export default function SpecialtyFilter({
         >
           {localize("كل التخصصات", "All specialties")}
         </button>
-        {options.map((option) => {
+        {visibleOptions.map((option) => {
           const value = option.nameEn || option.nameAr;
           const selected = selectedSpecialty === value;
           return (
@@ -96,6 +126,23 @@ export default function SpecialtyFilter({
           );
         })}
       </div>
+      {visibleOptions.length === 0 && (
+        <p className="py-3 text-center text-xs font-semibold text-slate-500">
+          {localize("لا يوجد تخصص مطابق لعبارة البحث.", "No specialty matches your search.")}
+        </p>
+      )}
     </section>
   );
+}
+
+function normalizeSearchText(value = "") {
+  return value
+    .toLocaleLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u064B-\u065F\u0670]/g, "")
+    .replace(/[إأآ]/g, "ا")
+    .replace(/ى/g, "ي")
+    .replace(/ة/g, "ه")
+    .replace(/\s+/g, " ")
+    .trim();
 }

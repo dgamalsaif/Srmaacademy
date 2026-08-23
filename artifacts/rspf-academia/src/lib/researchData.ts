@@ -4,6 +4,7 @@ export interface ResearchOpportunity {
   specialty: string;
   specialtyAr?: string;
   specialtyEn?: string;
+  displayOrder?: number;
   specialtyColor: string;
   title: string;
   titleAr?: string;

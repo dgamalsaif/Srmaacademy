@@ -75,13 +75,14 @@ export default function ParticipantPortal() {
       items: ungroupedOpportunities,
     });
   }
+  const opportunityOrder = (opportunity: ResearchOpportunity) => opportunity.displayOrder ?? Number.MAX_SAFE_INTEGER;
   groupedOpportunities.forEach((group) => {
-    group.items.sort((a, b) => b.seatsLeft - a.seatsLeft || (a.titleEn || a.title).localeCompare(b.titleEn || b.title));
+    group.items.sort((a, b) => opportunityOrder(a) - opportunityOrder(b) || (a.titleEn || a.title).localeCompare(b.titleEn || b.title));
   });
   groupedOpportunities.sort((a, b) => {
-    const seatsA = a.items.reduce((total, opportunity) => total + opportunity.seatsLeft, 0);
-    const seatsB = b.items.reduce((total, opportunity) => total + opportunity.seatsLeft, 0);
-    return seatsB - seatsA || a.label.localeCompare(b.label);
+    const orderA = Math.min(...a.items.map(opportunityOrder));
+    const orderB = Math.min(...b.items.map(opportunityOrder));
+    return orderA - orderB || a.label.localeCompare(b.label);
   });
   const isSpecialtyScroll = contentSettings.opportunityDisplayMode === "scroll";
   const contentFlow = direction === "rtl" ? "flex-row-reverse" : "flex-row";

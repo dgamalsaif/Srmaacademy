@@ -7,6 +7,7 @@ import { getSiteContentSettings, OpportunityFieldId } from "../lib/siteContentSe
 import { addImportedSpecialties, importResearchOpportunities, PROGRAM_CATALOG_LOCK_ID, type ResearchOpportunityImportRow } from "../lib/researchOpportunityImport";
 import { getResearchImageUrl, ResearchImageValidationError, resolveResearchImageUploadToken, uploadResearchImage } from "../lib/researchImageStorage";
 import { ensureProgramCapacityModel, PROGRAM_CAPACITY_LOCK_NAMESPACE, type DatabaseTransaction } from "../lib/programCapacity";
+import { applyResearchCatalogSeatSnapshot, researchCatalogDisplayOrder } from "../lib/researchCatalogSeatSnapshot";
 
 const router = Router();
 
@@ -84,6 +85,7 @@ async function listPrograms() {
       await tx.insert(programCatalogBootstrapTable).values({ key: INITIAL_CATALOG_KEY });
     }
     await ensureProgramCapacityModel(tx);
+    await applyResearchCatalogSeatSnapshot(tx);
     rows = await tx.select().from(researchProgramsTable).orderBy(desc(researchProgramsTable.createdAt));
     return rows;
   });
@@ -99,6 +101,7 @@ function toClient(row: typeof researchProgramsTable.$inferSelect) {
     specialty: row.specialtyEn,
     specialtyAr: row.specialtyAr,
     specialtyEn: row.specialtyEn,
+    displayOrder: researchCatalogDisplayOrder(row.titleEn),
     description: row.descriptionAr,
     descriptionAr: row.descriptionAr,
     descriptionEn: row.descriptionEn,

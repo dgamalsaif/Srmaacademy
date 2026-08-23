@@ -52,7 +52,8 @@ export async function getManagedOwner(req: Request): Promise<OwnerContext | null
   if (!primaryEmail || primaryEmail.verification?.status !== "verified") return null;
   const email = primaryEmail.emailAddress.trim().toLowerCase();
 
-  let [owner] = await db.select().from(ownerAccountsTable).where(eq(ownerAccountsTable.email, email)).limit(1);
+  let owner: typeof ownerAccountsTable.$inferSelect | null =
+    (await db.select().from(ownerAccountsTable).where(eq(ownerAccountsTable.email, email)).limit(1))[0] ?? null;
   if (!owner) {
     owner = await bootstrapInitialOwner(email, auth.userId, user.fullName);
   }
