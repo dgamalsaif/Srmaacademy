@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useClerk } from "@clerk/react";
 import { Link, useLocation } from "wouter";
 import { ChevronRight, LogOut, RefreshCw, Users, FileText, Check, X, Clock, Mail, Phone, Download, Pencil, Trash2, Save, Loader2 } from "lucide-react";
 import Footer from "@/components/Footer";
@@ -242,6 +243,7 @@ export default function AdminSubmissions() {
   const [exportError, setExportError] = useState("");
   const [selectedResearchId, setSelectedResearchId] = useState<number | "all">("all");
   const [, setLocation] = useLocation();
+  const { signOut } = useClerk();
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [role, setRole] = useState<"owner" | "coordinator" | null>(null);
   const [editingRegistration, setEditingRegistration] = useState<Registration | null>(null);
@@ -256,9 +258,9 @@ export default function AdminSubmissions() {
           setAuthorized(true);
           setRole(result.role);
         }
-        else { setAuthorized(false); setLocation(result.authenticated ? "/coordinator/dashboard" : "/owner-admin"); }
+        else { setAuthorized(false); setLocation(result.authenticated ? "/coordinator/dashboard" : "/sign-in"); }
       })
-      .catch(() => { setAuthorized(false); setLocation("/owner-admin"); });
+      .catch(() => { setAuthorized(false); setLocation("/sign-in"); });
   }, [setLocation]);
 
   const fetchData = useCallback(async () => {
@@ -277,8 +279,12 @@ export default function AdminSubmissions() {
   }, [role]);
 
   const handleLogout = async () => {
+    if (role === "owner") {
+      await signOut({ redirectUrl: `${import.meta.env.BASE_URL.replace(/\/$/, "") || "/"}/sign-in` });
+      return;
+    }
     await fetch("/api/coordinator/logout", { method: "POST" });
-    setLocation(role === "owner" ? "/owner-admin" : "/coordinator");
+    setLocation("/coordinator");
   };
 
   useEffect(() => { void fetchData(); }, [fetchData]);

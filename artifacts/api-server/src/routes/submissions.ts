@@ -2,7 +2,7 @@ import { Router, type Request, type Response } from "express";
 import { db, coordinatorsTable, registrationsTable, researchProgramsTable, serviceRequestsTable, insertRegistrationSchema, insertServiceRequestSchema } from "@workspace/db";
 import { desc, eq, sql } from "drizzle-orm";
 import { sendServiceRequestEmail } from "../lib/mailer";
-import { readSession, requireCoordinator, requireOwner } from "../middlewares/coordinatorAuth";
+import { type StaffSession, requireCoordinator, requireOwner } from "../middlewares/coordinatorAuth";
 import { getSiteContentSettings } from "../lib/siteContentSettings";
 import { ensureProgramCapacityModel } from "../lib/programCapacity";
 
@@ -111,26 +111,22 @@ router.post("/registrations", async (req, res) => {
 
 /* ── POST /api/coordinator/registrations ── */
 router.post("/coordinator/registrations", requireCoordinator, async (req, res) => {
-  const session = readSession(req.cookies?.srma_coordinator_session);
-  const coordinatorId = session?.role === "coordinator" && session.coordinatorId ? session.coordinatorId : null;
+  const staff = res.locals.staff as StaffSession;
+  const coordinatorId = staff.role === "coordinator" ? staff.coordinatorId : null;
   await createRegistration(req, res, coordinatorId);
 });
 
 /* ── GET /api/registrations ── */
 router.get("/registrations", requireCoordinator, async (req, res) => {
-  const session = readSession(req.cookies?.srma_coordinator_session);
-  if (!session) {
-    res.status(401).json({ error: "يلزم تسجيل دخول المنسق" });
-    return;
-  }
+  const staff = res.locals.staff as StaffSession;
 
-  const rows = session.role === "coordinator"
+  const rows = staff.role === "coordinator"
     ? await db.select().from(registrationsTable)
-      .where(eq(registrationsTable.coordinatorId, session.coordinatorId))
+      .where(eq(registrationsTable.coordinatorId, staff.coordinatorId))
       .orderBy(desc(registrationsTable.createdAt))
     : await db.select().from(registrationsTable).orderBy(desc(registrationsTable.createdAt));
 
-  const coordinators = session.role === "owner"
+  const coordinators = staff.role === "owner"
     ? await db.select({ id: coordinatorsTable.id, fullName: coordinatorsTable.fullName }).from(coordinatorsTable)
     : [];
   const coordinatorNames = new Map(coordinators.map((coordinator) => [coordinator.id, coordinator.fullName]));
@@ -148,7 +144,7 @@ router.get("/registrations", requireCoordinator, async (req, res) => {
     researchTitle: programById.get(registration.researchId)?.titleAr || programById.get(registration.researchId)?.titleEn || registration.researchTitle,
     researchStatus: programById.get(registration.researchId)?.status || "",
     researchCategory: programById.get(registration.researchId)?.category || "active",
-    coordinatorName: session.role === "owner" && registration.coordinatorId
+    coordinatorName: staff.role === "owner" && registration.coordinatorId
       ? coordinatorNames.get(registration.coordinatorId) || "منسق سابق"
       : null,
     registrationSource: registration.coordinatorId ? "coordinator" : "public",
@@ -160,11 +156,7 @@ router.get("/registrations", requireCoordinator, async (req, res) => {
  * intentionally kept on the status-only endpoint below.
  */
 router.patch("/registrations/:id", requireCoordinator, async (req, res) => {
-  const session = readSession(req.cookies?.srma_coordinator_session);
-  if (!session) {
-    res.status(401).json({ error: "يلزم تسجيل الدخول" });
-    return;
-  }
+  const staff = res.locals.staff as StaffSession;
 
   const id = Number(req.params["id"]);
   const [current] = await db.select().from(registrationsTable).where(eq(registrationsTable.id, id)).limit(1);
@@ -172,7 +164,7 @@ router.patch("/registrations/:id", requireCoordinator, async (req, res) => {
     res.status(404).json({ error: "الطالب غير موجود" });
     return;
   }
-  if (session.role === "coordinator" && current.coordinatorId !== session.coordinatorId) {
+  if (staff.role === "coordinator" && current.coordinatorId !== staff.coordinatorId) {
     res.status(403).json({ error: "لا يمكنك تعديل تسجيل لا يخصك" });
     return;
   }
@@ -202,18 +194,14 @@ router.patch("/registrations/:id", requireCoordinator, async (req, res) => {
   const [row] = await db.update(registrationsTable).set(parsed.data).where(eq(registrationsTable.id, id)).returning();
   res.json({
     ...row,
-    coordinatorName: session.role === "owner" ? null : null,
+    coordinatorName: null,
     registrationSource: row.coordinatorId ? "coordinator" : "public",
   });
 });
 
 /* ── DELETE /api/registrations/:id ── */
 router.delete("/registrations/:id", requireCoordinator, async (req, res) => {
-  const session = readSession(req.cookies?.srma_coordinator_session);
-  if (!session) {
-    res.status(401).json({ error: "يلزم تسجيل الدخول" });
-    return;
-  }
+  const staff = res.locals.staff as StaffSession;
   const id = Number(req.params["id"]);
   try {
     await db.transaction(async (tx) => {
@@ -223,7 +211,7 @@ router.delete("/registrations/:id", requireCoordinator, async (req, res) => {
       await tx.execute(sql`SELECT pg_advisory_xact_lock(${REGISTRATION_LOCK_NAMESPACE + candidate.researchId})`);
       const [current] = await tx.select().from(registrationsTable).where(eq(registrationsTable.id, id)).limit(1);
       if (!current) throw new RegistrationCapacityError("الطالب غير موجود", 404);
-      if (session.role === "coordinator" && current.coordinatorId !== session.coordinatorId) {
+      if (staff.role === "coordinator" && current.coordinatorId !== staff.coordinatorId) {
         throw new RegistrationCapacityError("لا يمكنك حذف تسجيل لا يخصك", 403);
       }
 

@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
-import { db, coordinatorsTable, serviceRequestsTable } from "@workspace/db";
+import { db, coordinatorsTable, ownerAccountsTable, serviceRequestsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import {
   clearCoordinatorCookie, createSession, readSession, setCoordinatorCookie, requireCoordinator, requireOwner,
 } from "../middlewares/coordinatorAuth";
+import { getManagedOwner } from "../middlewares/ownerAuth";
 
 const router = Router();
 
@@ -34,17 +35,36 @@ router.post("/coordinator/login", async (req, res) => {
 });
 
 router.post("/owner/login", async (req, res) => {
-  const password = typeof req.body?.password === "string" ? req.body.password : "";
-  const ownerPassword = process.env["OWNER_ADMIN_PASSWORD"] || "";
-  const actual = Buffer.from(password);
-  const expected = Buffer.from(ownerPassword);
-  if (!ownerPassword || actual.length !== expected.length || !timingSafeEqual(actual, expected)) {
-    res.status(401).json({ error: "رمز دخول المالك غير صحيح." });
+  res.status(410).json({ error: "تم نقل دخول المالك إلى الحساب الموثّق بالبريد الإلكتروني." });
+});
+
+router.post("/owner/bootstrap", async (req, res) => {
+  const configuredSecret = process.env["OWNER_BOOTSTRAP_SECRET"] || process.env["OWNER_ADMIN_PASSWORD"] || "";
+  const submittedSecret = typeof req.body?.bootstrapSecret === "string" ? req.body.bootstrapSecret : "";
+  const sameSecret = configuredSecret.length > 0
+    && submittedSecret.length === configuredSecret.length
+    && timingSafeEqual(Buffer.from(submittedSecret), Buffer.from(configuredSecret));
+  if (!sameSecret) {
+    res.status(401).json({ error: "تعذر تهيئة حساب المالك." });
     return;
   }
 
-  setCoordinatorCookie(res, createSession("owner"));
-  res.json({ authenticated: true, role: "owner" });
+  const [existingOwner] = await db.select({ id: ownerAccountsTable.id }).from(ownerAccountsTable).limit(1);
+  if (existingOwner) {
+    res.status(409).json({ error: "تمت تهيئة حساب المالك مسبقاً." });
+    return;
+  }
+
+  const email = typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase() : "";
+  const fullName = typeof req.body?.fullName === "string" ? req.body.fullName.trim().replace(/\s+/g, " ") : "";
+  const phone = typeof req.body?.phone === "string" ? req.body.phone.trim() : "";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || fullName.length < 3 || phone.length < 7 || phone.length > 32) {
+    res.status(400).json({ error: "يرجى إدخال بيانات مالك صحيحة." });
+    return;
+  }
+
+  await db.insert(ownerAccountsTable).values({ email, fullName, phone, status: "active" });
+  res.status(201).json({ initialized: true });
 });
 
 router.post("/coordinator/logout", (_req, res) => {
@@ -53,6 +73,16 @@ router.post("/coordinator/logout", (_req, res) => {
 });
 
 router.get("/coordinator/session", async (req, res) => {
+  const owner = await getManagedOwner(req);
+  if (owner) {
+    res.json({
+      authenticated: true,
+      role: "owner",
+      coordinatorId: null,
+      coordinatorName: owner.fullName,
+    });
+    return;
+  }
   const session = readSession(req.cookies?.srma_coordinator_session);
   const [coordinator] = session?.role === "coordinator" && session.coordinatorId
     ? await db.select({ fullName: coordinatorsTable.fullName })
@@ -66,6 +96,27 @@ router.get("/coordinator/session", async (req, res) => {
     coordinatorId: session?.coordinatorId || null,
     coordinatorName: coordinator?.fullName || null,
   });
+});
+
+router.get("/owner/profile", requireOwner, async (_req, res) => {
+  const owner = res.locals.owner as { fullName: string; email: string; phone: string; clerkUserId: string };
+  res.setHeader("Cache-Control", "no-store");
+  res.json({ fullName: owner.fullName, email: owner.email, phone: owner.phone, verified: true, clerkUserId: owner.clerkUserId });
+});
+
+router.patch("/owner/profile", requireOwner, async (req, res) => {
+  const owner = res.locals.owner as { id: number };
+  const fullName = typeof req.body?.fullName === "string" ? req.body.fullName.trim().replace(/\s+/g, " ") : "";
+  const phone = typeof req.body?.phone === "string" ? req.body.phone.trim() : "";
+  if (fullName.length < 3 || phone.length < 7 || phone.length > 32) {
+    res.status(400).json({ error: "يرجى إدخال اسم ورقم هاتف صحيحين." });
+    return;
+  }
+  const [updated] = await db.update(ownerAccountsTable)
+    .set({ fullName, phone, updatedAt: new Date() })
+    .where(eq(ownerAccountsTable.id, owner.id))
+    .returning({ fullName: ownerAccountsTable.fullName, email: ownerAccountsTable.email, phone: ownerAccountsTable.phone });
+  res.json(updated);
 });
 
 router.post("/coordinator/change-name", requireCoordinator, async (req, res) => {

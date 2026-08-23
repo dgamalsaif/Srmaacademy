@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useClerk } from "@clerk/react";
 import { Link, useLocation } from "wouter";
 import { Plus, Pencil, Trash2, Eye, X, ChevronRight, LogOut, Search, Users, BookOpen, TrendingUp, AlertCircle, UserPlus, GraduationCap, Award, Landmark, LayoutDashboard, CreditCard, Settings, ClipboardList, CheckCircle, FlaskConical, Stethoscope, User, Clock, Copy, Check, Edit } from "lucide-react";
 import { ResearchOpportunity, SPECIALTY_COLORS } from "@/lib/researchData";
@@ -12,6 +13,7 @@ import { SRMA_LOGO } from "@/components/BrandBackground";
 import ResearchImagePicker from "@/components/ResearchImagePicker";
 import OpportunityMedia from "@/components/OpportunityMedia";
 import SpecialtyFilter, { buildSpecialtyOptions, specialtyMatches } from "@/components/SpecialtyFilter";
+import OwnerSecurityPanel from "@/components/OwnerSecurityPanel";
 
 const EMPTY_FORM: Omit<ResearchOpportunity, "id" | "createdAt"> = {
   category: "active",
@@ -377,6 +379,7 @@ function SettingsPanel({ role, accountName, onNameUpdated }: { role: "owner" | "
   const [codeMessage, setCodeMessage] = useState("");
 
   useEffect(() => setFullName(accountName), [accountName]);
+  if (role === "owner") return <OwnerSecurityPanel onNameUpdated={onNameUpdated} />;
 
   const changeName = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -422,7 +425,7 @@ function SettingsPanel({ role, accountName, onNameUpdated }: { role: "owner" | "
           <div>
             <h2 className="text-right text-xl font-black text-slate-800">إعدادات الحساب</h2>
             <p className="mt-1 text-right text-sm font-medium text-slate-500">
-              {role === "owner" ? "إدارة طلبات المنسقين والبرامج متاحة لك فقط." : "حدّث بياناتك الشخصية ورمز الوصول بأمان."}
+              حدّث بياناتك الشخصية ورمز الوصول بأمان.
             </p>
           </div>
         </div>
@@ -608,6 +611,7 @@ function ProgramCard({ research, onRegister, onEdit, onDelete, canManage }: any)
 
 export default function AdminDashboard() {
   const [location, setLocation] = useLocation();
+  const { signOut } = useClerk();
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [role, setRole] = useState<"owner" | "coordinator" | null>(null);
   const [accountName, setAccountName] = useState("");
@@ -647,9 +651,9 @@ export default function AdminDashboard() {
           setRole(result.role);
           setAccountName(result.coordinatorName || "");
         }
-        else { setAuthorized(false); setLocation(ownerWorkspace ? "/owner-admin" : "/coordinator"); }
+        else { setAuthorized(false); setLocation(ownerWorkspace ? "/sign-in" : "/coordinator"); }
       })
-      .catch(() => { setAuthorized(false); setLocation(ownerWorkspace ? "/owner-admin" : "/coordinator"); });
+      .catch(() => { setAuthorized(false); setLocation(ownerWorkspace ? "/sign-in" : "/coordinator"); });
   }, [ownerWorkspace, setLocation]);
 
   useEffect(() => {
@@ -777,6 +781,10 @@ export default function AdminDashboard() {
   };
 
   const handleLogout = async () => {
+    if (role === "owner") {
+      await signOut({ redirectUrl: `${import.meta.env.BASE_URL.replace(/\/$/, "") || "/"}/sign-in` });
+      return;
+    }
     await fetch("/api/coordinator/logout", { method: "POST" });
     setLocation("/coordinator");
   };

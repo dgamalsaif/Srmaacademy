@@ -2,6 +2,7 @@ import { raw, Router, type Request } from "express";
 import { db, insertResearchProgramSchema, programCatalogBootstrapTable, researchProgramsTable } from "@workspace/db";
 import { desc, eq, sql } from "drizzle-orm";
 import { readSession, requireOwner } from "../middlewares/coordinatorAuth";
+import { getManagedOwner } from "../middlewares/ownerAuth";
 import { getSiteContentSettings, OpportunityFieldId } from "../lib/siteContentSettings";
 import { importResearchOpportunities, PROGRAM_CATALOG_LOCK_ID, type ResearchOpportunityImportRow } from "../lib/researchOpportunityImport";
 import { getResearchImageUrl, ResearchImageValidationError, resolveResearchImageUploadToken, uploadResearchImage } from "../lib/researchImageStorage";
@@ -159,7 +160,7 @@ router.get("/sitemap.xml", async (_req, res) => {
 
 router.get("/programs", async (req, res) => {
   const rows = await listPrograms();
-  const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session));
+  const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session)) || Boolean(await getManagedOwner(req));
   res.json((isStaff ? rows : rows.filter(isPublicProgram)).map(toClient));
 });
 
@@ -189,7 +190,7 @@ router.post("/program-images/upload", requireOwner, raw({
 router.get("/programs/:id/image", async (req, res) => {
   const id = Number(req.params["id"]);
   const [program] = await db.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, id)).limit(1);
-  const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session));
+  const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session)) || Boolean(await getManagedOwner(req));
   if (!program || !program.imagePath || (!isStaff && !isPublicProgram(program))) {
     res.status(404).end();
     return;
@@ -224,7 +225,7 @@ router.get("/programs/:id/image", async (req, res) => {
 router.get("/programs/:id/share", async (req, res) => {
   const id = Number(req.params["id"]);
   const [program] = await db.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, id)).limit(1);
-  const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session));
+  const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session)) || Boolean(await getManagedOwner(req));
   if (!program || (!isStaff && !isPublicProgram(program))) {
     res.status(404).type("html").send("<!doctype html><title>Not found</title>");
     return;
