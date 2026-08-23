@@ -2,25 +2,28 @@ import { Link } from "wouter";
 import { Phone, Send, Radio } from "lucide-react";
 import { SRMA_LOGO } from "@/components/BrandBackground";
 import InstallAppButton from "@/components/InstallAppButton";
+import { useLanguage } from "@/lib/i18n";
 
 const quickLinks = [
-  { href: "/", label: "الرئيسية" },
-  { href: "/participant-portal", label: "بوابة المشارك" },
-  { href: "/coordinator", label: "بوابة المنسق" },
-  { href: "/special-requests", label: "الطلبات الخاصة" },
-  { href: "/knowledge-center", label: "مركز المعرفة" },
-  { href: "/about", label: "عن المنصة" },
-  { href: "/faq", label: "الأسئلة الشائعة" },
+  { href: "/", ar: "الرئيسية", en: "Home" },
+  { href: "/participant-portal", ar: "بوابة المشارك", en: "Participant Portal" },
+  { href: "/coordinator", ar: "بوابة المنسق", en: "Coordinator Portal" },
+  { href: "/special-requests", ar: "الطلبات الخاصة", en: "Special Requests" },
+  { href: "/knowledge-center", ar: "مركز المعرفة", en: "Knowledge Center" },
+  { href: "/about", ar: "عن المنصة", en: "About the platform" },
+  { href: "/faq", ar: "الأسئلة الشائعة", en: "Frequently asked questions" },
 ];
 
 export default function Footer() {
+  const { localize, t } = useLanguage();
+
   return (
     <footer className="bg-[#0C3156] text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           {/* Contact */}
           <div>
-            <h3 className="text-lg font-bold mb-5 text-[#E9A020]">تواصل معنا</h3>
+            <h3 className="text-lg font-bold mb-5 text-[#E9A020]">{t("footer.contact")}</h3>
             <div className="space-y-3">
               <a
                 href="https://wa.me/966562159258"
@@ -40,7 +43,7 @@ export default function Footer() {
                 className="flex items-center gap-2 text-blue-200 hover:text-white text-sm transition-colors"
               >
                 <Send size={15} />
-                @SRMAAcademy (Telegram)
+                @SRMAAcademy ({t("common.telegram")})
               </a>
               <a
                 href="https://whatsapp.com/channel/0029Vb7QxGE1iUxikfgEFJ0I"
@@ -50,14 +53,14 @@ export default function Footer() {
                 className="flex items-center gap-2 text-blue-200 hover:text-white text-sm transition-colors"
               >
                 <Radio size={15} />
-                قناة WhatsApp
+                {localize("قناة WhatsApp", "WhatsApp Channel")}
               </a>
             </div>
           </div>
 
           {/* Quick links */}
           <div>
-            <h3 className="text-lg font-bold mb-5 text-[#E9A020]">روابط سريعة</h3>
+            <h3 className="text-lg font-bold mb-5 text-[#E9A020]">{t("footer.quickLinks")}</h3>
             <ul className="space-y-2.5">
               {quickLinks.map((link) => (
                 <li key={link.href}>
@@ -66,7 +69,7 @@ export default function Footer() {
                     data-testid={`link-footer-${link.href.replace("/", "") || "home"}`}
                     className="text-blue-200 hover:text-white text-sm transition-colors"
                   >
-                    {link.label}
+                    {localize(link.ar, link.en)}
                   </Link>
                 </li>
               ))}
@@ -87,7 +90,7 @@ export default function Footer() {
               </div>
             </div>
             <p className="text-blue-200 text-sm text-right leading-relaxed">
-              المنصة الأكاديمية الأولى في المملكة للبحث العلمي الطبي — نرافقك من الفكرة حتى النشر في أرقى المجلات الدولية
+              {localize("المنصة الأكاديمية الأولى في المملكة للبحث العلمي الطبي — نرافقك من الفكرة حتى النشر في أرقى المجلات الدولية", "The Kingdom's leading academic platform for medical research — supporting you from idea to publication in leading international journals.")}
             </p>
             <a
               href="https://t.me/SRMAAcademy"
@@ -97,7 +100,7 @@ export default function Footer() {
               className="flex items-center gap-2 border border-[#E9A020]/60 text-[#E9A020] px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-[#E9A020]/10 transition-colors"
             >
               <Send size={14} />
-              اشترك في قناة Telegram
+              {t("footer.telegram")}
             </a>
             <InstallAppButton className="flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-black text-[#0C3156] transition hover:bg-blue-50" />
           </div>
@@ -106,7 +109,7 @@ export default function Footer() {
 
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between flex-wrap gap-2">
-          <p className="text-blue-300 text-xs">© SRMA Research Academy 2026. جميع الحقوق محفوظة.</p>
+          <p className="text-blue-300 text-xs">{localize("© SRMA Research Academy 2026. جميع الحقوق محفوظة.", "© SRMA Research Academy 2026. All rights reserved.")}</p>
           <p className="text-blue-300 text-xs">SRMA Research Academy</p>
         </div>
       </div>

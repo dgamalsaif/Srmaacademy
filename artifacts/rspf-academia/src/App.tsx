@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -12,6 +11,7 @@ import ParticipantPortal from "@/pages/ParticipantPortal";
 import CoordinatorPortal from "@/pages/CoordinatorPortal";
 import SpecialRequests from "@/pages/SpecialRequests";
 import KnowledgeCenter from "@/pages/KnowledgeCenter";
+import KnowledgeArticle from "@/pages/KnowledgeArticle";
 import About from "@/pages/About";
 import FAQ from "@/pages/FAQ";
 import AdminDashboard from "@/pages/AdminDashboard";
@@ -19,16 +19,21 @@ import AdminSubmissions from "@/pages/AdminSubmissions";
 import ResearchDetail from "@/pages/ResearchDetail";
 import OwnerLogin from "@/pages/OwnerLogin";
 import NotFound from "@/pages/not-found";
+import { LanguageProvider, useLanguage } from "@/lib/i18n";
+import { PageSeo } from "@/lib/seo";
 
 const queryClient = new QueryClient();
 
 function Router() {
   const [location] = useLocation();
+  const { language } = useLanguage();
   const isAdmin = location === "/admin" || location === "/admin/submissions" || location === "/owner-admin" || location === "/coordinator/dashboard";
   const isCoordinatorPortal = location === "/coordinator" || location === "/coordinator-portal";
+  const isPrivate = isAdmin || isCoordinatorPortal;
 
   return (
     <div className="relative flex min-h-screen flex-col" style={{ fontFamily: "'Tajawal', sans-serif" }}>
+      <PageSeo pathname={location} language={language} noIndex={isPrivate} />
       <BrandBackground />
       <div className="relative z-10 flex min-h-screen flex-col">
         {!isAdmin && !isCoordinatorPortal && <Navbar />}
@@ -40,6 +45,7 @@ function Router() {
             <Route path="/coordinator-portal" component={CoordinatorPortal} />
             <Route path="/special-requests" component={SpecialRequests} />
             <Route path="/knowledge-center" component={KnowledgeCenter} />
+            <Route path="/knowledge-center/:slug" component={KnowledgeArticle} />
             <Route path="/about" component={About} />
             <Route path="/faq" component={FAQ} />
             <Route path="/admin" component={AdminDashboard} />
@@ -58,17 +64,14 @@ function Router() {
 }
 
 function App() {
-  useEffect(() => {
-    document.documentElement.dir = "rtl";
-    document.documentElement.lang = "ar";
-  }, []);
-
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
+        <LanguageProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <Router />
+          </WouterRouter>
+        </LanguageProvider>
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

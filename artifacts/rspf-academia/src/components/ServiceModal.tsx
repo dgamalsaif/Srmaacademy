@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { X, CheckCircle2, Loader2 } from "lucide-react";
+import { useLanguage } from "@/lib/i18n";
 
 interface ServiceModalProps {
   isOpen: boolean;
@@ -10,17 +11,18 @@ interface ServiceModalProps {
 const API_BASE = "/api";
 
 const serviceTypes = [
-  "إعداد الدراسة البحثية",
-  "رسائل الماجستير",
-  "رسائل الدكتوراه",
-  "التحكيم العلمي",
-  "الترجمة الأكاديمية",
-  "التدقيق والمراجعة",
-  "التحليل الإحصائي",
-  "خدمات أخرى",
+  { value: "إعداد الدراسة البحثية", label: "Research study preparation" },
+  { value: "رسائل الماجستير", label: "Master's theses" },
+  { value: "رسائل الدكتوراه", label: "Doctoral dissertations" },
+  { value: "التحكيم العلمي", label: "Scientific peer review" },
+  { value: "الترجمة الأكاديمية", label: "Academic translation" },
+  { value: "التدقيق والمراجعة", label: "Editing and proofreading" },
+  { value: "التحليل الإحصائي", label: "Statistical analysis" },
+  { value: "خدمات أخرى", label: "Other services" },
 ];
 
 export default function ServiceModal({ isOpen, onClose, serviceName }: ServiceModalProps) {
+  const { language, localize } = useLanguage();
   const [form, setForm] = useState({
     fullName: "",
     phone: "",
@@ -41,6 +43,12 @@ export default function ServiceModal({ isOpen, onClose, serviceName }: ServiceMo
   };
 
   const handleClose = () => { reset(); onClose(); };
+  const serviceLabel = (value: string) => language === "en"
+    ? serviceTypes.find((service) => service.value === value)?.label || value
+    : value;
+  const requestError = (message?: string) => language === "en"
+    ? "We could not submit your request. Please try again."
+    : (message || "حدث خطأ أثناء الإرسال");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,24 +64,23 @@ export default function ServiceModal({ isOpen, onClose, serviceName }: ServiceMo
 
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error((body as { error?: string }).error || "حدث خطأ أثناء الإرسال");
+        throw new Error(requestError((body as { error?: string }).error));
       }
 
       setDone(true);
 
       // Open WhatsApp with pre-filled message
       const waMessage = encodeURIComponent(
-        `مرحباً، أنا ${form.fullName}\n` +
-        `أطلب خدمة: ${form.serviceType}\n\n` +
-        `📱 ${form.phone}\n📧 ${form.email}\n\n` +
-        `التفاصيل: ${form.details}`
+        language === "en"
+          ? `Hello, I am ${form.fullName}\nI am requesting: ${serviceLabel(form.serviceType)}\n\n📱 ${form.phone}\n📧 ${form.email}\n\nDetails: ${form.details}`
+          : `مرحباً، أنا ${form.fullName}\nأطلب خدمة: ${form.serviceType}\n\n📱 ${form.phone}\n📧 ${form.email}\n\nالتفاصيل: ${form.details}`
       );
       setTimeout(() => {
         window.open(`https://wa.me/966562159258?text=${waMessage}`, "_blank");
       }, 1200);
 
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "حدث خطأ غير متوقع");
+      setError(err instanceof Error ? err.message : localize("حدث خطأ غير متوقع", "An unexpected error occurred."));
     } finally {
       setLoading(false);
     }
@@ -89,12 +96,12 @@ export default function ServiceModal({ isOpen, onClose, serviceName }: ServiceMo
         {/* Header */}
         <div className="sticky top-0 bg-white border-b border-slate-100 px-6 py-4 rounded-t-2xl">
           <div className="flex items-center justify-between">
-            <button data-testid="button-service-modal-close" onClick={handleClose} className="text-slate-400 hover:text-slate-600">
+            <button data-testid="button-service-modal-close" aria-label={localize("إغلاق نافذة طلب الخدمة", "Close service request dialog")} onClick={handleClose} className="text-slate-400 hover:text-slate-600">
               <X size={20} />
             </button>
             <div className="text-right">
-              <h2 className="text-lg font-bold text-[#0C3156]">{form.serviceType || serviceName}</h2>
-              <p className="text-xs text-slate-500 mt-0.5">يرجى ملء النموذج لتقديم طلبك</p>
+              <h2 className="text-lg font-bold text-[#0C3156]">{serviceLabel(form.serviceType || serviceName)}</h2>
+              <p className="text-xs text-slate-500 mt-0.5">{localize("يرجى ملء النموذج لتقديم طلبك", "Please complete the form to submit your request.")}</p>
             </div>
           </div>
         </div>
@@ -105,20 +112,20 @@ export default function ServiceModal({ isOpen, onClose, serviceName }: ServiceMo
             <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle2 size={32} className="text-emerald-600" />
             </div>
-            <h3 className="text-xl font-black text-slate-900 mb-2">تم استلام طلبك!</h3>
-            <p className="text-slate-500 text-sm mb-2">تم حفظ طلبك وسيتواصل معك الفريق خلال 24 ساعة.</p>
-            <p className="text-slate-500 text-sm mb-6">سيفتح واتساب تلقائياً...</p>
+            <h3 className="text-xl font-black text-slate-900 mb-2">{localize("تم استلام طلبك!", "Your request has been received!")}</h3>
+            <p className="text-slate-500 text-sm mb-2">{localize("تم حفظ طلبك وسيتواصل معك الفريق خلال 24 ساعة.", "Your request has been saved and the team will contact you within 24 hours.")}</p>
+            <p className="text-slate-500 text-sm mb-6">{localize("سيفتح واتساب تلقائياً...", "WhatsApp will open automatically...")}</p>
             <div className="flex gap-3 justify-center">
               <a
-                href={`https://wa.me/966562159258?text=${encodeURIComponent(`مرحباً، أنا ${form.fullName} — أطلب خدمة: ${form.serviceType}`)}`}
+                href={`https://wa.me/966562159258?text=${encodeURIComponent(language === "en" ? `Hello, I am ${form.fullName} — I am requesting: ${serviceLabel(form.serviceType)}` : `مرحباً، أنا ${form.fullName} — أطلب خدمة: ${form.serviceType}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-[#25D366] text-white font-bold px-6 py-2.5 rounded-full text-sm hover:bg-[#1eb856] transition-colors"
               >
-                فتح واتساب يدوياً
+                {localize("فتح واتساب يدوياً", "Open WhatsApp manually")}
               </a>
               <button onClick={handleClose} className="border border-slate-200 text-slate-600 font-semibold px-6 py-2.5 rounded-full text-sm hover:bg-slate-50">
-                إغلاق
+                {localize("إغلاق", "Close")}
               </button>
             </div>
           </div>
@@ -131,9 +138,9 @@ export default function ServiceModal({ isOpen, onClose, serviceName }: ServiceMo
             )}
 
             {[
-              { label: "الاسم الكامل", key: "fullName", placeholder: "الاسم الكامل", type: "text" },
-              { label: "رقم الجوال (واتساب)", key: "phone", placeholder: "+966 56 215 9258", type: "tel" },
-              { label: "البريد الإلكتروني", key: "email", placeholder: "example@email.com", type: "email", ltr: true },
+              { label: localize("الاسم الكامل", "Full name"), key: "fullName", placeholder: localize("الاسم الكامل", "Full name"), type: "text" },
+              { label: localize("رقم الجوال (واتساب)", "Mobile number (WhatsApp)"), key: "phone", placeholder: "+966 56 215 9258", type: "tel" },
+              { label: localize("البريد الإلكتروني", "Email address"), key: "email", placeholder: "example@email.com", type: "email", ltr: true },
             ].map(({ label, key, placeholder, type, ltr }) => (
               <div key={key}>
                 <label className="block text-sm font-semibold text-slate-700 mb-1 text-right">{label} <span className="text-red-500">*</span></label>
@@ -151,24 +158,24 @@ export default function ServiceModal({ isOpen, onClose, serviceName }: ServiceMo
             ))}
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1 text-right">نوع الخدمة</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1 text-right">{localize("نوع الخدمة", "Service type")}</label>
               <select
                 data-testid="select-service-type"
                 value={form.serviceType}
                 onChange={(e) => setForm({ ...form, serviceType: e.target.value })}
                 className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-right text-sm focus:outline-none focus:ring-2 focus:ring-[#0C3156]/25 focus:border-[#0C3156] bg-white"
               >
-                {serviceTypes.map((s) => <option key={s} value={s}>{s}</option>)}
+                {serviceTypes.map((service) => <option key={service.value} value={service.value}>{language === "en" ? service.label : service.value}</option>)}
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1 text-right">تفاصيل الطلب <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1 text-right">{localize("تفاصيل الطلب", "Request details")} <span className="text-red-500">*</span></label>
               <textarea
                 data-testid="textarea-service-details"
                 required
                 rows={4}
-                placeholder="يرجى وصف احتياجك بالتفصيل..."
+                placeholder={localize("يرجى وصف احتياجك بالتفصيل...", "Please describe your needs in detail...")}
                 value={form.details}
                 onChange={(e) => setForm({ ...form, details: e.target.value })}
                 className="w-full border border-slate-200 rounded-xl px-4 py-2.5 text-right text-sm focus:outline-none focus:ring-2 focus:ring-[#0C3156]/25 focus:border-[#0C3156] resize-none"
@@ -177,7 +184,7 @@ export default function ServiceModal({ isOpen, onClose, serviceName }: ServiceMo
 
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1 text-right">
-                رابط الملفات <span className="text-slate-400 font-normal">(اختياري)</span>
+                {localize("رابط الملفات", "File link")} <span className="text-slate-400 font-normal">{localize("(اختياري)", "(optional)")}</span>
               </label>
               <input
                 data-testid="input-service-file-link"
@@ -197,13 +204,13 @@ export default function ServiceModal({ isOpen, onClose, serviceName }: ServiceMo
               className="w-full bg-[#E9A020] text-white font-bold py-3.5 rounded-xl hover:bg-[#d08e10] transition-colors text-base shadow-sm disabled:opacity-60 flex items-center justify-center gap-2"
             >
               {loading ? (
-                <><Loader2 size={18} className="animate-spin" /> جاري الإرسال...</>
+                <><Loader2 size={18} className="animate-spin" /> {localize("جاري الإرسال...", "Submitting...")}</>
               ) : (
-                "تقديم الطلب الآن 📤"
+                localize("تقديم الطلب الآن 📤", "Submit request now 📤")
               )}
             </button>
             <p className="text-center text-xs text-slate-400 mt-1">
-              بعد التقديم سيفتح واتساب تلقائياً مع بياناتك
+              {localize("بعد التقديم سيفتح واتساب تلقائياً مع بياناتك", "After submission, WhatsApp will open automatically with your details.")}
             </p>
           </form>
         )}

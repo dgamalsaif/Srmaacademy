@@ -1,2 +1,10 @@
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /owner-admin
+Disallow: /coordinator
+Disallow: /coordinator/
+
+Sitemap: https://srmaacademy.com/sitemap.xml
+Sitemap: https://srmaacademy.com/api/sitemap.xml

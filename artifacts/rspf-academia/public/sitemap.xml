@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://srmaacademy.com/?lang=ar</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://srmaacademy.com/?lang=en</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://srmaacademy.com/participant-portal?lang=ar</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://srmaacademy.com/participant-portal?lang=en</loc><changefreq>daily</changefreq><priority>0.9</priority></url>
+  <url><loc>https://srmaacademy.com/knowledge-center?lang=ar</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://srmaacademy.com/knowledge-center?lang=en</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://srmaacademy.com/knowledge-center/saudi-board-research-matching-2026?lang=ar</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://srmaacademy.com/knowledge-center/saudi-board-research-matching-2026?lang=en</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://srmaacademy.com/knowledge-center/choosing-q1-q2-medical-journal?lang=ar</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://srmaacademy.com/knowledge-center/choosing-q1-q2-medical-journal?lang=en</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://srmaacademy.com/knowledge-center/research-for-fellowship-and-exam-applications?lang=ar</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://srmaacademy.com/knowledge-center/research-for-fellowship-and-exam-applications?lang=en</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://srmaacademy.com/about?lang=ar</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://srmaacademy.com/about?lang=en</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://srmaacademy.com/faq?lang=ar</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://srmaacademy.com/faq?lang=en</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://srmaacademy.com/special-requests?lang=ar</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://srmaacademy.com/special-requests?lang=en</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+</urlset>

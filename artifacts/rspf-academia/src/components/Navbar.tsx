@@ -3,19 +3,20 @@ import { Link, useLocation } from "wouter";
 import { Menu, X } from "lucide-react";
 import { SRMA_LOGO } from "@/components/BrandBackground";
 import InstallAppButton from "@/components/InstallAppButton";
-
-const navLinks = [
-  { href: "/", label: "الرئيسية" },
-  { href: "/knowledge-center", label: "مركز المعرفة" },
-  { href: "/about", label: "عن المنصة" },
-  { href: "/participant-portal", label: "بوابة المشارك", highlight: true },
-  { href: "/coordinator", label: "بوابة المنسق" },
-  { href: "/special-requests", label: "الطلبات الخاصة ⭐" },
-];
+import { useLanguage } from "@/lib/i18n";
 
 export default function Navbar() {
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { t, language, toggleLanguage } = useLanguage();
+  const navLinks = [
+    { href: "/", label: t("nav.home") },
+    { href: "/knowledge-center", label: t("nav.knowledge") },
+    { href: "/about", label: t("nav.about") },
+    { href: "/participant-portal", label: t("nav.participant"), highlight: true },
+    { href: "/coordinator", label: t("nav.coordinator") },
+    { href: "/special-requests", label: t("nav.requests") },
+  ];
 
   return (
     <nav className="sticky top-0 z-50 bg-white shadow-md border-b border-slate-100">
@@ -55,6 +56,9 @@ export default function Navbar() {
           <div className="hidden lg:block">
             <InstallAppButton className="flex items-center gap-1.5 rounded-full border border-[#117b59]/25 bg-[#f3fbf8] px-3 py-2 text-xs font-black text-[#117b59] transition hover:bg-[#e6f5ef]" />
           </div>
+          <button type="button" data-testid="button-language-toggle" onClick={toggleLanguage} className="hidden rounded-full border border-[#0C3156]/20 px-3 py-2 text-xs font-black text-[#0C3156] transition hover:bg-[#0C3156] hover:text-white sm:inline-flex" aria-label={language === "ar" ? "Switch to English" : "التبديل إلى العربية"}>
+            {t("language.switch")}
+          </button>
 
           {/* Logo */}
           <Link href="/" data-testid="link-logo" className="flex items-center gap-2.5 flex-shrink-0">
@@ -84,6 +88,9 @@ export default function Navbar() {
             </Link>
           ))}
           <div className="px-3 pt-3">
+            <button type="button" data-testid="button-language-toggle-mobile" onClick={() => { toggleLanguage(); setMobileOpen(false); }} className="mb-2 flex w-full items-center justify-center rounded-xl border border-[#0C3156]/20 px-4 py-3 text-sm font-black text-[#0C3156]">
+              {t("language.switch")}
+            </button>
             <InstallAppButton className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#e6f5ef] px-4 py-3 text-sm font-black text-[#117b59]" />
           </div>
         </div>

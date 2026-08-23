@@ -134,6 +134,29 @@ async function validateRequiredProgramFields(data: Record<string, unknown>): Pro
   });
 }
 
+function escapeXml(value: string) {
+  return value.replace(/[<>&'"]/g, (character) => ({
+    "<": "&lt;",
+    ">": "&gt;",
+    "&": "&amp;",
+    "'": "&apos;",
+    "\"": "&quot;",
+  }[character] || character));
+}
+
+router.get("/sitemap.xml", async (_req, res) => {
+  const rows = (await listPrograms()).filter(isPublicProgram);
+  const siteUrl = "https://srmaacademy.com";
+  const entries = rows.flatMap((program) => {
+    const lastModified = program.updatedAt?.toISOString?.() || program.createdAt.toISOString();
+    return ["ar", "en"].map((language) => (
+      `  <url><loc>${siteUrl}/research/${program.id}?lang=${language}</loc><lastmod>${lastModified.slice(0, 10)}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`
+    ));
+  }).join("\n");
+  const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries}\n</urlset>`;
+  res.type("application/xml").set("Cache-Control", "public, max-age=3600").send(body);
+});
+
 router.get("/programs", async (req, res) => {
   const rows = await listPrograms();
   const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session));
