@@ -653,8 +653,11 @@ export default function AdminDashboard() {
   const ownerWorkspace = location === "/admin";
 
   useEffect(() => {
-    fetch("/api/coordinator/session")
-      .then((response) => response.json() as Promise<{ authenticated?: boolean; role?: "owner" | "coordinator"; coordinatorName?: string | null }>)
+    fetch("/api/coordinator/session", { cache: "no-store", credentials: "same-origin" })
+      .then((response) => {
+        if (!response.ok) throw new Error("Unable to verify staff session");
+        return response.json() as Promise<{ authenticated?: boolean; role?: "owner" | "coordinator"; coordinatorName?: string | null }>;
+      })
       .then((result) => {
         if (result.authenticated && result.role) {
           if (ownerWorkspace && result.role !== "owner") {

@@ -73,6 +73,11 @@ router.post("/coordinator/logout", (_req, res) => {
 });
 
 router.get("/coordinator/session", async (req, res) => {
+  // Authentication state must never be served from a browser cache. A cached
+  // anonymous response can otherwise survive a successful Clerk sign-in.
+  res.setHeader("Cache-Control", "no-store, max-age=0");
+  res.setHeader("Vary", "Cookie");
+
   const owner = await getManagedOwner(req);
   if (owner) {
     res.json({
