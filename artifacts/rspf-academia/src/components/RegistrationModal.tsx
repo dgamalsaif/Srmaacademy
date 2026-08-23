@@ -9,13 +9,17 @@ interface RegistrationModalProps {
   researchTitle: string;
   researchId?: number;
   coordinatorEntry?: boolean;
+  firstAuthorSeatsLeft?: number;
+  coAuthorSeatsLeft?: number;
+  onRegistered?: () => void;
 }
 
 const API_BASE = "/api";
 const initialForm = { fullName: "", specialization: "", email: "", whatsapp: "", affiliation: "", country: "المملكة العربية السعودية", dialCode: "+966", city: "", orcid: "" };
 
-export default function RegistrationModal({ isOpen, onClose, researchTitle, researchId = 0, coordinatorEntry = false }: RegistrationModalProps) {
+export default function RegistrationModal({ isOpen, onClose, researchTitle, researchId = 0, coordinatorEntry = false, firstAuthorSeatsLeft, coAuthorSeatsLeft, onRegistered }: RegistrationModalProps) {
   const [form, setForm] = useState(initialForm);
+  const [authorRole, setAuthorRole] = useState<"first_author" | "co_author">("co_author");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
@@ -33,7 +37,12 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
       .catch(() => setContentSettings(DEFAULT_SITE_CONTENT_SETTINGS));
   }, [isOpen]);
 
-  const reset = () => { setForm(initialForm); setDone(false); setError(""); setLoading(false); };
+  useEffect(() => {
+    if (!isOpen) return;
+    setAuthorRole(coAuthorSeatsLeft === 0 && (firstAuthorSeatsLeft || 0) > 0 ? "first_author" : "co_author");
+  }, [isOpen, firstAuthorSeatsLeft, coAuthorSeatsLeft]);
+
+  const reset = () => { setForm(initialForm); setAuthorRole("co_author"); setDone(false); setError(""); setLoading(false); };
   const handleClose = () => { reset(); onClose(); };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -46,6 +55,7 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
         whatsapp: visible("whatsapp") ? `${form.dialCode} ${form.whatsapp}`.trim() : "",
         researchId,
         researchTitle,
+        authorRole,
       };
       const response = await fetch(coordinatorEntry ? `${API_BASE}/coordinator/registrations` : `${API_BASE}/registrations`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
@@ -53,6 +63,7 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
       const result = await response.json().catch(() => ({})) as { error?: string };
       if (!response.ok) throw new Error(result.error || "حدث خطأ أثناء حفظ التسجيل");
       setDone(true);
+      onRegistered?.();
       if (!coordinatorEntry && visible("whatsapp")) {
         const message = encodeURIComponent(`مرحباً، أنا ${form.fullName} — ${form.specialization}\nأودّ التسجيل في الفرصة البحثية:\n${researchTitle}\n\n📧 ${form.email}\n🏥 ${form.affiliation}`);
         window.setTimeout(() => window.open(`https://wa.me/966562159258?text=${message}`, "_blank"), 900);
@@ -119,6 +130,17 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
             </div>}
 
             {visible("country") && <CountrySelector country={form.country} onCountryChange={(country) => setForm((previous) => ({ ...previous, country }))} dialCode={form.dialCode} onDialCodeChange={(dialCode) => setForm((previous) => ({ ...previous, dialCode }))} id={coordinatorEntry ? "student-country" : "registration-country"} required={required("country")} />}
+
+            {!coordinatorEntry && (typeof firstAuthorSeatsLeft === "number" || typeof coAuthorSeatsLeft === "number") && (
+              <div className="rounded-xl border border-[#d8eee7] bg-[#f3fbf8] p-4 text-right">
+                <label className="mb-2 block text-sm font-black text-[#174c3d]">دور التأليف المطلوب</label>
+                <select data-testid="select-author-role" value={authorRole} onChange={(event) => setAuthorRole(event.target.value as "first_author" | "co_author")} className="w-full rounded-xl border border-emerald-200 bg-white px-3 py-3 text-sm font-bold text-slate-700 outline-none focus:ring-2 focus:ring-emerald-200">
+                  <option value="first_author" disabled={(firstAuthorSeatsLeft || 0) < 1}>الكاتب الأول — متاح {firstAuthorSeatsLeft || 0} من 1</option>
+                  <option value="co_author" disabled={(coAuthorSeatsLeft || 0) < 1}>مؤلف مشارك — متاح {coAuthorSeatsLeft || 0}</option>
+                </select>
+                <p className="mt-2 text-xs leading-5 text-slate-500">يُحجز الدور المختار فوراً عند حفظ التسجيل، ولا يمكن تجاوزه بعد اكتمال مقاعده.</p>
+              </div>
+            )}
 
             <button data-testid="button-submit-registration" type="submit" disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-base font-bold text-white shadow-[0_8px_18px_rgba(17,123,89,0.18)] transition disabled:opacity-60" style={{ backgroundColor: contentSettings.accentColor }}>
               {loading ? <><Loader2 size={18} className="animate-spin" /> جارٍ الحفظ...</> : coordinatorEntry ? "حفظ تسجيل الطالب" : "تسجيل الآن"}

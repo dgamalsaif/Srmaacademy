@@ -4,22 +4,19 @@ import { ChevronLeft, Users, Clock, BookOpen, CheckCircle2, ArrowLeft, ExternalL
 import { ResearchOpportunity } from "@/lib/researchData";
 import RegistrationModal from "@/components/RegistrationModal";
 import { DEFAULT_SITE_CONTENT_SETTINGS, SiteContentSettings } from "@/lib/siteContentSettings";
-
-const COMPLETED_STAGE_LABELS: Record<string, string> = {
-  seats_full: "اكتملت المقاعد",
-  submitted: "تم الرفع في المجلة",
-  accepted: "مقبولة",
-  published: "تم النشر",
-};
+import OpportunityMedia from "@/components/OpportunityMedia";
+import OpportunityPrice from "@/components/OpportunityPrice";
+import { OpportunityCurrency, RESEARCH_STATUS_LABELS } from "@/lib/opportunityPricing";
 
 export default function ResearchDetail() {
   const params = useParams<{ id: string }>();
   const [research, setResearch] = useState<ResearchOpportunity | null>(null);
   const [allResearch, setAllResearch] = useState<ResearchOpportunity[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [currency, setCurrency] = useState<OpportunityCurrency>("SAR");
   const [contentSettings, setContentSettings] = useState<SiteContentSettings>(DEFAULT_SITE_CONTENT_SETTINGS);
 
-  useEffect(() => {
+  const loadResearch = () => {
     fetch("/api/programs")
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("programs unavailable")))
       .then((data: ResearchOpportunity[]) => {
@@ -27,6 +24,10 @@ export default function ResearchDetail() {
         setResearch(data.find((item) => item.id === parseInt(params.id || "0")) || null);
       })
       .catch(() => { setAllResearch([]); setResearch(null); });
+  };
+
+  useEffect(() => {
+    loadResearch();
     fetch("/api/site-content-settings")
       .then((response) => response.ok ? response.json() : Promise.reject())
       .then((settings: SiteContentSettings) => setContentSettings(settings))
@@ -50,7 +51,7 @@ export default function ResearchDetail() {
   const seatsUsed = research.totalSeats - research.seatsLeft;
   const pct = research.totalSeats > 0 ? Math.round((seatsUsed / research.totalSeats) * 100) : 0;
   const isCompletedResearch = research.category === "completed";
-  const completedStageLabel = COMPLETED_STAGE_LABELS[research.status] || "دراسة منجزة";
+  const statusLabel = RESEARCH_STATUS_LABELS[research.status] || "دراسة منجزة";
 
   return (
     <div className="min-h-screen bg-white">
@@ -74,9 +75,9 @@ export default function ResearchDetail() {
                 <span className={`text-xs font-bold px-3 py-1 rounded-full bg-white/20 text-white`}>
                   {research.specialty}
                 </span>
-                {isCompletedResearch ? (
+                {isCompletedResearch || research.status === "ethics_approved" || research.status === "under_review" ? (
                   <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-400 text-[#0C3156]">
-                    {completedStageLabel}
+                    {statusLabel}
                   </span>
                 ) : research.status === "open" && (
                   <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#E9A020] text-white">
@@ -97,12 +98,7 @@ export default function ResearchDetail() {
               <h1 className="text-xl sm:text-2xl font-black leading-snug mb-2 whitespace-pre-line">{contentSettings.participantTitleLanguage === "arabic" ? (research.titleAr || research.title) : contentSettings.participantTitleLanguage === "both" ? `${research.titleAr || research.title}\n${research.titleEn || research.title}` : (research.titleEn || research.title)}</h1>
               <p className="text-blue-200 text-sm">تاريخ الإضافة: {research.createdAt}</p>
             </div>
-            {research.imageUrl && (
-              <div className="srma-protected-image relative overflow-hidden rounded-2xl border border-slate-200 bg-slate-100 shadow-sm" onContextMenu={(event) => event.preventDefault()} onDragStart={(event) => event.preventDefault()}>
-                <img src={research.imageUrl} alt={`صورة ${research.titleAr || research.title}`} draggable={false} className="h-auto max-h-[420px] w-full object-cover" />
-                <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/5 text-lg font-black tracking-[0.25em] text-white/85 drop-shadow">SRMA RESEARCH ACADEMY</span>
-              </div>
-            )}
+            <OpportunityMedia research={research} className="h-[320px] sm:h-[420px]" />
 
             {/* Description */}
             <div className="bg-white border border-slate-200 rounded-2xl p-6 text-right shadow-sm">
@@ -154,6 +150,10 @@ export default function ResearchDetail() {
                     {research.seatsLeft} / {research.totalSeats}
                   </span>
                 </div>
+                <div className="rounded-xl bg-slate-50 px-3 py-2.5 text-xs">
+                  <div className="flex justify-between gap-2 font-bold text-amber-700"><span>الكاتب الأول</span><span>{research.firstAuthorSeatsLeft ?? 1} متاح من {research.firstAuthorSeats ?? 1}</span></div>
+                  <div className="mt-1.5 flex justify-between gap-2 font-bold text-emerald-700"><span>المؤلفون المشاركون</span><span>{research.coAuthorSeatsLeft ?? 14} متاح من {research.coAuthorSeats ?? 14}</span></div>
+                </div>
                 <div className="flex items-center justify-between flex-row-reverse py-2 border-b border-slate-100">
                   <span className="text-sm text-slate-500 flex items-center gap-1.5">
                     <Clock size={14} />
@@ -179,6 +179,8 @@ export default function ResearchDetail() {
                   <span className="font-semibold text-[#0C3156] text-sm">{research.supervisor || "—"}</span>
                 </div>
               </div>
+
+              {!isCompletedResearch && <div className="mb-5"><OpportunityPrice originalSar={research.priceOriginalSar} discountedSar={research.priceDiscountedSar} currency={currency} onCurrencyChange={setCurrency} /></div>}
 
               {/* Progress */}
               <div className="mb-5">
@@ -213,7 +215,7 @@ export default function ResearchDetail() {
                 className="w-full border border-[#0C3156]/25 text-[#0C3156] font-semibold py-2.5 rounded-xl text-sm text-center hover:bg-[#0C3156]/5 transition-colors flex items-center justify-center gap-2"
               >
                 <ExternalLink size={14} />
-                تواصل لمعرفة السعر
+                تواصل معنا
               </a>
             </div>
           </div>
@@ -244,7 +246,7 @@ export default function ResearchDetail() {
         )}
       </div>
 
-      <RegistrationModal isOpen={modalOpen} onClose={() => setModalOpen(false)} researchTitle={research.titleAr || research.title} researchId={research.id} />
+      <RegistrationModal isOpen={modalOpen} onClose={() => setModalOpen(false)} researchTitle={research.titleAr || research.title} researchId={research.id} firstAuthorSeatsLeft={research.firstAuthorSeatsLeft} coAuthorSeatsLeft={research.coAuthorSeatsLeft} onRegistered={loadResearch} />
     </div>
   );
 }

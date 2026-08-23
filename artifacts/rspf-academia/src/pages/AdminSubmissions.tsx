@@ -18,6 +18,7 @@ interface Registration {
   orcid: string;
   researchId: number;
   researchTitle: string;
+  authorRole?: "first_author" | "co_author";
   researchStatus?: string;
   researchCategory?: string;
   coordinatorId: number | null;
@@ -58,7 +59,9 @@ const RESEARCH_STATUS_LABELS: Record<string, string> = {
   closed: "أُغلقت",
   upcoming: "قريباً",
   seats_full: "اكتملت المقاعد",
+  ethics_approved: "موافقة أخلاقية / PROSPERO",
   submitted: "تم الرفع في المجلة",
+  under_review: "قيد مراجعة المجلة",
   accepted: "مقبولة للنشر",
   published: "تم النشر",
 };
@@ -160,6 +163,7 @@ function StudentEditModal({ registration, onClose, onSaved }: { registration: Re
             <p className="text-xs font-black text-[#117b59]">تعديل بيانات الطالب</p>
             <h2 className="mt-1 text-xl font-black text-slate-800">{registration.fullName}</h2>
             <p className="mt-1 text-xs text-slate-500">{registration.researchTitle}</p>
+            <p className="mt-1 text-xs font-bold text-[#117b59]">{registration.authorRole === "first_author" ? "دور التأليف: الكاتب الأول" : "دور التأليف: مؤلف مشارك"}</p>
           </div>
         </div>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -333,7 +337,7 @@ export default function AdminSubmissions() {
         year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
       });
       const rows = [
-        ["الاسم الكامل", "التخصص", "البريد الإلكتروني", "واتساب", "جهة الانتساب", "الدولة", "المدينة", "البرنامج / الفرصة", "مرحلة الفرصة", ...(canManageCoordinatorRequests ? ["المسجّل بواسطة"] : []), "حالة الطالب", "تاريخ التسجيل"],
+        ["الاسم الكامل", "التخصص", "البريد الإلكتروني", "واتساب", "جهة الانتساب", "الدولة", "المدينة", "البرنامج / الفرصة", "دور التأليف", "مرحلة الفرصة", ...(canManageCoordinatorRequests ? ["المسجّل بواسطة"] : []), "حالة الطالب", "تاريخ التسجيل"],
         ...records.map((registration) => [
           registration.fullName,
           registration.specialization,
@@ -343,6 +347,7 @@ export default function AdminSubmissions() {
           registration.country,
           registration.city || "—",
           registration.researchTitle,
+          registration.authorRole === "first_author" ? "الكاتب الأول" : "مؤلف مشارك",
           RESEARCH_STATUS_LABELS[registration.researchStatus || ""] || registration.researchStatus || "—",
           ...(canManageCoordinatorRequests ? [registration.coordinatorName || "تسجيل عام"] : []),
           STATUS_LABELS[registration.status] || registration.status,

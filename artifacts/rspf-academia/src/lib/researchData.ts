@@ -13,7 +13,13 @@ export interface ResearchOpportunity {
   descriptionEn?: string;
   seatsLeft: number;
   totalSeats: number;
-  status: "open" | "closed" | "draft" | "upcoming" | "seats_full" | "submitted" | "accepted" | "published";
+  status: "open" | "closed" | "draft" | "upcoming" | "seats_full" | "ethics_approved" | "submitted" | "under_review" | "accepted" | "published";
+  firstAuthorSeats?: number;
+  firstAuthorSeatsLeft?: number;
+  coAuthorSeats?: number;
+  coAuthorSeatsLeft?: number;
+  priceOriginalSar?: number;
+  priceDiscountedSar?: number;
   journalTarget: string;
   journalIssn?: string;
   journalPubmed?: string;

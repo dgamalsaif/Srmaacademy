@@ -1,11 +1,20 @@
 import { Router, type Request, type Response } from "express";
 import { db, coordinatorsTable, registrationsTable, researchProgramsTable, serviceRequestsTable, insertRegistrationSchema, insertServiceRequestSchema } from "@workspace/db";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { sendServiceRequestEmail } from "../lib/mailer";
 import { readSession, requireCoordinator, requireOwner } from "../middlewares/coordinatorAuth";
 import { getSiteContentSettings } from "../lib/siteContentSettings";
+import { ensureProgramCapacityModel } from "../lib/programCapacity";
 
 const router = Router();
+const REGISTRATION_LOCK_NAMESPACE = 4_219_000;
+const AUTHOR_ROLES = new Set(["first_author", "co_author"]);
+
+class RegistrationCapacityError extends Error {
+  constructor(message: string, readonly status = 400) {
+    super(message);
+  }
+}
 
 async function createRegistration(req: Request, res: Response, coordinatorId: number | null) {
   const audience = coordinatorId ? "coordinator" : "participant";
@@ -44,16 +53,55 @@ async function createRegistration(req: Request, res: Response, coordinatorId: nu
     return;
   }
 
-  const [program] = await db.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, parsed.data.researchId)).limit(1);
-  if (!program || program.status !== "open") {
-    res.status(400).json({ error: "هذه الفرصة غير متاحة للتسجيل حالياً." });
+  const authorRole = typeof source.authorRole === "string" ? source.authorRole : "co_author";
+  if (!AUTHOR_ROLES.has(authorRole)) {
+    res.status(400).json({ error: "اختر دور تأليف صحيحاً." });
     return;
   }
 
-  const researchTitle = program.titleAr || program.titleEn;
-  const row = await db.insert(registrationsTable).values({ ...parsed.data, researchTitle, coordinatorId }).returning();
+  try {
+    const row = await db.transaction(async (tx) => {
+      await ensureProgramCapacityModel(tx);
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(${REGISTRATION_LOCK_NAMESPACE + parsed.data.researchId})`);
+      const [program] = await tx.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, parsed.data.researchId)).limit(1);
+      if (!program || program.status !== "open") {
+        throw new RegistrationCapacityError("هذه الفرصة غير متاحة للتسجيل حالياً.");
+      }
 
-  res.status(201).json(row[0]);
+      const isFirstAuthor = authorRole === "first_author";
+      const selectedSeatsLeft = isFirstAuthor ? program.firstAuthorSeatsLeft : program.coAuthorSeatsLeft;
+      if (selectedSeatsLeft < 1 || program.seatsLeft < 1) {
+        throw new RegistrationCapacityError(isFirstAuthor ? "مقعد الكاتب الأول غير متاح حالياً." : "مقاعد المؤلفين المشاركين اكتملت.");
+      }
+
+      const firstAuthorSeatsLeft = program.firstAuthorSeatsLeft - (isFirstAuthor ? 1 : 0);
+      const coAuthorSeatsLeft = program.coAuthorSeatsLeft - (isFirstAuthor ? 0 : 1);
+      const seatsLeft = firstAuthorSeatsLeft + coAuthorSeatsLeft;
+      const researchTitle = program.titleAr || program.titleEn;
+      const [registration] = await tx.insert(registrationsTable).values({
+        ...parsed.data,
+        authorRole,
+        researchTitle,
+        coordinatorId,
+      }).returning();
+      await tx.update(researchProgramsTable).set({
+        firstAuthorSeatsLeft,
+        coAuthorSeatsLeft,
+        seatsLeft,
+        status: seatsLeft === 0 ? "seats_full" : program.status,
+        updatedAt: new Date(),
+      }).where(eq(researchProgramsTable.id, program.id));
+      return registration;
+    });
+    res.status(201).json(row);
+  } catch (error) {
+    if (error instanceof RegistrationCapacityError) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+    req.log.error({ err: error, researchId: parsed.data.researchId }, "Could not reserve a research opportunity seat");
+    res.status(500).json({ error: "تعذر حجز المقعد الآن. يرجى المحاولة مرة أخرى." });
+  }
 }
 
 /* ── POST /api/registrations ── */
@@ -167,17 +215,47 @@ router.delete("/registrations/:id", requireCoordinator, async (req, res) => {
     return;
   }
   const id = Number(req.params["id"]);
-  const [current] = await db.select().from(registrationsTable).where(eq(registrationsTable.id, id)).limit(1);
-  if (!current) {
-    res.status(404).json({ error: "الطالب غير موجود" });
-    return;
+  try {
+    await db.transaction(async (tx) => {
+      const [candidate] = await tx.select().from(registrationsTable).where(eq(registrationsTable.id, id)).limit(1);
+      if (!candidate) throw new RegistrationCapacityError("الطالب غير موجود", 404);
+      await ensureProgramCapacityModel(tx);
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(${REGISTRATION_LOCK_NAMESPACE + candidate.researchId})`);
+      const [current] = await tx.select().from(registrationsTable).where(eq(registrationsTable.id, id)).limit(1);
+      if (!current) throw new RegistrationCapacityError("الطالب غير موجود", 404);
+      if (session.role === "coordinator" && current.coordinatorId !== session.coordinatorId) {
+        throw new RegistrationCapacityError("لا يمكنك حذف تسجيل لا يخصك", 403);
+      }
+
+      const [program] = await tx.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, current.researchId)).limit(1);
+      await tx.delete(registrationsTable).where(eq(registrationsTable.id, id));
+      if (!program) return;
+
+      const firstAuthorSeatsLeft = Math.min(
+        program.firstAuthorSeats,
+        program.firstAuthorSeatsLeft + (current.authorRole === "first_author" ? 1 : 0),
+      );
+      const coAuthorSeatsLeft = Math.min(
+        program.coAuthorSeats,
+        program.coAuthorSeatsLeft + (current.authorRole === "first_author" ? 0 : 1),
+      );
+      await tx.update(researchProgramsTable).set({
+        firstAuthorSeatsLeft,
+        coAuthorSeatsLeft,
+        seatsLeft: firstAuthorSeatsLeft + coAuthorSeatsLeft,
+        status: program.status === "seats_full" && program.category === "active" ? "open" : program.status,
+        updatedAt: new Date(),
+      }).where(eq(researchProgramsTable.id, program.id));
+    });
+    res.status(204).end();
+  } catch (error) {
+    if (error instanceof RegistrationCapacityError) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+    req.log.error({ err: error, registrationId: id }, "Could not restore a research opportunity seat");
+    res.status(500).json({ error: "تعذر حذف التسجيل الآن. يرجى المحاولة مرة أخرى." });
   }
-  if (session.role === "coordinator" && current.coordinatorId !== session.coordinatorId) {
-    res.status(403).json({ error: "لا يمكنك حذف تسجيل لا يخصك" });
-    return;
-  }
-  await db.delete(registrationsTable).where(eq(registrationsTable.id, id));
-  res.status(204).end();
 });
 
 /* ── PATCH /api/registrations/:id/status ── */

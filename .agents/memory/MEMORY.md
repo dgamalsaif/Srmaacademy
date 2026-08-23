@@ -1,1 +1,2 @@
 - [Registration email delivery](registration-email-delivery.md) — distinguish a saved registration from a successfully delivered email whenever SMTP may be unavailable.
+- [Database migration baseline](database-migration-baseline.md) — verify Drizzle migration snapshots before generating a new migration; a missing baseline can produce full table creation SQL.

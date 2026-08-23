@@ -4,6 +4,9 @@ import { Link } from "wouter";
 import { ResearchOpportunity } from "@/lib/researchData";
 import RegistrationModal from "@/components/RegistrationModal";
 import { DEFAULT_SITE_CONTENT_SETTINGS, SiteContentSettings } from "@/lib/siteContentSettings";
+import OpportunityMedia from "@/components/OpportunityMedia";
+import OpportunityPrice from "@/components/OpportunityPrice";
+import { OpportunityCurrency } from "@/lib/opportunityPricing";
 
 const hallOfFame = [
   { specialty: "ENT – Head and Neck Surgery", specialtyColor: "bg-indigo-100 text-indigo-700", title: "Efficacy of Biologic Therapy versus Conventional Treatment in Chronic Rhinosinusitis" },
@@ -18,9 +21,10 @@ export default function ParticipantPortal() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedResearch, setSelectedResearch] = useState<ResearchOpportunity | null>(null);
   const [opportunities, setOpportunities] = useState<ResearchOpportunity[]>([]);
+  const [currency, setCurrency] = useState<OpportunityCurrency>("SAR");
   const [contentSettings, setContentSettings] = useState<SiteContentSettings>(DEFAULT_SITE_CONTENT_SETTINGS);
 
-  useEffect(() => {
+  const refreshOpportunities = () => {
     fetch("/api/programs")
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("programs unavailable")))
       .then((data: ResearchOpportunity[]) => {
@@ -28,6 +32,10 @@ export default function ParticipantPortal() {
         setOpportunities(available);
       })
       .catch(() => setOpportunities([]));
+  };
+
+  useEffect(() => {
+    refreshOpportunities();
     fetch("/api/site-content-settings")
       .then((response) => response.ok ? response.json() : Promise.reject())
       .then((settings: SiteContentSettings) => setContentSettings(settings))
@@ -123,12 +131,7 @@ export default function ParticipantPortal() {
                             {displayTitle(opp)}
                           </h3>
                         </Link>
-                        {opp.imageUrl && (
-                          <div className="srma-protected-image relative mb-4 overflow-hidden rounded-xl border border-slate-100 bg-slate-100" onContextMenu={(event) => event.preventDefault()} onDragStart={(event) => event.preventDefault()}>
-                            <img src={opp.imageUrl} alt={`صورة ${displayTitle(opp)}`} draggable={false} className="h-48 w-full object-cover" />
-                            <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/5 text-sm font-black tracking-[0.2em] text-white/80 drop-shadow">SRMA</span>
-                          </div>
-                        )}
+                        <div className="mb-4"><OpportunityMedia research={opp} className="h-52" /></div>
 
                         <p className="text-[#0C3156] text-sm italic text-right mb-3 font-medium">
                           🏆 نحن في SRMA – نبني ملفك البحثي ونصنع الفارق
@@ -143,18 +146,18 @@ export default function ParticipantPortal() {
                           })}
                         </div>
 
-                        <a href="https://wa.me/966562159258" target="_blank" rel="noopener noreferrer"
-                          data-testid={`link-price-${opp.id}`}
-                          className="text-[#0C3156] text-sm underline text-right block mb-3 font-semibold">
-                          تواصل لمعرفة السعر
-                        </a>
+                        <div className="mb-4"><OpportunityPrice originalSar={opp.priceOriginalSar} discountedSar={opp.priceDiscountedSar} currency={currency} onCurrencyChange={setCurrency} compact /></div>
 
                         {contentSettings.visibleParticipantCardParts.includes("seats") && <><div className="mb-1">
                           <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
                             <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: `linear-gradient(to left, ${contentSettings.primaryColor}, ${contentSettings.accentColor})` }} />
                           </div>
                         </div>
-                        <p className="mb-4 text-right text-xs text-slate-500">تبقى <span className="font-bold" style={{ color: contentSettings.primaryColor }}>{opp.seatsLeft} مقاعد</span> فقط من أصل {opp.totalSeats}</p></>}
+                        <p className="mb-2 text-right text-xs text-slate-500">تبقى <span className="font-bold" style={{ color: contentSettings.primaryColor }}>{opp.seatsLeft} مقاعد</span> فقط من أصل {opp.totalSeats}</p>
+                        <div className="mb-4 flex flex-wrap justify-end gap-1.5 text-[11px] font-bold">
+                          <span className="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700">الكاتب الأول: {opp.firstAuthorSeatsLeft ?? 1} متاح</span>
+                          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">مؤلف مشارك: {opp.coAuthorSeatsLeft ?? 14} متاح</span>
+                        </div></>}
 
                         {contentSettings.visibleParticipantCardParts.includes("benefits") && <><button data-testid={`button-expand-benefits-${opp.id}`} onClick={() => toggleExpand(opp.id)}
                           className="flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-[#0C3156] mb-3 flex-row-reverse w-full justify-end">
@@ -248,7 +251,7 @@ export default function ParticipantPortal() {
         </div>
       </section>
 
-      <RegistrationModal isOpen={modalOpen} onClose={() => { setModalOpen(false); setSelectedResearch(null); }} researchTitle={selectedResearch?.titleAr || selectedResearch?.title || ""} researchId={selectedResearch?.id} />
+      <RegistrationModal isOpen={modalOpen} onClose={() => { setModalOpen(false); setSelectedResearch(null); }} researchTitle={selectedResearch?.titleAr || selectedResearch?.title || ""} researchId={selectedResearch?.id} firstAuthorSeatsLeft={selectedResearch?.firstAuthorSeatsLeft} coAuthorSeatsLeft={selectedResearch?.coAuthorSeatsLeft} onRegistered={refreshOpportunities} />
     </div>
   );
 }

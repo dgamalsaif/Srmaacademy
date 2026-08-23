@@ -23,9 +23,15 @@ const EMPTY_FORM: Omit<ResearchOpportunity, "id" | "createdAt"> = {
   description: "",
   descriptionAr: "",
   descriptionEn: "",
-  seatsLeft: 12,
-  totalSeats: 12,
+  seatsLeft: 15,
+  totalSeats: 15,
+  firstAuthorSeats: 1,
+  firstAuthorSeatsLeft: 1,
+  coAuthorSeats: 14,
+  coAuthorSeatsLeft: 14,
   status: "open",
+  priceOriginalSar: 1500,
+  priceDiscountedSar: 1000,
   journalTarget: "",
   journalIssn: "",
   journalPubmed: "",
@@ -47,7 +53,7 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, s
   const [imagePath, setImagePath] = useState<string | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
   const isCompletedResearch = form.category === "completed";
-  const completedStatus = ["seats_full", "submitted", "accepted", "published"].includes(form.status) ? form.status : "seats_full";
+  const completedStatus = ["seats_full", "ethics_approved", "submitted", "under_review", "accepted", "published"].includes(form.status) ? form.status : "seats_full";
   const isRequired = (field: OpportunityFieldId) => requiredFields.includes(field);
   const applySpecialty = (value: string, language: "ar" | "en") => {
     const selected = settings.specialtyOptions.find((option) => language === "ar" ? option.nameAr === value : option.nameEn === value);
@@ -159,7 +165,9 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, s
               {isCompletedResearch ? (
                 <select required={isRequired("status")} value={completedStatus} onChange={(e) => setForm({ ...form, status: e.target.value as ResearchOpportunity["status"], seatsLeft: e.target.value === "seats_full" ? 0 : form.seatsLeft })} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] bg-slate-50 text-right appearance-none">
                   <option value="seats_full">اكتملت المقاعد</option>
+                  <option value="ethics_approved">موافقة أخلاقية / PROSPERO</option>
                   <option value="submitted">تم الرفع في المجلة</option>
+                  <option value="under_review">قيد مراجعة المجلة</option>
                   <option value="accepted">مقبولة</option>
                   <option value="published">تم النشر</option>
                 </select>
@@ -173,14 +181,27 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, s
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">المقاعد الإجمالية{isRequired("totalSeats") && " *"}</label>
-              <input required={isRequired("totalSeats")} type="number" min={0} value={form.totalSeats} onChange={(e) => setForm({ ...form, totalSeats: parseInt(e.target.value) || 0 })} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] text-center bg-slate-50" />
+          <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-4 text-right">
+            <p className="font-black text-slate-800">هيكل المقاعد الموحّد</p>
+            <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs font-bold">
+              <span className="rounded-xl bg-white px-2 py-2 text-slate-700">15 مقعداً إجمالاً</span>
+              <span className="rounded-xl bg-white px-2 py-2 text-amber-700">كاتب أول: 1</span>
+              <span className="rounded-xl bg-white px-2 py-2 text-emerald-700">مؤلفون مشاركون: 14</span>
             </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2 text-right">المقاعد المتبقية{isRequired("seatsLeft") && " *"}</label>
-              <input required={isRequired("seatsLeft")} type="number" min={0} value={form.seatsLeft} onChange={(e) => setForm({ ...form, seatsLeft: parseInt(e.target.value) || 0 })} className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] text-center bg-slate-50" />
+            {isEdit && <p className="mt-3 text-xs text-slate-500">المتاح حالياً: {form.seatsLeft} من 15. يُحدَّث تلقائياً بعد التسجيل أو الحذف.</p>}
+          </div>
+
+          <div className="rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4">
+            <div className="mb-3 text-right"><p className="font-black text-slate-800">سعر الاشتراك</p><p className="mt-1 text-xs text-slate-500">الأسعار تحفظ بالريال السعودي وتُعرض بالدولار تلقائياً بسعر 3.75 ريال/دولار.</p></div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-right text-sm font-bold text-slate-700">السعر قبل الخصم (ر.س)</label>
+                <input type="number" min={0} value={form.priceOriginalSar ?? 1500} onChange={(event) => setForm({ ...form, priceOriginalSar: parseInt(event.target.value) || 0 })} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm outline-none focus:border-[#117b59] focus:ring-2 focus:ring-[#117b59]/20" />
+              </div>
+              <div>
+                <label className="mb-2 block text-right text-sm font-bold text-slate-700">السعر بعد الخصم (ر.س)</label>
+                <input type="number" min={0} value={form.priceDiscountedSar ?? 1000} onChange={(event) => setForm({ ...form, priceDiscountedSar: parseInt(event.target.value) || 0 })} className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-center text-sm outline-none focus:border-[#117b59] focus:ring-2 focus:ring-[#117b59]/20" />
+              </div>
             </div>
           </div>
 
@@ -685,6 +706,8 @@ export default function AdminDashboard() {
     benefits: form.benefits,
     duration: form.duration,
     supervisor: form.supervisor,
+    priceOriginalSar: form.priceOriginalSar ?? 1500,
+    priceDiscountedSar: form.priceDiscountedSar ?? 1000,
     ...(typeof imagePath === "string" ? { imagePath } : {}),
   });
 
@@ -1123,7 +1146,7 @@ export default function AdminDashboard() {
       {formOpen && (
         <ResearchFormModal
           isEdit={false}
-          initial={{ ...EMPTY_FORM, category: newCategory, status: newCategory === "completed" ? "seats_full" : "open", totalSeats: 12, seatsLeft: newCategory === "completed" ? 0 : 12 }}
+          initial={{ ...EMPTY_FORM, category: newCategory, status: newCategory === "completed" ? "seats_full" : "open", totalSeats: 15, seatsLeft: newCategory === "completed" ? 0 : 15 }}
           onSave={handleAdd}
           onClose={() => setFormOpen(false)}
           requiredFields={contentSettings.requiredOpportunityFields}
