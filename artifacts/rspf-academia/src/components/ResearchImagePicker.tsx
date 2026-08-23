@@ -9,6 +9,7 @@ interface ResearchImagePickerProps {
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const ALLOWED_IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 
 export default function ResearchImagePicker({ initialImageUrl = "", onImagePathChange, onUploadingChange }: ResearchImagePickerProps) {
   const [previewUrl, setPreviewUrl] = useState(initialImageUrl);
@@ -27,7 +28,8 @@ export default function ResearchImagePicker({ initialImageUrl = "", onImagePathC
 
   const uploadImage = async (file: File) => {
     setError("");
-    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+    const fileExtension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
+    if (!ALLOWED_IMAGE_TYPES.has(file.type.toLowerCase()) && !ALLOWED_IMAGE_EXTENSIONS.has(fileExtension)) {
       setError("اختر صورة بصيغة JPG أو PNG أو WebP.");
       return;
     }
@@ -152,16 +154,16 @@ async function createWatermarkedImage(file: File) {
 
 function loadImage(file: File) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
-    const url = URL.createObjectURL(file);
+    // FileReader is more reliable than blob URLs in some mobile browsers and
+    // embedded webviews used by photo pickers.
+    const reader = new FileReader();
     const image = new Image();
-    image.onload = () => {
-      URL.revokeObjectURL(url);
-      resolve(image);
+    reader.onerror = () => reject(new Error("تعذر قراءة ملف الصورة. أعد اختيار الملف وحاول مرة أخرى."));
+    reader.onload = () => {
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error("لم يتمكن المتصفح من فك ترميز الصورة. احفظها بصيغة JPG أو PNG أو WebP ثم حاول مجدداً."));
+      image.src = String(reader.result);
     };
-    image.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("تعذر قراءة الصورة المختارة."));
-    };
-    image.src = url;
+    reader.readAsDataURL(file);
   });
 }
