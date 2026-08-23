@@ -1,5 +1,5 @@
 import React from "react";
-import { CoordinatorPortalSettings, PORTAL_NAV_ICONS, PortalNavItem, PortalNavIcon } from "@/lib/coordinatorPortalSettings";
+import { CoordinatorCopyKey, CoordinatorPortalSettings, PORTAL_NAV_ICONS, PortalNavItem, PortalNavIcon } from "@/lib/coordinatorPortalSettings";
 import { Save, ChevronUp, ChevronDown, Eye, EyeOff, Star, Layout, MessageCircle, Link as LinkIcon, Smartphone, Cookie, Plus, Trash2 } from "lucide-react";
 
 interface Props {
@@ -22,6 +22,9 @@ export default function CoordinatorPortalSettingsPanel({
   };
 
   const updateNav = (newNav: PortalNavItem[]) => updateField("navItems", newNav);
+  const updateTranslation = (key: CoordinatorCopyKey, value: string) => {
+    updateField("translations", { ...settings.translations, [key]: value });
+  };
 
   const moveNavUp = (index: number) => {
     if (index === 0) return;
@@ -48,6 +51,7 @@ export default function CoordinatorPortalSettingsPanel({
     const newNav = [...settings.navItems, {
       id: `nav-${Date.now()}`,
       label: "رابط جديد",
+      labelEn: "New link",
       href: "/new-link",
       icon: "file" as PortalNavIcon,
       visible: true,
@@ -132,6 +136,10 @@ export default function CoordinatorPortalSettingsPanel({
                       <label className="block text-[11px] font-bold text-slate-500 mb-1.5">العنوان</label>
                       <input value={item.label} onChange={e => updateNavItem(index, { label: e.target.value })} data-testid={`input-nav-label-${item.id}`} className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium outline-none focus:border-[#117b59] focus:bg-white transition-all" />
                     </div>
+                     <div>
+                       <label className="block text-[11px] font-bold text-slate-500 mb-1.5">العنوان بالإنجليزية</label>
+                       <input value={item.labelEn ?? ""} onChange={e => updateNavItem(index, { labelEn: e.target.value })} data-testid={`input-nav-label-en-${item.id}`} dir="ltr" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-left text-sm font-medium outline-none focus:border-[#117b59] focus:bg-white transition-all" />
+                     </div>
                     <div>
                       <label className="block text-[11px] font-bold text-slate-500 mb-1.5">الرابط المسار</label>
                       <input value={item.href} onChange={e => updateNavItem(index, { href: e.target.value })} data-testid={`input-nav-href-${item.id}`} dir="ltr" className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm font-medium outline-none focus:border-[#117b59] focus:bg-white transition-all text-left" />
@@ -170,6 +178,22 @@ export default function CoordinatorPortalSettingsPanel({
               إضافة رابط جديد
             </button>
           </SectionCard>
+           
+           <SectionCard icon={Layout} title="النصوص الإنجليزية">
+             <p className="mb-5 text-sm text-slate-500">تُعرض هذه النصوص عند اختيار اللغة الإنجليزية.</p>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+               {(Object.entries(ENGLISH_COPY_LABELS) as [CoordinatorCopyKey, string][]).map(([key, label]) => (
+                 <InputField
+                   key={key}
+                   label={label}
+                   value={settings.translations[key]}
+                   onChange={value => updateTranslation(key, value)}
+                   testId={`input-translation-${key}`}
+                   dir="ltr"
+                 />
+               ))}
+             </div>
+           </SectionCard>
         </div>
 
         <div className="xl:col-span-4 space-y-6">
@@ -228,6 +252,27 @@ export default function CoordinatorPortalSettingsPanel({
     </div>
   );
 }
+
+const ENGLISH_COPY_LABELS: Record<CoordinatorCopyKey, string> = {
+  brandSubtitle: "الشعار اللفظي",
+  pageTitle: "عنوان الصفحة",
+  loginTitle: "عنوان تسجيل الدخول",
+  loginDescription: "وصف تسجيل الدخول",
+  codeLabel: "تسمية حقل الرمز",
+  codePlaceholder: "تلميح حقل الرمز",
+  loginLabel: "زر الدخول",
+  registrationPrefix: "بادئة التسجيل",
+  registrationLabel: "رابط التسجيل",
+  footnote: "النص السفلي",
+  cookieTitle: "عنوان ملفات الارتباط",
+  cookieDescription: "وصف ملفات الارتباط",
+  cookieRejectLabel: "زر الرفض",
+  cookieAcceptLabel: "زر القبول",
+  installTitle: "عنوان التثبيت",
+  installDescription: "وصف التثبيت",
+  installActionLabel: "زر التثبيت",
+  installDismissLabel: "زر التجاهل",
+};
 
 function SectionCard({ title, icon: Icon, children }: { title: string, icon: React.ElementType, children: React.ReactNode }) {
   return (

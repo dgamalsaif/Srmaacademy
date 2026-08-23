@@ -4,10 +4,13 @@ import { coordinatorPortalSettingsTable, db } from "@workspace/db";
 import { requireOwner } from "../middlewares/coordinatorAuth";
 
 type PortalNavIcon = "home" | "book" | "info" | "graduation" | "users" | "file";
+type CoordinatorCopyKey = "brandSubtitle" | "pageTitle" | "loginTitle" | "loginDescription" | "codeLabel" | "codePlaceholder" | "loginLabel" | "registrationPrefix" | "registrationLabel" | "footnote" | "cookieTitle" | "cookieDescription" | "cookieRejectLabel" | "cookieAcceptLabel" | "installTitle" | "installDescription" | "installActionLabel" | "installDismissLabel";
+const COPY_KEYS: CoordinatorCopyKey[] = ["brandSubtitle", "pageTitle", "loginTitle", "loginDescription", "codeLabel", "codePlaceholder", "loginLabel", "registrationPrefix", "registrationLabel", "footnote", "cookieTitle", "cookieDescription", "cookieRejectLabel", "cookieAcceptLabel", "installTitle", "installDescription", "installActionLabel", "installDismissLabel"];
 
 interface PortalNavItem {
   id: string;
   label: string;
+  labelEn?: string;
   href: string;
   icon: PortalNavIcon;
   visible: boolean;
@@ -42,6 +45,7 @@ interface CoordinatorPortalSettings {
   installDescription: string;
   installActionLabel: string;
   installDismissLabel: string;
+  translations: Record<CoordinatorCopyKey, string>;
   navItems: PortalNavItem[];
 }
 
@@ -76,13 +80,33 @@ const DEFAULT_SETTINGS: CoordinatorPortalSettings = {
   installDescription: "أضف المنصة إلى شاشتك الرئيسية للوصول السريع.",
   installActionLabel: "تثبيت",
   installDismissLabel: "ليس الآن",
+  translations: {
+    brandSubtitle: "Research Academy",
+    pageTitle: "SRMA Research Academy — Coordinator Portal",
+    loginTitle: "Coordinator Portal",
+    loginDescription: "Sign in with your personal access code",
+    codeLabel: "Access code",
+    codePlaceholder: "Enter your code here...",
+    loginLabel: "Sign in",
+    registrationPrefix: "Don't have an account?",
+    registrationLabel: "Register now",
+    footnote: "This portal is for approved coordinators only",
+    cookieTitle: "We use cookies",
+    cookieDescription: "We use cookies to improve your experience and measure platform performance. You can change your choice later from the policies page.",
+    cookieRejectLabel: "Reject non-essential",
+    cookieAcceptLabel: "Accept all",
+    installTitle: "Install SRMA Research Academy",
+    installDescription: "Add the platform to your home screen for quick access.",
+    installActionLabel: "Install",
+    installDismissLabel: "Not now",
+  },
   navItems: [
-    { id: "home", label: "الرئيسية", href: "/", icon: "home", visible: true, accent: false },
-    { id: "knowledge", label: "مركز المعرفة", href: "/knowledge-center", icon: "book", visible: true, accent: false },
-    { id: "about", label: "عن المنصة", href: "/about", icon: "info", visible: true, accent: false },
-    { id: "participant", label: "بوابة المشارك", href: "/participant-portal", icon: "graduation", visible: true, accent: true },
-    { id: "coordinator", label: "بوابة المنسق", href: "/coordinator", icon: "users", visible: true, accent: true },
-    { id: "requests", label: "الطلبات الخاصة", href: "/special-requests", icon: "file", visible: true, accent: false },
+    { id: "home", label: "الرئيسية", labelEn: "Home", href: "/", icon: "home", visible: true, accent: false },
+    { id: "knowledge", label: "مركز المعرفة", labelEn: "Knowledge Center", href: "/knowledge-center", icon: "book", visible: true, accent: false },
+    { id: "about", label: "عن المنصة", labelEn: "About", href: "/about", icon: "info", visible: true, accent: false },
+    { id: "participant", label: "بوابة المشارك", labelEn: "Participant Portal", href: "/participant-portal", icon: "graduation", visible: true, accent: true },
+    { id: "coordinator", label: "بوابة المنسق", labelEn: "Coordinator Portal", href: "/coordinator", icon: "users", visible: true, accent: true },
+    { id: "requests", label: "الطلبات الخاصة", labelEn: "Special Requests", href: "/special-requests", icon: "file", visible: true, accent: false },
   ],
 };
 
@@ -134,6 +158,16 @@ function sanitizeSettings(value: unknown): CoordinatorPortalSettings | null {
     : DEFAULT_SETTINGS[key] as boolean;
 
   const navItems = sanitizeNavItems(input.navItems);
+  const rawTranslations = input.translations && typeof input.translations === "object" && !Array.isArray(input.translations)
+    ? input.translations as Record<string, unknown>
+    : {};
+  const translations = COPY_KEYS.reduce((result, key) => {
+    const supplied = rawTranslations[key];
+    result[key] = typeof supplied === "string"
+      ? supplied.trim().slice(0, key.includes("Description") ? 800 : 300)
+      : (typeof input[key] === "string" ? input[key].trim().slice(0, key.includes("Description") ? 800 : 300) : DEFAULT_SETTINGS.translations[key]);
+    return result;
+  }, {} as Record<CoordinatorCopyKey, string>);
   const telegramUrl = text("telegramUrl", 300);
   const whatsappUrl = text("whatsappUrl", 300);
   const cookiePolicyUrl = text("cookiePolicyUrl", 300);
@@ -167,6 +201,7 @@ function sanitizeSettings(value: unknown): CoordinatorPortalSettings | null {
     installDescription: text("installDescription", 300),
     installActionLabel: text("installActionLabel", 60),
     installDismissLabel: text("installDismissLabel", 60),
+    translations,
     navItems,
   };
 }
@@ -178,6 +213,7 @@ function sanitizeNavItems(value: unknown): PortalNavItem[] {
     if (!item || typeof item !== "object" || Array.isArray(item)) return [];
     const input = item as Record<string, unknown>;
     const label = typeof input.label === "string" ? input.label.trim().slice(0, 64) : "";
+    const labelEn = typeof input.labelEn === "string" ? input.labelEn.trim().slice(0, 64) : label;
     const href = typeof input.href === "string" ? input.href.trim().slice(0, 300) : "";
     const suppliedId = typeof input.id === "string" ? input.id.toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 36) : "";
     const id = suppliedId || `link-${index + 1}`;
@@ -187,6 +223,7 @@ function sanitizeNavItems(value: unknown): PortalNavItem[] {
     return [{
       id,
       label,
+      labelEn,
       href,
       icon,
       visible: typeof input.visible === "boolean" ? input.visible : true,

@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from "react";
 import { BadgePercent, BookOpen, Clock3, Expand, LibraryBig, UsersRound, X } from "lucide-react";
 import { ResearchOpportunity } from "@/lib/researchData";
-import { formatOpportunityMoney, getDiscountPercentage, RESEARCH_STATUS_LABELS } from "@/lib/opportunityPricing";
+import { formatOpportunityMoney, getDiscountPercentage, getResearchStatusLabel } from "@/lib/opportunityPricing";
 import { SRMA_LOGO } from "@/components/BrandBackground";
 import { useLanguage } from "@/lib/i18n";
 
 function OpportunityMetadata({ research, className = "" }: { research: ResearchOpportunity; className?: string }) {
-  const { direction, localize } = useLanguage();
+  const { direction, language, localize } = useLanguage();
   const originalSar = research.priceOriginalSar ?? 1500;
   const discountedSar = research.priceDiscountedSar ?? 1000;
   const discount = getDiscountPercentage(originalSar, discountedSar);
@@ -46,8 +46,8 @@ function OpportunityMetadata({ research, className = "" }: { research: ResearchO
           <div className="min-w-0">
             <p className="text-[9px] font-bold text-white/70">{localize("السعر بعد الخصم", "Discounted price")}</p>
             <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
-              <strong className="text-sm font-black text-white">{formatOpportunityMoney(discountedSar, "SAR")}</strong>
-              <span className="text-[9px] font-bold text-white/65">{formatOpportunityMoney(discountedSar, "USD")}</span>
+              <strong dir="ltr" className="text-sm font-black text-white">{formatOpportunityMoney(discountedSar, "SAR", language)}</strong>
+              <span dir="ltr" className="text-[9px] font-bold text-white/65">{formatOpportunityMoney(discountedSar, "USD", language)}</span>
             </div>
           </div>
           {discount > 0 && (
@@ -59,7 +59,7 @@ function OpportunityMetadata({ research, className = "" }: { research: ResearchO
         <div className="flex items-center justify-between gap-2 rounded-lg border border-white/15 bg-white/10 px-2 py-1.5">
           <div>
             <p className="text-[9px] font-bold text-white/65">{localize("السعر الأصلي", "Original price")}</p>
-            <p className="text-[11px] font-black text-white/85 line-through">{formatOpportunityMoney(originalSar, "SAR")}</p>
+            <p dir="ltr" className="text-[11px] font-black text-white/85 line-through">{formatOpportunityMoney(originalSar, "SAR", language)}</p>
           </div>
           <div className="text-left">
             <p className="text-[9px] font-bold text-white/65">{localize("المقاعد", "Seats")}</p>
@@ -78,10 +78,8 @@ function OpportunityMetadata({ research, className = "" }: { research: ResearchO
 }
 
 export default function OpportunityMedia({ research, className = "h-56" }: { research: ResearchOpportunity; className?: string }) {
-  const { direction, localize } = useLanguage();
-  const status = localize(RESEARCH_STATUS_LABELS[research.status] || research.status, ({
-    open: "Open for registration", closed: "Registration closed", draft: "Draft", ethics_approved: "Ethics approved", under_review: "Under review",
-  } as Record<string, string>)[research.status], research.status);
+  const { direction, language, localize } = useLanguage();
+  const status = getResearchStatusLabel(research.status, language);
   const title = localize(research.titleAr, research.titleEn, research.title);
   const specialty = localize(research.specialtyAr, research.specialtyEn, research.specialty);
   const [imageFailed, setImageFailed] = useState(false);

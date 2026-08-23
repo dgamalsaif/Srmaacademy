@@ -17,7 +17,7 @@ const hallOfFame = [
 ];
 
 export default function ParticipantPortal() {
-  const { direction, localize, t } = useLanguage();
+  const { direction, language, localize, t } = useLanguage();
   const [activeTab, setActiveTab] = useState(0);
   const [expandedCards, setExpandedCards] = useState<number[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -53,15 +53,8 @@ export default function ParticipantPortal() {
     if (contentSettings.participantTitleLanguage === "both") return `${research.titleAr || research.title}\n${research.titleEn || research.title}`;
     return localize(research.titleAr, research.titleEn, research.title);
   };
-  const participantTitle = contentSettings.participantTitle === DEFAULT_SITE_CONTENT_SETTINGS.participantTitle
-    ? localize("بوابة المشارك", "Participant Portal")
-    : contentSettings.participantTitle;
-  const participantDescription = contentSettings.participantDescription === DEFAULT_SITE_CONTENT_SETTINGS.participantDescription
-    ? localize(
-      "اكتشف الفرص البحثية المتاحة وسجل في البرنامج المناسب لتخصصك وأهدافك المهنية",
-      "Explore available research opportunities and register for the program that fits your specialty and professional goals.",
-    )
-    : contentSettings.participantDescription;
+  const participantTitle = language === "en" ? contentSettings.participantTitleEn : contentSettings.participantTitle;
+  const participantDescription = language === "en" ? contentSettings.participantDescriptionEn : contentSettings.participantDescription;
 
   return (
     <div className="min-h-screen bg-white" dir={direction}>

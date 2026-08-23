@@ -40,7 +40,16 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
     orcid: { label: "ORCID", placeholder: "0000-0000-0000-0000" },
     country: { label: "Country", placeholder: "" },
   };
-  const localizedField = (id: RegistrationFieldId) => language === "en" ? fieldText[id] : fieldSetting(id);
+  const localizedField = (id: RegistrationFieldId) => {
+    const configured = fieldSetting(id);
+    if (language !== "en") return configured;
+    return {
+      ...configured,
+      label: configured.labelEn || fieldText[id].label,
+      placeholder: configured.placeholderEn || fieldText[id].placeholder,
+    };
+  };
+  const localizedSetting = (arabic: string, english: string, fallback: string) => language === "en" ? (english || fallback) : arabic;
   const submitError = (message?: string) => language === "en"
     ? "We could not save your registration. Please try again."
     : (message || "حدث خطأ أثناء حفظ التسجيل");
@@ -107,8 +116,8 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
           <button data-testid="button-modal-close" aria-label={localize("إغلاق نافذة التسجيل", "Close registration dialog")} onClick={handleClose} className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"><X size={20} /></button>
           <div className="text-right">
             <p className="mb-1 text-xs font-bold" style={{ color: contentSettings.accentColor }}>{coordinatorEntry ? localize("تسجيل جديد من لوحة المنسق", "New registration from the coordinator dashboard") : "SRMA Research Academy"}</p>
-            <h2 id="registration-dialog-title" className="text-lg font-black text-[#102b4d]">{coordinatorEntry ? localize(contentSettings.coordinatorFormTitle, "Register a student for a research opportunity") : localize("التسجيل في الفرصة البحثية", "Register for the research opportunity")}</h2>
-            <p className="mt-1 max-w-sm text-xs leading-5 text-slate-500">{coordinatorEntry ? localize(contentSettings.coordinatorFormDescription, "Enter the student's details exactly as they appear in their academic documents.") : researchTitle}</p>
+            <h2 id="registration-dialog-title" className="text-lg font-black text-[#102b4d]">{coordinatorEntry ? localizedSetting(contentSettings.coordinatorFormTitle, contentSettings.coordinatorFormTitleEn, "Register a student for a research opportunity") : localize("التسجيل في الفرصة البحثية", "Register for the research opportunity")}</h2>
+            <p className="mt-1 max-w-sm text-xs leading-5 text-slate-500">{coordinatorEntry ? localizedSetting(contentSettings.coordinatorFormDescription, contentSettings.coordinatorFormDescriptionEn, "Enter the student's details exactly as they appear in their academic documents.") : researchTitle}</p>
           </div>
         </div>
 
@@ -121,7 +130,7 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4 px-6 py-6">
-            {coordinatorEntry && <div className="rounded-xl border border-[#d8eee7] bg-[#f3fbf8] px-4 py-3 text-right text-sm leading-6 text-[#28634f]">{localize(contentSettings.coordinatorFormDescription, "Enter the student's details exactly as they appear in their academic documents.")}</div>}
+            {coordinatorEntry && <div className="rounded-xl border border-[#d8eee7] bg-[#f3fbf8] px-4 py-3 text-right text-sm leading-6 text-[#28634f]">{localizedSetting(contentSettings.coordinatorFormDescription, contentSettings.coordinatorFormDescriptionEn, "Enter the student's details exactly as they appear in their academic documents.")}</div>}
             {error && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-right text-sm text-red-700">⚠️ {error}</div>}
             {baseFields.filter(({ key }) => visible(key)).map(({ key, icon: Icon, ltr }) => {
               const setting = fieldSetting(key);

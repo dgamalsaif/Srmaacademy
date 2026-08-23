@@ -1,41 +1,43 @@
 import { ChevronDown, Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useLanguage } from "@/lib/i18n";
 
 export type CountryOption = {
   name: string;
+  nameEn: string;
   code: string;
   flag: string;
   aliases?: string[];
 };
 
 export const COUNTRIES: CountryOption[] = [
-  { name: "المملكة العربية السعودية", code: "+966", flag: "🇸🇦", aliases: ["السعودية", "saudi"] },
-  { name: "اليمن", code: "+967", flag: "🇾🇪", aliases: ["yemen"] },
-  { name: "الإمارات العربية المتحدة", code: "+971", flag: "🇦🇪", aliases: ["الإمارات", "uae"] },
-  { name: "الكويت", code: "+965", flag: "🇰🇼", aliases: ["kuwait"] },
-  { name: "قطر", code: "+974", flag: "🇶🇦", aliases: ["qatar"] },
-  { name: "البحرين", code: "+973", flag: "🇧🇭", aliases: ["bahrain"] },
-  { name: "عُمان", code: "+968", flag: "🇴🇲", aliases: ["oman"] },
-  { name: "مصر", code: "+20", flag: "🇪🇬", aliases: ["egypt"] },
-  { name: "الأردن", code: "+962", flag: "🇯🇴", aliases: ["jordan"] },
-  { name: "العراق", code: "+964", flag: "🇮🇶", aliases: ["iraq"] },
-  { name: "سوريا", code: "+963", flag: "🇸🇾", aliases: ["syria"] },
-  { name: "لبنان", code: "+961", flag: "🇱🇧", aliases: ["lebanon"] },
-  { name: "فلسطين", code: "+970", flag: "🇵🇸", aliases: ["palestine"] },
-  { name: "المغرب", code: "+212", flag: "🇲🇦", aliases: ["morocco"] },
-  { name: "الجزائر", code: "+213", flag: "🇩🇿", aliases: ["algeria"] },
-  { name: "تونس", code: "+216", flag: "🇹🇳", aliases: ["tunisia"] },
-  { name: "ليبيا", code: "+218", flag: "🇱🇾", aliases: ["libya"] },
-  { name: "السودان", code: "+249", flag: "🇸🇩", aliases: ["sudan"] },
-  { name: "تركيا", code: "+90", flag: "🇹🇷", aliases: ["turkey"] },
-  { name: "المملكة المتحدة", code: "+44", flag: "🇬🇧", aliases: ["uk", "britain"] },
-  { name: "الولايات المتحدة", code: "+1", flag: "🇺🇸", aliases: ["usa", "america"] },
-  { name: "كندا", code: "+1", flag: "🇨🇦", aliases: ["canada"] },
-  { name: "ألمانيا", code: "+49", flag: "🇩🇪", aliases: ["germany"] },
-  { name: "فرنسا", code: "+33", flag: "🇫🇷", aliases: ["france"] },
-  { name: "أستراليا", code: "+61", flag: "🇦🇺", aliases: ["australia"] },
-  { name: "الهند", code: "+91", flag: "🇮🇳", aliases: ["india"] },
-  { name: "باكستان", code: "+92", flag: "🇵🇰", aliases: ["pakistan"] },
+  { name: "المملكة العربية السعودية", nameEn: "Saudi Arabia", code: "+966", flag: "🇸🇦", aliases: ["السعودية", "saudi"] },
+  { name: "اليمن", nameEn: "Yemen", code: "+967", flag: "🇾🇪", aliases: ["yemen"] },
+  { name: "الإمارات العربية المتحدة", nameEn: "United Arab Emirates", code: "+971", flag: "🇦🇪", aliases: ["الإمارات", "uae"] },
+  { name: "الكويت", nameEn: "Kuwait", code: "+965", flag: "🇰🇼", aliases: ["kuwait"] },
+  { name: "قطر", nameEn: "Qatar", code: "+974", flag: "🇶🇦", aliases: ["qatar"] },
+  { name: "البحرين", nameEn: "Bahrain", code: "+973", flag: "🇧🇭", aliases: ["bahrain"] },
+  { name: "عُمان", nameEn: "Oman", code: "+968", flag: "🇴🇲", aliases: ["oman"] },
+  { name: "مصر", nameEn: "Egypt", code: "+20", flag: "🇪🇬", aliases: ["egypt"] },
+  { name: "الأردن", nameEn: "Jordan", code: "+962", flag: "🇯🇴", aliases: ["jordan"] },
+  { name: "العراق", nameEn: "Iraq", code: "+964", flag: "🇮🇶", aliases: ["iraq"] },
+  { name: "سوريا", nameEn: "Syria", code: "+963", flag: "🇸🇾", aliases: ["syria"] },
+  { name: "لبنان", nameEn: "Lebanon", code: "+961", flag: "🇱🇧", aliases: ["lebanon"] },
+  { name: "فلسطين", nameEn: "Palestine", code: "+970", flag: "🇵🇸", aliases: ["palestine"] },
+  { name: "المغرب", nameEn: "Morocco", code: "+212", flag: "🇲🇦", aliases: ["morocco"] },
+  { name: "الجزائر", nameEn: "Algeria", code: "+213", flag: "🇩🇿", aliases: ["algeria"] },
+  { name: "تونس", nameEn: "Tunisia", code: "+216", flag: "🇹🇳", aliases: ["tunisia"] },
+  { name: "ليبيا", nameEn: "Libya", code: "+218", flag: "🇱🇾", aliases: ["libya"] },
+  { name: "السودان", nameEn: "Sudan", code: "+249", flag: "🇸🇩", aliases: ["sudan"] },
+  { name: "تركيا", nameEn: "Turkey", code: "+90", flag: "🇹🇷", aliases: ["turkey"] },
+  { name: "المملكة المتحدة", nameEn: "United Kingdom", code: "+44", flag: "🇬🇧", aliases: ["uk", "britain"] },
+  { name: "الولايات المتحدة", nameEn: "United States", code: "+1", flag: "🇺🇸", aliases: ["usa", "america"] },
+  { name: "كندا", nameEn: "Canada", code: "+1", flag: "🇨🇦", aliases: ["canada"] },
+  { name: "ألمانيا", nameEn: "Germany", code: "+49", flag: "🇩🇪", aliases: ["germany"] },
+  { name: "فرنسا", nameEn: "France", code: "+33", flag: "🇫🇷", aliases: ["france"] },
+  { name: "أستراليا", nameEn: "Australia", code: "+61", flag: "🇦🇺", aliases: ["australia"] },
+  { name: "الهند", nameEn: "India", code: "+91", flag: "🇮🇳", aliases: ["india"] },
+  { name: "باكستان", nameEn: "Pakistan", code: "+92", flag: "🇵🇰", aliases: ["pakistan"] },
 ];
 
 interface CountrySelectorProps {
@@ -61,6 +63,7 @@ export default function CountrySelector({
   required = false,
   compact = false,
 }: CountrySelectorProps) {
+  const { direction, language, localize } = useLanguage();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState(dialCode);
   const root = useRef<HTMLDivElement>(null);
@@ -78,11 +81,12 @@ export default function CountrySelector({
     const normalized = query.trim().toLowerCase();
     if (!normalized) return COUNTRIES;
     return COUNTRIES.filter((item) =>
-      [item.name, item.code, ...(item.aliases || [])].some((entry) => entry.toLowerCase().includes(normalized)),
+      [item.name, item.nameEn, item.code, ...(item.aliases || [])].some((entry) => entry.toLowerCase().includes(normalized)),
     );
   }, [query]);
 
-  const selected = COUNTRIES.find((item) => item.name === country) ?? COUNTRIES[0];
+  const selectedCountry = COUNTRIES.find((item) => item.name === country || item.nameEn === country);
+  const selected = selectedCountry ?? COUNTRIES[0];
   const choose = (item: CountryOption) => {
     onCountryChange(item.name);
     onDialCodeChange(item.code);
@@ -91,17 +95,18 @@ export default function CountrySelector({
   };
 
   return (
-    <div className={compact ? "grid grid-cols-[minmax(0,1fr)_120px] gap-2" : "grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_150px] gap-3"}>
+    <div className={compact ? "grid grid-cols-[minmax(0,1fr)_120px] gap-2" : "grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_150px] gap-3"} dir={direction}>
       <div>
         <label htmlFor={`${id}-country`} className="mb-1.5 block text-right text-sm font-semibold text-slate-700">
-          الدولة {required && <span className="text-rose-500">*</span>}
+          {localize("الدولة", "Country")} {required && <span className="text-rose-500">*</span>}
         </label>
         <div className="relative">
           <input
             id={`${id}-country`}
-            value={country}
+            value={selectedCountry ? (language === "ar" ? selected.name : selected.nameEn) : country}
             readOnly
             required={required}
+            aria-label={localize("الدولة المختارة", "Selected country")}
             className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-right text-sm font-medium text-slate-700 outline-none"
           />
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-lg">{selected.flag}</span>
@@ -109,13 +114,14 @@ export default function CountrySelector({
       </div>
       <div ref={root} className="relative">
         <label htmlFor={`${id}-dial-code`} className="mb-1.5 block text-right text-sm font-semibold text-slate-700">
-          رمز الدولة
+          {localize("رمز الدولة", "Dial code")}
         </label>
         <div className="relative">
           <Search size={15} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             id={`${id}-dial-code`}
             data-testid={`input-${id}-dial-code`}
+            aria-label={localize("ابحث برمز الدولة أو اسمها", "Search by country name or dial code")}
             value={query}
             onFocus={() => setOpen(true)}
             onChange={(event) => {
@@ -138,10 +144,10 @@ export default function CountrySelector({
                 className="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-right text-sm transition hover:bg-[#f3fbf8]"
               >
                 <span className="text-lg">{item.flag}</span>
-                <span className="flex-1 font-medium text-slate-700">{item.name}</span>
+                <span className="flex-1 font-medium text-slate-700">{language === "ar" ? item.name : item.nameEn}</span>
                 <span className="font-bold text-[#117b59]" dir="ltr">{item.code}</span>
               </button>
-            )) : <p className="px-3 py-4 text-center text-xs text-slate-400">لا توجد دولة مطابقة للبحث</p>}
+            )) : <p className="px-3 py-4 text-center text-xs text-slate-400">{localize("لا توجد دولة مطابقة للبحث", "No matching country found")}</p>}
           </div>
         )}
       </div>

@@ -1,8 +1,10 @@
 export type PortalNavIcon = "home" | "book" | "info" | "graduation" | "users" | "file";
+export type CoordinatorCopyKey = "brandSubtitle" | "pageTitle" | "loginTitle" | "loginDescription" | "codeLabel" | "codePlaceholder" | "loginLabel" | "registrationPrefix" | "registrationLabel" | "footnote" | "cookieTitle" | "cookieDescription" | "cookieRejectLabel" | "cookieAcceptLabel" | "installTitle" | "installDescription" | "installActionLabel" | "installDismissLabel";
 
 export interface PortalNavItem {
   id: string;
   label: string;
+  labelEn?: string;
   href: string;
   icon: PortalNavIcon;
   visible: boolean;
@@ -37,6 +39,7 @@ export interface CoordinatorPortalSettings {
   installDescription: string;
   installActionLabel: string;
   installDismissLabel: string;
+  translations: Record<CoordinatorCopyKey, string>;
   navItems: PortalNavItem[];
 }
 
@@ -77,12 +80,32 @@ export const DEFAULT_COORDINATOR_PORTAL_SETTINGS: CoordinatorPortalSettings = {
   installDescription: "أضف المنصة إلى شاشتك الرئيسية للوصول السريع.",
   installActionLabel: "تثبيت",
   installDismissLabel: "ليس الآن",
+  translations: {
+    brandSubtitle: "Research Academy",
+    pageTitle: "SRMA Research Academy — Coordinator Portal",
+    loginTitle: "Coordinator Portal",
+    loginDescription: "Sign in with your personal access code",
+    codeLabel: "Access code",
+    codePlaceholder: "Enter your code here...",
+    loginLabel: "Sign in",
+    registrationPrefix: "Don't have an account?",
+    registrationLabel: "Register now",
+    footnote: "This portal is for approved coordinators only",
+    cookieTitle: "We use cookies",
+    cookieDescription: "We use cookies to improve your experience and measure platform performance. You can change your choice later from the policies page.",
+    cookieRejectLabel: "Reject non-essential",
+    cookieAcceptLabel: "Accept all",
+    installTitle: "Install SRMA Research Academy",
+    installDescription: "Add the platform to your home screen for quick access.",
+    installActionLabel: "Install",
+    installDismissLabel: "Not now",
+  },
   navItems: [
-    { id: "home", label: "الرئيسية", href: "/", icon: "home", visible: true, accent: false },
-    { id: "knowledge", label: "مركز المعرفة", href: "/knowledge-center", icon: "book", visible: true, accent: false },
-    { id: "about", label: "عن المنصة", href: "/about", icon: "info", visible: true, accent: false },
-    { id: "participant", label: "بوابة المشارك", href: "/participant-portal", icon: "graduation", visible: true, accent: true },
-    { id: "coordinator", label: "بوابة المنسق", href: "/coordinator", icon: "users", visible: true, accent: true },
-    { id: "requests", label: "الطلبات الخاصة", href: "/special-requests", icon: "file", visible: true, accent: false },
+    { id: "home", label: "الرئيسية", labelEn: "Home", href: "/", icon: "home", visible: true, accent: false },
+    { id: "knowledge", label: "مركز المعرفة", labelEn: "Knowledge Center", href: "/knowledge-center", icon: "book", visible: true, accent: false },
+    { id: "about", label: "عن المنصة", labelEn: "About", href: "/about", icon: "info", visible: true, accent: false },
+    { id: "participant", label: "بوابة المشارك", labelEn: "Participant Portal", href: "/participant-portal", icon: "graduation", visible: true, accent: true },
+    { id: "coordinator", label: "بوابة المنسق", labelEn: "Coordinator Portal", href: "/coordinator", icon: "users", visible: true, accent: true },
+    { id: "requests", label: "الطلبات الخاصة", labelEn: "Special Requests", href: "/special-requests", icon: "file", visible: true, accent: false },
   ],
 };

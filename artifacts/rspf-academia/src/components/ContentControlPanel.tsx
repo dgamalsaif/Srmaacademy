@@ -76,16 +76,20 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
         <div className="space-y-6 xl:col-span-8">
           <Panel title="نصوص الصفحات" icon={SlidersHorizontal}>
             <div className="grid gap-4 md:grid-cols-2">
-              <TextField label="عنوان بوابة المشارك" value={settings.participantTitle} onChange={(value) => update("participantTitle", value)} />
-              <TextField label="عنوان نموذج المنسق" value={settings.coordinatorFormTitle} onChange={(value) => update("coordinatorFormTitle", value)} />
+              <TextField label="عنوان بوابة المشارك (عربي)" value={settings.participantTitle} onChange={(value) => update("participantTitle", value)} />
+              <TextField label="Participant portal title (English)" value={settings.participantTitleEn} onChange={(value) => update("participantTitleEn", value)} />
+              <TextField label="عنوان نموذج المنسق (عربي)" value={settings.coordinatorFormTitle} onChange={(value) => update("coordinatorFormTitle", value)} />
+              <TextField label="Coordinator form title (English)" value={settings.coordinatorFormTitleEn} onChange={(value) => update("coordinatorFormTitleEn", value)} />
             </div>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <LanguageField label="لغة عناوين الفرص للمشترك" value={settings.participantTitleLanguage} onChange={(value) => update("participantTitleLanguage", value)} />
               <LanguageField label="لغة عناوين الفرص للمنسق" value={settings.coordinatorTitleLanguage} onChange={(value) => update("coordinatorTitleLanguage", value)} />
             </div>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <TextArea label="وصف بوابة المشارك" value={settings.participantDescription} onChange={(value) => update("participantDescription", value)} />
-              <TextArea label="وصف نموذج المنسق" value={settings.coordinatorFormDescription} onChange={(value) => update("coordinatorFormDescription", value)} />
+              <TextArea label="وصف بوابة المشارك (عربي)" value={settings.participantDescription} onChange={(value) => update("participantDescription", value)} />
+              <TextArea label="Participant portal description (English)" value={settings.participantDescriptionEn} onChange={(value) => update("participantDescriptionEn", value)} />
+              <TextArea label="وصف نموذج المنسق (عربي)" value={settings.coordinatorFormDescription} onChange={(value) => update("coordinatorFormDescription", value)} />
+              <TextArea label="Coordinator form description (English)" value={settings.coordinatorFormDescriptionEn} onChange={(value) => update("coordinatorFormDescriptionEn", value)} />
             </div>
           </Panel>
 
@@ -143,7 +147,7 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <span className="h-3 w-3 rounded-full" style={{ backgroundColor: field.color }} />
-                      <h3 className="font-black text-slate-800">{field.label || field.id}</h3>
+                       <h3 className="font-black text-slate-800">{field.label || field.labelEn || field.id}</h3>
                       <span className="rounded-lg bg-white px-2 py-1 text-[11px] font-bold text-slate-400">{field.type}</span>
                     </div>
                     <div className="flex gap-1">
@@ -151,9 +155,11 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                       <button type="button" onClick={() => moveField(index, 1)} disabled={index === settings.registrationFields.length - 1} className="rounded-lg p-2 text-slate-500 hover:bg-white disabled:opacity-30" aria-label="نقل للأسفل"><ChevronDown size={17} /></button>
                     </div>
                   </div>
-                  <div className="mt-4 grid gap-3 md:grid-cols-[1fr_1fr_115px]">
-                    <TextField label="اسم الحقل" value={field.label} onChange={(value) => updateField(index, { label: value })} />
-                    <TextField label="النص المساعد" value={field.placeholder} onChange={(value) => updateField(index, { placeholder: value })} />
+                   <div className="mt-4 grid gap-3 md:grid-cols-2">
+                     <TextField label="اسم الحقل (عربي)" value={field.label} onChange={(value) => updateField(index, { label: value })} />
+                     <TextField label="Field label (English)" value={field.labelEn} onChange={(value) => updateField(index, { labelEn: value })} />
+                     <TextField label="النص المساعد (عربي)" value={field.placeholder} onChange={(value) => updateField(index, { placeholder: value })} />
+                     <TextField label="Placeholder (English)" value={field.placeholderEn} onChange={(value) => updateField(index, { placeholderEn: value })} />
                     <div><label className="mb-2 block text-xs font-bold text-slate-500">اللون</label><input type="color" value={field.color} onChange={(event) => updateField(index, { color: event.target.value })} className="h-11 w-full rounded-xl border border-slate-200 bg-white p-1" /></div>
                   </div>
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
