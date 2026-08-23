@@ -13,7 +13,13 @@ export default function OwnerSignIn() {
           <h1 className="mt-2 text-2xl font-black text-slate-900">دخول مالك المنصة</h1>
           <p className="mt-2 text-sm leading-6 text-slate-500">استخدم حساب المالك الموثّق بالبريد الإلكتروني.</p>
         </div>
-        <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
+        <SignIn
+          routing="path"
+          path={`${basePath}/sign-in`}
+          signUpUrl={`${basePath}/sign-up`}
+          forceRedirectUrl={`${basePath}/admin`}
+          fallbackRedirectUrl={`${basePath}/admin`}
+        />
       </div>
     </div>
   );

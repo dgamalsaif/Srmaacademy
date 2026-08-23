@@ -12,7 +12,13 @@ export default function OwnerSignUp() {
           <h1 className="mt-4 text-2xl font-black text-slate-900">إنشاء حساب المالك</h1>
           <p className="mt-2 text-sm leading-6 text-slate-500">سيُسمح فقط للبريد الإلكتروني المسجل كمالك بالوصول إلى الإدارة.</p>
         </div>
-        <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
+        <SignUp
+          routing="path"
+          path={`${basePath}/sign-up`}
+          signInUrl={`${basePath}/sign-in`}
+          forceRedirectUrl={`${basePath}/admin`}
+          fallbackRedirectUrl={`${basePath}/admin`}
+        />
       </div>
     </div>
   );

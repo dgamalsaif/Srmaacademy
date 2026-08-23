@@ -7,11 +7,6 @@ export type OwnerContext = Pick<OwnerAccount, "id" | "email" | "fullName" | "pho
   clerkUserId: string;
 };
 
-function hasSecondFactor(auth: ReturnType<typeof getAuth>) {
-  const secondFactorAge = auth.factorVerificationAge?.[1];
-  return typeof secondFactorAge === "number" && secondFactorAge >= 0;
-}
-
 /**
  * Resolves only an explicitly allow-listed owner. A Clerk account with the
  * same email is linked exactly once, preventing a different authenticated
@@ -20,7 +15,6 @@ function hasSecondFactor(auth: ReturnType<typeof getAuth>) {
 export async function getManagedOwner(req: Request): Promise<OwnerContext | null> {
   const auth = getAuth(req);
   if (!auth.userId) return null;
-  if (!hasSecondFactor(auth)) return null;
 
   const user = await clerkClient.users.getUser(auth.userId);
   const primaryEmail = user.primaryEmailAddress;
