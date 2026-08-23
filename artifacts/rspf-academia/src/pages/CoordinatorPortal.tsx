@@ -7,6 +7,7 @@ import { CoordinatorPortalSettings, DEFAULT_COORDINATOR_PORTAL_SETTINGS, PortalN
 import Footer from "@/components/Footer";
 import { SRMA_LOGO } from "@/components/BrandBackground";
 import { useLanguage } from "@/lib/i18n";
+import { LanguageMenu } from "@/components/Navbar";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -76,15 +77,13 @@ function CoordinatorHeader({ settings }: { settings: CoordinatorPortalSettings }
         </nav>
 
         <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            data-testid="button-language-toggle"
-            onClick={() => setLanguage(language === "ar" ? "en" : "ar")}
-            className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-black text-[#0d765c] transition hover:border-[#0d765c]/30 hover:bg-[#e7f3ef]"
-            aria-label={language === "ar" ? "Switch to English" : "التبديل إلى العربية"}
-          >
-            {language === "ar" ? "EN" : "ع"}
-          </button>
+          <LanguageMenu
+            language={language}
+            label={language === "ar" ? "اللغة" : "Language"}
+            options={[{ value: "ar", label: "العربية" }, { value: "en", label: "English" }]}
+            onSelect={(nextLanguage) => setLanguage(nextLanguage)}
+            triggerClassName="hidden sm:flex"
+          />
           <button
             type="button"
             data-testid="button-coordinator-mobile-menu"
@@ -113,6 +112,14 @@ function CoordinatorHeader({ settings }: { settings: CoordinatorPortalSettings }
               </Link>
             );
           })}
+          <LanguageMenu
+            language={language}
+            label={language === "ar" ? "اللغة" : "Language"}
+            options={[{ value: "ar", label: "العربية" }, { value: "en", label: "English" }]}
+            onSelect={(nextLanguage) => { setLanguage(nextLanguage); setMobileOpen(false); }}
+            triggerClassName="mt-2 flex w-full"
+            mobile
+          />
         </nav>
       )}
     </header>
@@ -208,6 +215,15 @@ export default function CoordinatorPortal() {
             <p className="text-[17px] font-black text-[#172238]">{localize(settings.pageTitle, settings.translations.pageTitle)}</p>
           </div>
 
+          <aside data-testid="coordinator-welcome-guide" className="srma-welcome-card mb-6 rounded-2xl border border-[#d8eee7] bg-[#f3fbf8] p-5 text-right">
+            <p className="text-sm font-black text-[#117b59]">{localize("مرحباً بك، منسق الأبحاث 👋", "Welcome, research coordinator 👋")}</p>
+            <h2 className="mt-1 text-lg font-black text-[#172238]">{localize("دليلك السريع لاستخدام البوابة", "Your quick guide to the portal")}</h2>
+            <ol className="mt-3 space-y-2 text-xs leading-6 text-slate-600">
+              <li><strong>1.</strong> {localize("أدخل رمز الدخول للوصول إلى لوحة المنسق.", "Enter your access code to sign in.")}</li>
+              <li><strong>2.</strong> {localize("استخدم القائمة لاستعراض الفرص وتسجيل الطلاب.", "Use the menu to view opportunities and register students.")}</li>
+              <li><strong>3.</strong> {localize("راجع طلابك وتابع حالة تسجيلاتهم.", "Review your students and follow their registration status.")}</li>
+            </ol>
+          </aside>
           <div className="page-enter rounded-2xl border border-slate-200/80 bg-white p-8 text-center shadow-[0_16px_30px_rgba(17,38,59,0.12)]">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#e7f3ef]">
               <Shield size={27} className="text-[#117b59]" strokeWidth={2.2} />

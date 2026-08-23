@@ -113,7 +113,7 @@ export default function Navbar() {
   );
 }
 
-function LanguageMenu({
+export function LanguageMenu({
   language,
   label,
   options,

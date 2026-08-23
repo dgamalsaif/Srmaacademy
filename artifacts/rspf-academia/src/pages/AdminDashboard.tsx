@@ -852,7 +852,16 @@ export default function AdminDashboard() {
       if (!groups[spec]) groups[spec] = [];
       groups[spec].push(r);
     });
-    return groups;
+    Object.values(groups).forEach((items) => {
+      items.sort((a, b) => b.seatsLeft - a.seatsLeft || (a.titleEn || a.title).localeCompare(b.titleEn || b.title));
+    });
+    return Object.fromEntries(
+      Object.entries(groups).sort(([, a], [, b]) => {
+        const seatsA = a.reduce((total, opportunity) => total + opportunity.seatsLeft, 0);
+        const seatsB = b.reduce((total, opportunity) => total + opportunity.seatsLeft, 0);
+        return seatsB - seatsA;
+      }),
+    );
   }, [filtered]);
   const isSpecialtyScroll = contentSettings.opportunityDisplayMode === "scroll";
 

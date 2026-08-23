@@ -118,7 +118,7 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {services.map((svc) => (
-              <div key={svc.title} className="rounded-2xl p-6 text-white flex flex-col gap-4 hover:scale-[1.02] transition-transform" style={{ backgroundColor: svc.bg }} data-testid={`card-service-${svc.title.substring(0,8)}`}>
+              <div key={svc.title} className="srma-hover-lift rounded-2xl p-6 text-white flex flex-col gap-4 hover:scale-[1.02] transition-transform" style={{ backgroundColor: svc.bg }} data-testid={`card-service-${svc.title.substring(0,8)}`}>
                 {svc.badge && (
                   <span className="inline-flex self-start bg-[#E9A020] text-white text-xs font-bold px-3 py-1 rounded-full">{s(svc.badge)}</span>
                 )}

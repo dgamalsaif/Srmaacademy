@@ -75,10 +75,18 @@ export default function ParticipantPortal() {
       items: ungroupedOpportunities,
     });
   }
+  groupedOpportunities.forEach((group) => {
+    group.items.sort((a, b) => b.seatsLeft - a.seatsLeft || (a.titleEn || a.title).localeCompare(b.titleEn || b.title));
+  });
+  groupedOpportunities.sort((a, b) => {
+    const seatsA = a.items.reduce((total, opportunity) => total + opportunity.seatsLeft, 0);
+    const seatsB = b.items.reduce((total, opportunity) => total + opportunity.seatsLeft, 0);
+    return seatsB - seatsA || a.label.localeCompare(b.label);
+  });
   const isSpecialtyScroll = contentSettings.opportunityDisplayMode === "scroll";
 
   return (
-    <div className="min-h-screen bg-white" dir={direction}>
+      <div className="min-h-screen bg-white" dir={direction}>
       {/* HEADER */}
       <section className="py-14 px-4 text-center" style={{ background: `linear-gradient(135deg, ${contentSettings.primaryColor}10, ${contentSettings.accentColor}08, white)` }}>
         <div className="max-w-4xl mx-auto">
@@ -109,16 +117,30 @@ export default function ParticipantPortal() {
       </div>
 
       {/* TICKER */}
-      <div className="py-2.5 text-white overflow-hidden" style={{ backgroundColor: contentSettings.primaryColor }}>
-        <div className="w-max whitespace-nowrap">
-          <span className="block px-10 text-sm font-medium whitespace-nowrap">
-            ⚡ {localize("انضم لأكثر من 500 طبيب وباحث حققوا متطلبات الهيئة السعودية للتخصصات الصحية مع SRMA | سجل الآن وابدأ رحلتك البحثية اليوم", "Join over 500 physicians and researchers who have met Saudi Commission for Health Specialties requirements with SRMA | Register now and begin your research journey today")}
-          </span>
+      <div className="srma-ticker py-2.5 text-white" style={{ backgroundColor: contentSettings.primaryColor }}>
+        <div className="srma-ticker-track" dir="ltr">
+          <span>⚡ {localize("انضم لأكثر من 500 طبيب وباحث حققوا متطلبات الهيئة السعودية للتخصصات الصحية مع SRMA | سجل الآن وابدأ رحلتك البحثية اليوم", "Join over 500 physicians and researchers who have met Saudi Commission for Health Specialties requirements with SRMA | Register now and begin your research journey today")}</span>
+          <span aria-hidden="true">⚡ {localize("انضم لأكثر من 500 طبيب وباحث حققوا متطلبات الهيئة السعودية للتخصصات الصحية مع SRMA | سجل الآن وابدأ رحلتك البحثية اليوم", "Join over 500 physicians and researchers who have met Saudi Commission for Health Specialties requirements with SRMA | Register now and begin your research journey today")}</span>
         </div>
       </div>
 
       <section className="py-10 px-4">
         <div className="max-w-5xl mx-auto">
+          <section data-testid="participant-welcome" className="srma-welcome-card mb-8 rounded-3xl border border-emerald-100 bg-gradient-to-l from-[#f3fbf8] via-white to-[#eff6ff] p-6 text-right shadow-sm sm:p-8">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-black text-[#117b59]">{localize("مرحباً بك في SRMA 👋", "Welcome to SRMA 👋")}</p>
+                <h2 className="mt-1 text-2xl font-black text-slate-900">{localize("ابدأ رحلتك البحثية بخطوات بسيطة", "Start your research journey in a few simple steps")}</h2>
+                <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">{localize("اختر التخصص، راجع تفاصيل الفرصة ومقاعدها المتبقية، ثم اضغط «سجل الآن» لإرسال بياناتك.", "Choose a specialty, review the opportunity details and remaining seats, then select “Register now” to submit your details.")}</p>
+              </div>
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#0C3156] text-3xl shadow-lg shadow-[#0C3156]/20">🔬</div>
+            </div>
+            <div className="mt-5 grid gap-2 text-xs font-bold text-slate-600 sm:grid-cols-3">
+              {[localize("1. اختر تخصصك", "1. Choose your specialty"), localize("2. راجع المقاعد والسعر", "2. Review seats and price"), localize("3. أرسل طلب التسجيل", "3. Send your registration")].map((step) => (
+                <span key={step} className="rounded-xl border border-white bg-white/80 px-3 py-3 shadow-sm">{step}</span>
+              ))}
+            </div>
+          </section>
           {activeTab === 0 && (
             <>
               <div className="flex items-center justify-between mb-6 flex-row-reverse">
@@ -142,7 +164,7 @@ export default function ParticipantPortal() {
               ) : (
                 <div className="space-y-10">
                    {groupedOpportunities.map((group) => (
-                    <section key={group.id} data-testid={`specialty-section-${group.id}`}>
+                    <section key={group.id} className="srma-reveal" data-testid={`specialty-section-${group.id}`}>
                       <div className="mb-4 flex items-center gap-3">
                         <div className="h-px flex-1 bg-slate-200" />
                         <h3 className="rounded-full border border-emerald-100 bg-emerald-50 px-4 py-2 text-sm font-black text-[#117b59]">{group.label}</h3>

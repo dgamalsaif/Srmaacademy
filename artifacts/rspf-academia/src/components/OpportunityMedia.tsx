@@ -82,6 +82,9 @@ export default function OpportunityMedia({ research, className = "h-56" }: { res
   const status = getResearchStatusLabel(research.status, language);
   const title = research.titleEn || research.title;
   const specialty = localize(research.specialtyAr, research.specialtyEn, research.specialty);
+  const originalSar = research.priceOriginalSar ?? 1500;
+  const discountedSar = research.priceDiscountedSar ?? 1000;
+  const discount = getDiscountPercentage(originalSar, discountedSar);
   const [imageFailed, setImageFailed] = useState(false);
   const [isPanoramaOpen, setIsPanoramaOpen] = useState(false);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -130,37 +133,59 @@ export default function OpportunityMedia({ research, className = "h-56" }: { res
   return (
     <>
       <div className="space-y-2">
-        <div ref={stageRef} className={`srma-media-stage srma-protected-image relative ${className}`} onPointerMove={handlePointerMove} onPointerLeave={resetTilt} onContextMenu={(event) => event.preventDefault()} onDragStart={(event) => event.preventDefault()}>
-          <div
-          className={`srma-media-surface relative h-full overflow-hidden rounded-2xl border border-[#c5dce0] bg-[#082c4a] shadow-sm ${canShowImage ? "cursor-zoom-in" : ""}`}
-          role={canShowImage ? "button" : undefined}
-          tabIndex={canShowImage ? 0 : undefined}
-          aria-label={canShowImage ? localize(`عرض صورة ${title} كبانوراما بالحجم الكامل`, `View ${title} as a full-size panorama`) : undefined}
-          onClick={() => canShowImage && setIsPanoramaOpen(true)}
-          onKeyDown={openPanoramaWithKeyboard}
-        >
-          {canShowImage ? (
-            <>
-              <img src={research.imageUrl} alt="" aria-hidden="true" draggable={false} className="absolute inset-0 h-full w-full scale-110 object-cover opacity-45 blur-xl" />
-              <img data-testid={`img-opportunity-${research.id}`} src={research.imageUrl} alt={localize(`صورة ${title}`, `Image of ${title}`)} draggable={false} onError={handleImageFailure} className="srma-media-image relative h-full w-full" />
-            </>
-          ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
-              <img src={SRMA_LOGO} alt="" className="h-[80%] w-[80%] rounded-full object-cover opacity-20 blur-[0.3px]" />
-              <BookOpen size={38} className="absolute text-white/80" />
-              {imageFailed && <p role="status" className="relative px-4 text-xs font-bold text-white/90">{localize("تعذر عرض الصورة المحمية حالياً", "The protected image cannot be displayed at this time.")}</p>}
+        <div className="flex items-stretch gap-2" dir={direction}>
+          <div className="hidden w-[82px] shrink-0 flex-col justify-between gap-1.5 sm:flex">
+            <span data-testid={`status-opportunity-${research.id}`} className="srma-media-side-chip border-emerald-200 bg-emerald-50 text-emerald-700">{status}</span>
+            <span className="srma-media-side-chip border-slate-200 bg-slate-50 text-slate-700">{specialty}</span>
+          </div>
+          <div ref={stageRef} className={`srma-media-stage srma-protected-image relative min-w-0 flex-1 ${className}`} onPointerMove={handlePointerMove} onPointerLeave={resetTilt} onContextMenu={(event) => event.preventDefault()} onDragStart={(event) => event.preventDefault()}>
+            <div
+              className={`srma-media-surface relative h-full overflow-hidden rounded-2xl border border-[#c5dce0] bg-[#082c4a] shadow-sm ${canShowImage ? "cursor-zoom-in" : ""}`}
+              role={canShowImage ? "button" : undefined}
+              tabIndex={canShowImage ? 0 : undefined}
+              aria-label={canShowImage ? localize(`عرض صورة ${title} كبانوراما بالحجم الكامل`, `View ${title} as a full-size panorama`) : undefined}
+              onClick={() => canShowImage && setIsPanoramaOpen(true)}
+              onKeyDown={openPanoramaWithKeyboard}
+            >
+              {canShowImage ? (
+                <>
+                  <img src={research.imageUrl} alt="" aria-hidden="true" draggable={false} className="absolute inset-0 h-full w-full scale-110 object-cover opacity-45 blur-xl" />
+                  <img data-testid={`img-opportunity-${research.id}`} src={research.imageUrl} alt={localize(`صورة ${title}`, `Image of ${title}`)} draggable={false} onError={handleImageFailure} className="srma-media-image relative h-full w-full" />
+                </>
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+                  <img src={SRMA_LOGO} alt="" className="h-[80%] w-[80%] rounded-full object-cover opacity-20 blur-[0.3px]" />
+                  <BookOpen size={38} className="absolute text-white/80" />
+                  {imageFailed && <p role="status" className="relative px-4 text-xs font-bold text-white/90">{localize("تعذر عرض الصورة المحمية حالياً", "The protected image cannot be displayed at this time.")}</p>}
+                </div>
+              )}
+              <img
+                src={SRMA_LOGO}
+                alt={localize("شعار SRMA", "SRMA logo")}
+                aria-hidden="true"
+                className={`pointer-events-none absolute top-3 h-11 w-11 rounded-xl border border-white/30 object-cover opacity-90 shadow-lg ${direction === "rtl" ? "right-3" : "left-3"}`}
+              />
+              {discount > 0 && (
+                <div className="pointer-events-none absolute inset-x-0 top-3 flex justify-center">
+                  <span data-testid={`discount-badge-${research.id}`} className="srma-discount-badge inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-600 px-3 py-1.5 text-xs font-black text-white shadow-lg">
+                    <BadgePercent size={14} /> {localize(`تخفيض ${discount.toFixed(0)}%`, `Save ${discount.toFixed(0)}%`)}
+                  </span>
+                </div>
+              )}
             </div>
-          )}
-          <img src={SRMA_LOGO} alt="" aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 h-[135%] w-[135%] -translate-x-1/2 -translate-y-1/2 rounded-full object-cover opacity-[0.11] mix-blend-screen" />
+          </div>
+          <div className="hidden w-[82px] shrink-0 flex-col justify-between gap-1.5 sm:flex">
+            <span className="srma-media-side-chip border-slate-200 bg-white text-slate-600">{research.journalTarget || localize("المجلة المستهدفة", "Target journal")}</span>
+            <span className="srma-media-side-chip border-slate-200 bg-white text-slate-700">{localize(`${research.seatsLeft} مقاعد`, `${research.seatsLeft} seats`)}</span>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-1.5" dir={direction}>
+        <div className="flex flex-wrap items-center gap-1.5 sm:hidden" dir={direction}>
           <span data-testid={`status-opportunity-${research.id}`} className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-700">{status}</span>
-          <span className="max-w-[50%] truncate rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-bold text-slate-700">{specialty}</span>
-          <span className="max-w-[55%] truncate rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-bold text-slate-600">{research.journalTarget || localize("المجلة المستهدفة", "Target journal")}</span>
+          <span className="max-w-[48%] truncate rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-bold text-slate-700">{specialty}</span>
+          <span className="max-w-[52%] truncate rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-bold text-slate-600">{research.journalTarget || localize("المجلة المستهدفة", "Target journal")}</span>
           <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-black text-slate-700">{localize(`${research.seatsLeft} مقاعد`, `${research.seatsLeft} seats`)}</span>
-          {canShowImage && <button type="button" data-testid={`button-expand-image-${research.id}`} onClick={() => setIsPanoramaOpen(true)} className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-[#0C3156] transition hover:border-[#0C3156]/40 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0C3156]" aria-label={localize(`عرض صورة ${title} بالحجم الكامل`, `View ${title} full size`)}><Expand size={15} /></button>}
         </div>
+        {canShowImage && <button type="button" data-testid={`button-expand-image-${research.id}`} onClick={() => setIsPanoramaOpen(true)} className="ml-auto flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-[#0C3156] transition hover:border-[#0C3156]/40 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0C3156]" aria-label={localize(`عرض صورة ${title} بالحجم الكامل`, `View ${title} full size`)}><Expand size={15} /></button>}
       </div>
       {isPanoramaOpen && canShowImage && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#041829]/[.94] p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={localize(`صورة ${title}`, `Image of ${title}`)} onClick={() => setIsPanoramaOpen(false)}>
