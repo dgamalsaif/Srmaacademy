@@ -7,6 +7,37 @@ export type OwnerContext = Pick<OwnerAccount, "id" | "email" | "fullName" | "pho
   clerkUserId: string;
 };
 
+async function bootstrapInitialOwner(
+  email: string,
+  clerkUserId: string,
+  clerkFullName: string | null,
+): Promise<OwnerAccount | null> {
+  const configuredEmail = process.env.OWNER_BOOTSTRAP_EMAIL?.trim().toLowerCase();
+  if (!configuredEmail || email !== configuredEmail) return null;
+
+  const [existingOwner] = await db.select().from(ownerAccountsTable).where(eq(ownerAccountsTable.email, email)).limit(1);
+  if (existingOwner) return existingOwner;
+
+  const [anyOwner] = await db.select({ id: ownerAccountsTable.id }).from(ownerAccountsTable).limit(1);
+  if (anyOwner) return null;
+
+  const [createdOwner] = await db.insert(ownerAccountsTable)
+    .values({
+      email,
+      clerkUserId,
+      fullName: clerkFullName?.trim() || "مالك منصة SRMA",
+      phone: "",
+      status: "active",
+    })
+    .onConflictDoNothing()
+    .returning();
+
+  if (createdOwner) return createdOwner;
+
+  const [racedOwner] = await db.select().from(ownerAccountsTable).where(eq(ownerAccountsTable.email, email)).limit(1);
+  return racedOwner || null;
+}
+
 /**
  * Resolves only an explicitly allow-listed owner. A Clerk account with the
  * same email is linked exactly once, preventing a different authenticated
@@ -21,7 +52,10 @@ export async function getManagedOwner(req: Request): Promise<OwnerContext | null
   if (!primaryEmail || primaryEmail.verification?.status !== "verified") return null;
   const email = primaryEmail.emailAddress.trim().toLowerCase();
 
-  const [owner] = await db.select().from(ownerAccountsTable).where(eq(ownerAccountsTable.email, email)).limit(1);
+  let [owner] = await db.select().from(ownerAccountsTable).where(eq(ownerAccountsTable.email, email)).limit(1);
+  if (!owner) {
+    owner = await bootstrapInitialOwner(email, auth.userId, user.fullName);
+  }
   if (!owner || owner.status !== "active") return null;
   if (owner.clerkUserId && owner.clerkUserId !== auth.userId) return null;
 
