@@ -1,0 +1,9 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "EDq5ek1JtwROHGoIycxHr"
+uri = "file://attached_assets/generated_images/srma-opportunity-images-1600x1200.zip"
+type = "unspecified"
+title = "صور الفرص البحثية — 1600×1200"
+description = "45 صورة JPEG بنسبة 4:3، مرتبطة بفرص SRMA البحثية ومهيأة للاستخدام المستقبلي."

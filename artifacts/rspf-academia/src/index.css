@@ -109,7 +109,7 @@
 }
 
 .srma-media-image {
-  object-fit: contain;
+  object-fit: cover;
   transform: translateZ(10px);
 }
 

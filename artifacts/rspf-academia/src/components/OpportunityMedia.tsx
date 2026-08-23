@@ -77,7 +77,7 @@ function OpportunityMetadata({ research, className = "" }: { research: ResearchO
   );
 }
 
-export default function OpportunityMedia({ research, className = "h-56" }: { research: ResearchOpportunity; className?: string }) {
+export default function OpportunityMedia({ research, className = "aspect-[4/3] min-h-[172px]" }: { research: ResearchOpportunity; className?: string }) {
   const { direction, language, localize } = useLanguage();
   const status = getResearchStatusLabel(research.status, language);
   const title = research.titleEn || research.title;
@@ -134,7 +134,7 @@ export default function OpportunityMedia({ research, className = "h-56" }: { res
     <>
       <div className="space-y-2">
         <div className="flex items-stretch gap-2" dir={direction}>
-          <div className="hidden w-[82px] shrink-0 flex-col justify-between gap-1.5 sm:flex">
+          <div className="hidden w-[68px] shrink-0 flex-col justify-between gap-1.5 2xl:flex">
             <span data-testid={`status-opportunity-${research.id}`} className="srma-media-side-chip border-emerald-200 bg-emerald-50 text-emerald-700">{status}</span>
             <span className="srma-media-side-chip border-slate-200 bg-slate-50 text-slate-700">{specialty}</span>
           </div>
@@ -174,12 +174,12 @@ export default function OpportunityMedia({ research, className = "h-56" }: { res
               )}
             </div>
           </div>
-          <div className="hidden w-[82px] shrink-0 flex-col justify-between gap-1.5 sm:flex">
+          <div className="hidden w-[68px] shrink-0 flex-col justify-between gap-1.5 2xl:flex">
             <span className="srma-media-side-chip border-slate-200 bg-white text-slate-600">{research.journalTarget || localize("المجلة المستهدفة", "Target journal")}</span>
             <span className="srma-media-side-chip border-slate-200 bg-white text-slate-700">{localize(`${research.seatsLeft} مقاعد`, `${research.seatsLeft} seats`)}</span>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-1.5 sm:hidden" dir={direction}>
+        <div className="flex flex-wrap items-center gap-1.5 2xl:hidden" dir={direction}>
           <span data-testid={`status-opportunity-${research.id}`} className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-700">{status}</span>
           <span className="max-w-[48%] truncate rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-bold text-slate-700">{specialty}</span>
           <span className="max-w-[52%] truncate rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-bold text-slate-600">{research.journalTarget || localize("المجلة المستهدفة", "Target journal")}</span>

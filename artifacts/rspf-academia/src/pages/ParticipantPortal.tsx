@@ -84,6 +84,7 @@ export default function ParticipantPortal() {
     return seatsB - seatsA || a.label.localeCompare(b.label);
   });
   const isSpecialtyScroll = contentSettings.opportunityDisplayMode === "scroll";
+  const contentFlow = direction === "rtl" ? "flex-row-reverse" : "flex-row";
 
   return (
       <div className="min-h-screen bg-white" dir={direction}>
@@ -177,7 +178,7 @@ export default function ParticipantPortal() {
                     const pct = Math.round((seatsUsed / opp.totalSeats) * 100);
                     return (
                       <div key={opp.id} className={`${isSpecialtyScroll ? "w-[min(88vw,390px)] shrink-0 snap-start" : ""} rounded-2xl border border-slate-200 p-5 shadow-sm transition-shadow hover:shadow-md`} style={{ backgroundColor: contentSettings.cardBackgroundColor }} data-testid={`card-research-${opp.id}`}>
-                        <div className="flex items-center justify-between gap-3 mb-3 flex-row-reverse">
+                        <div className={`flex items-center justify-between gap-3 mb-3 ${contentFlow}`}>
                           {contentSettings.visibleParticipantCardParts.includes("specialty") && <span className={`text-xs font-bold px-3 py-1 rounded-full ${opp.specialtyColor}`}>{localize(opp.specialtyAr, opp.specialtyEn, opp.specialty)}</span>}
                           <span className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 border border-red-100 px-3 py-1 rounded-full">
                             <Flame size={11} /> {localize("مقاعد محدودة متبقية", "Limited seats remaining")}
@@ -185,16 +186,16 @@ export default function ParticipantPortal() {
                         </div>
 
                         <Link href={`/research/${opp.id}`} data-testid={`link-research-title-${opp.id}`}>
-                          <h3 className="mb-2 cursor-pointer text-right font-bold leading-snug text-slate-900 transition-colors" style={{ color: contentSettings.primaryColor }}>
+                          <h3 dir="ltr" className="mb-2 cursor-pointer text-left font-bold leading-snug text-slate-900 transition-colors" style={{ color: contentSettings.primaryColor }}>
                             {displayTitle(opp)}
                           </h3>
                         </Link>
-                        <div className="mb-4"><OpportunityMedia research={opp} className="h-52" /></div>
+                        <div className="mb-4"><OpportunityMedia research={opp} className="aspect-[4/3] min-h-[172px]" /></div>
 
-                        <p className="text-[#0C3156] text-sm italic text-right mb-3 font-medium">
+                        <p className="mb-3 text-start text-sm font-medium italic text-[#0C3156]">
                           🏆 {localize("نحن في SRMA – نبني ملفك البحثي ونصنع الفارق", "At SRMA, we build your research profile and make the difference.")}
                         </p>
-                        <div className="mb-4 space-y-2 text-right text-sm leading-6 text-slate-600">
+                        <div className="mb-4 space-y-2 text-start text-sm leading-6 text-slate-600">
                           {contentSettings.participantCardOrder.filter((part) => contentSettings.visibleParticipantCardParts.includes(part) && !["specialty", "seats", "benefits"].includes(part)).map((part) => {
                             if (part === "description") return <p key={part}>{localize(opp.descriptionAr, opp.descriptionEn, opp.description)}</p>;
                             if (part === "duration" && opp.duration) return <p key={part}><strong>{localize("المدة:", "Duration:")}</strong> {opp.duration}</p>;
@@ -211,21 +212,21 @@ export default function ParticipantPortal() {
                             <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: `linear-gradient(to left, ${contentSettings.primaryColor}, ${contentSettings.accentColor})` }} />
                           </div>
                         </div>
-                        <p className="mb-2 text-right text-xs text-slate-500">{localize(`تبقى ${opp.seatsLeft} مقاعد فقط من أصل ${opp.totalSeats}`, `Only ${opp.seatsLeft} seats remain out of ${opp.totalSeats}`)}</p>
-                        <div className="mb-4 flex flex-wrap justify-end gap-1.5 text-[11px] font-bold">
+                        <p className="mb-2 text-start text-xs text-slate-500">{localize(`تبقى ${opp.seatsLeft} مقاعد فقط من أصل ${opp.totalSeats}`, `Only ${opp.seatsLeft} seats remain out of ${opp.totalSeats}`)}</p>
+                        <div className="mb-4 flex flex-wrap justify-start gap-1.5 text-[11px] font-bold">
                           <span className="rounded-full bg-amber-50 px-2.5 py-1 text-amber-700">{localize("الكاتب الأول", "First author")}: {opp.firstAuthorSeatsLeft ?? 1} {localize("متاح", "available")}</span>
                           <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-emerald-700">{localize("مؤلف مشارك", "Co-author")}: {opp.coAuthorSeatsLeft ?? 14} {localize("متاح", "available")}</span>
                         </div></>}
 
                         {contentSettings.visibleParticipantCardParts.includes("benefits") && <><button data-testid={`button-expand-benefits-${opp.id}`} onClick={() => toggleExpand(opp.id)}
-                          className="flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-[#0C3156] mb-3 flex-row-reverse w-full justify-end">
+                          className={`mb-3 flex w-full items-center justify-start gap-2 text-sm font-semibold text-slate-600 hover:text-[#0C3156] ${contentFlow}`}>
                           {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                           {localize("مزايا وقيمة المشاركة 💡", "Benefits and participation value 💡")}
                         </button>
                         {isExpanded && opp.benefits.length > 0 && (
                           <ul className="space-y-1.5 mb-4 bg-[#EFF6FF] rounded-xl p-4">
                             {opp.benefits.map((b) => (
-                              <li key={b} className="flex items-center gap-2 flex-row-reverse text-sm text-slate-700">
+                              <li key={b} className={`flex items-center gap-2 text-sm text-slate-700 ${contentFlow}`}>
                                 <span className="w-1.5 h-1.5 rounded-full bg-[#0C3156] flex-shrink-0" />
                                 {b}
                               </li>
@@ -233,7 +234,7 @@ export default function ParticipantPortal() {
                           </ul>
                         )}</>}
 
-                        <div className="flex gap-3">
+                        <div className={`flex gap-3 ${contentFlow}`}>
                           <button data-testid={`button-register-${opp.id}`} onClick={() => openModal(opp)}
                             className="flex-1 text-white font-bold py-3 rounded-xl transition-colors text-sm shadow-sm" style={{ backgroundColor: contentSettings.primaryColor }}>
                             {t("common.registerNow")} 👤
