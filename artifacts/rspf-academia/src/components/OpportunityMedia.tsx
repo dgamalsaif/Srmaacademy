@@ -1,11 +1,81 @@
 import { useEffect, useRef, useState } from "react";
-import { BookOpen, Clock3, Expand, UsersRound, X } from "lucide-react";
+import { BadgePercent, BookOpen, Clock3, Expand, LibraryBig, UsersRound, X } from "lucide-react";
 import { ResearchOpportunity } from "@/lib/researchData";
-import { RESEARCH_STATUS_LABELS } from "@/lib/opportunityPricing";
+import { formatOpportunityMoney, getDiscountPercentage, RESEARCH_STATUS_LABELS } from "@/lib/opportunityPricing";
 import { SRMA_LOGO } from "@/components/BrandBackground";
 
+function OpportunityMetadata({ research, className = "" }: { research: ResearchOpportunity; className?: string }) {
+  const originalSar = research.priceOriginalSar ?? 1500;
+  const discountedSar = research.priceDiscountedSar ?? 1000;
+  const discount = getDiscountPercentage(originalSar, discountedSar);
+  const journalDetails = [
+    research.journalIssn && `ISSN: ${research.journalIssn}`,
+    research.journalPubmed && `PubMed: ${research.journalPubmed}`,
+    research.journalScopus && `Scopus: ${research.journalScopus}`,
+    research.journalWos && `WOS: ${research.journalWos}`,
+  ].filter(Boolean) as string[];
+  const firstAuthorSeats = typeof research.firstAuthorSeatsLeft === "number"
+    ? research.firstAuthorSeatsLeft
+    : undefined;
+  const coAuthorSeats = typeof research.coAuthorSeatsLeft === "number"
+    ? research.coAuthorSeatsLeft
+    : undefined;
+
+  return (
+    <div className={`srma-media-info rounded-xl border border-white/20 bg-[#061f35]/90 p-2.5 text-white shadow-xl backdrop-blur-md ${className}`} dir="rtl">
+      <div className="flex items-center gap-1.5 border-b border-white/15 pb-1.5">
+        <LibraryBig size={13} className="shrink-0 text-[#8ee0c3]" />
+        <p className="min-w-0 truncate text-[11px] font-black">{research.journalTarget || "المجلة المستهدفة"}</p>
+      </div>
+      <div className="mt-1.5 flex flex-wrap items-center gap-1">
+        {journalDetails.map((detail) => (
+          <span key={detail} className="srma-media-detail-chip">{detail}</span>
+        ))}
+        {research.indexedIn?.map((index) => (
+          <span key={`index-${index}`} className="srma-media-detail-chip">مفهرسة في {index}</span>
+        ))}
+        {research.duration && (
+          <span className="srma-media-detail-chip inline-flex items-center gap-1"><Clock3 size={10} /> {research.duration}</span>
+        )}
+      </div>
+      <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-[1.15fr_1fr] sm:items-center">
+        <div className="flex items-center gap-2 rounded-lg border border-[#8ee0c3]/30 bg-[#07634e]/55 px-2 py-1.5">
+          <BadgePercent size={16} className="shrink-0 text-[#8ee0c3]" />
+          <div className="min-w-0">
+            <p className="text-[9px] font-bold text-white/70">السعر بعد الخصم</p>
+            <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+              <strong className="text-sm font-black text-white">{formatOpportunityMoney(discountedSar, "SAR")}</strong>
+              <span className="text-[9px] font-bold text-white/65">{formatOpportunityMoney(discountedSar, "USD")}</span>
+            </div>
+          </div>
+          {discount > 0 && (
+            <span className="mr-auto shrink-0 rounded-full bg-[#f5c34b] px-1.5 py-0.5 text-[9px] font-black text-[#082c4a]">
+              خصم {discount.toFixed(0)}%
+            </span>
+          )}
+        </div>
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-white/15 bg-white/10 px-2 py-1.5">
+          <div>
+            <p className="text-[9px] font-bold text-white/65">السعر الأصلي</p>
+            <p className="text-[11px] font-black text-white/85 line-through">{formatOpportunityMoney(originalSar, "SAR")}</p>
+          </div>
+          <div className="text-left">
+            <p className="text-[9px] font-bold text-white/65">المقاعد</p>
+            <p className="inline-flex items-center gap-1 text-[11px] font-black text-white"><UsersRound size={11} /> {research.seatsLeft} متاح من {research.totalSeats}</p>
+          </div>
+        </div>
+      </div>
+      {(firstAuthorSeats !== undefined || coAuthorSeats !== undefined) && (
+        <div className="mt-1.5 flex flex-wrap justify-end gap-1">
+          {firstAuthorSeats !== undefined && <span className="srma-media-seat-chip">الكاتب الأول: {firstAuthorSeats} متاح</span>}
+          {coAuthorSeats !== undefined && <span className="srma-media-seat-chip">المؤلفون المشاركون: {coAuthorSeats} متاح</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function OpportunityMedia({ research, className = "h-56" }: { research: ResearchOpportunity; className?: string }) {
-  const classification = research.journalScopus || research.journalWos || research.journalPubmed || research.indexedIn?.[0];
   const status = RESEARCH_STATUS_LABELS[research.status] || research.status;
   const [imageFailed, setImageFailed] = useState(false);
   const [isPanoramaOpen, setIsPanoramaOpen] = useState(false);
@@ -72,24 +142,21 @@ export default function OpportunityMedia({ research, className = "h-56" }: { res
             <span data-testid={`status-opportunity-${research.id}`} className="rounded-full border border-[#8ee0c3]/45 bg-[#07634e]/95 px-3 py-1 text-[11px] font-black text-white shadow-sm">{status}</span>
             <span className="srma-media-chip max-w-[55%] truncate rounded-full px-3 py-1 text-[11px] font-bold">{research.specialtyAr || research.specialty}</span>
           </div>
-          <div className="srma-media-copy absolute inset-x-3 bottom-3 space-y-2 text-right text-white" dir="rtl">
-            {research.journalTarget && <p className="truncate text-sm font-black drop-shadow">{research.journalTarget}</p>}
-            <div className="flex flex-wrap justify-end gap-1.5">
-              {classification && <span className="srma-media-chip rounded-full px-2.5 py-1 text-[10px] font-bold">الفهرسة: {classification}</span>}
-              {research.duration && <span className="srma-media-chip inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold"><Clock3 size={11} /> {research.duration}</span>}
-              <span className="inline-flex items-center gap-1 rounded-full border border-[#f5ce72] bg-[#f5c34b] px-2.5 py-1 text-[10px] font-black text-[#082c4a]"><UsersRound size={11} /> {research.seatsLeft} من {research.totalSeats} متاحة</span>
-            </div>
-          </div>
+          <OpportunityMetadata research={research} className="srma-media-copy absolute inset-x-3 bottom-3" />
           <img src={SRMA_LOGO} alt="شعار SRMA" className="pointer-events-none absolute bottom-3 left-3 h-9 w-9 rounded-xl border border-white/40 bg-white/90 object-cover p-0.5 shadow-lg" />
           {canShowImage && <button type="button" data-testid={`button-expand-image-${research.id}`} onClick={(event) => { event.stopPropagation(); setIsPanoramaOpen(true); }} className="srma-media-open absolute left-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl transition-transform duration-300 hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" aria-label={`عرض صورة ${research.titleAr || research.title} بالحجم الكامل`}><Expand size={17} /></button>}
         </div>
       </div>
       {isPanoramaOpen && canShowImage && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#041829]/[.94] p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={`صورة ${research.titleAr || research.title}`} onClick={() => setIsPanoramaOpen(false)}>
-          <div className="relative flex h-full w-full max-w-7xl items-center justify-center" onClick={(event) => event.stopPropagation()} onContextMenu={(event) => event.preventDefault()}>
-            <img src={research.imageUrl} alt={`صورة ${research.titleAr || research.title}`} draggable={false} className="srma-protected-image max-h-full max-w-full rounded-lg object-contain shadow-2xl" />
+          <div className="relative flex h-[min(94vh,980px)] w-full max-w-7xl flex-col gap-3" onClick={(event) => event.stopPropagation()} onContextMenu={(event) => event.preventDefault()}>
+            <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-2xl border border-white/15 bg-[#082c4a] shadow-2xl">
+              <img src={research.imageUrl} alt={`صورة ${research.titleAr || research.title}`} draggable={false} className="absolute inset-0 h-full w-full scale-110 object-cover opacity-35 blur-2xl" />
+              <img src={research.imageUrl} alt={`صورة ${research.titleAr || research.title}`} draggable={false} className="srma-protected-image relative max-h-full max-w-full object-contain shadow-2xl" />
+            </div>
             <button type="button" data-testid={`button-close-image-${research.id}`} onClick={() => setIsPanoramaOpen(false)} className="absolute right-1 top-1 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/30 bg-[#0b3657] text-white transition-transform hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" aria-label="إغلاق عرض الصورة"><X size={20} /></button>
-            <p className="absolute bottom-3 left-1/2 max-w-[80%] -translate-x-1/2 truncate rounded-full bg-[#061f35]/85 px-4 py-2 text-center text-sm font-bold text-white">{research.titleAr || research.title}</p>
+            <OpportunityMetadata research={research} className="mx-auto w-full max-w-4xl shrink-0" />
+            <p className="sr-only">{research.titleAr || research.title}</p>
           </div>
         </div>
       )}

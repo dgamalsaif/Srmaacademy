@@ -118,6 +118,24 @@
   box-shadow: 0 3px 14px hsl(210 58% 13% / .2);
 }
 
+.srma-media-detail-chip,
+.srma-media-seat-chip {
+  border-radius: 999px;
+  border: 1px solid hsl(195 40% 98% / .22);
+  background: hsl(195 40% 98% / .12);
+  color: hsl(195 40% 98% / .9);
+  padding: 0.18rem 0.45rem;
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.srma-media-seat-chip {
+  border-color: hsl(142 66% 75% / .38);
+  background: hsl(164 63% 31% / .7);
+  color: hsl(150 74% 88%);
+}
+
 .srma-media-open {
   background: hsl(195 40% 98% / .95);
   color: hsl(210 58% 15%);
