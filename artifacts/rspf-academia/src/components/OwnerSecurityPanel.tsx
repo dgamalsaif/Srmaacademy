@@ -89,12 +89,41 @@ export default function OwnerSecurityPanel({ onNameUpdated }: { onNameUpdated: (
         <button disabled={saving} type="submit" className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#117b59] px-5 py-3.5 font-black text-white transition hover:bg-[#0c6549] disabled:opacity-70">{saving ? <Loader2 className="animate-spin" size={18} /> : <UserRound size={18} />} حفظ بيانات المالك</button>
       </form>
 
-      <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      <div className="relative z-10 overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
         <div className="mb-4 flex items-start gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-amber-50 text-amber-700"><KeyRound size={20} /></div>
           <div className="text-right"><h3 className="font-black text-slate-800">كلمة المرور والتحقق بخطوتين وPasskey</h3><p className="mt-1 text-sm leading-6 text-slate-500">يتطلب الوصول إلى لوحة المالك عامل تحقق ثانياً. من هنا يمكنك تغيير كلمة المرور، إضافة بريد موثق، وإدارة الأجهزة والجلسات وتسجيل عامل أمان أو Passkey عند تفعيله في إعدادات المصادقة.</p></div>
         </div>
-        <UserProfile routing="hash" appearance={{ elements: { rootBox: "w-full", cardBox: "w-full max-w-none shadow-none border-0", navbar: "hidden" } }} />
+        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <UserProfile
+            routing="hash"
+            appearance={{
+              variables: {
+                colorPrimary: "#117b59",
+                colorForeground: "#0f2744",
+                colorMutedForeground: "#64748b",
+                colorBackground: "#ffffff",
+                colorInput: "#f8fafc",
+                colorInputForeground: "#0f2744",
+                colorNeutral: "#dbe4ee",
+                borderRadius: "0.875rem",
+              },
+              elements: {
+                rootBox: "w-full",
+                cardBox: "w-full max-w-none !bg-white !shadow-none !border-0",
+                navbar: "border-b border-slate-200 bg-slate-50 md:w-56 md:border-b-0 md:border-l",
+                navbarButton: "text-slate-600 hover:bg-white hover:text-[#117b59]",
+                navbarButton__active: "bg-emerald-50 text-[#117b59] font-bold",
+                pageScrollBox: "!bg-white",
+                profileSection: "border-slate-200",
+                profileSectionPrimaryButton: "text-[#117b59] hover:bg-emerald-50",
+                formFieldLabel: "text-slate-700 font-bold",
+                formFieldInput: "bg-slate-50 text-slate-900 border-slate-200",
+                formButtonPrimary: "bg-[#117b59] hover:bg-[#0c6549]",
+              },
+            }}
+          />
+        </div>
       </div>
     </section>
   );

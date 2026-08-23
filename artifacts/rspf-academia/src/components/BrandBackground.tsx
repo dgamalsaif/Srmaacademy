@@ -4,7 +4,7 @@ export const SRMA_LOGO = srmaLogo;
 
 export default function BrandBackground() {
   return (
-    <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-20 overflow-hidden">
+    <div aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
       <img
         src={SRMA_LOGO}
         alt=""
