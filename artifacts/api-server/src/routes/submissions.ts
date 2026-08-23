@@ -86,14 +86,98 @@ router.get("/registrations", requireCoordinator, async (req, res) => {
     ? await db.select({ id: coordinatorsTable.id, fullName: coordinatorsTable.fullName }).from(coordinatorsTable)
     : [];
   const coordinatorNames = new Map(coordinators.map((coordinator) => [coordinator.id, coordinator.fullName]));
+  const programs = await db.select({
+    id: researchProgramsTable.id,
+    titleAr: researchProgramsTable.titleAr,
+    titleEn: researchProgramsTable.titleEn,
+    status: researchProgramsTable.status,
+    category: researchProgramsTable.category,
+  }).from(researchProgramsTable);
+  const programById = new Map(programs.map((program) => [program.id, program]));
 
   res.json(rows.map((registration) => ({
     ...registration,
+    researchTitle: programById.get(registration.researchId)?.titleAr || programById.get(registration.researchId)?.titleEn || registration.researchTitle,
+    researchStatus: programById.get(registration.researchId)?.status || "",
+    researchCategory: programById.get(registration.researchId)?.category || "active",
     coordinatorName: session.role === "owner" && registration.coordinatorId
       ? coordinatorNames.get(registration.coordinatorId) || "منسق سابق"
       : null,
     registrationSource: registration.coordinatorId ? "coordinator" : "public",
   })));
+});
+
+/* ── PATCH /api/registrations/:id ──
+ * Coordinators may edit only registrations they created. The owner is
+ * intentionally kept on the status-only endpoint below.
+ */
+router.patch("/registrations/:id", requireCoordinator, async (req, res) => {
+  const session = readSession(req.cookies?.srma_coordinator_session);
+  if (!session) {
+    res.status(401).json({ error: "يلزم تسجيل الدخول" });
+    return;
+  }
+
+  const id = Number(req.params["id"]);
+  const [current] = await db.select().from(registrationsTable).where(eq(registrationsTable.id, id)).limit(1);
+  if (!current) {
+    res.status(404).json({ error: "الطالب غير موجود" });
+    return;
+  }
+  if (session.role === "coordinator" && current.coordinatorId !== session.coordinatorId) {
+    res.status(403).json({ error: "لا يمكنك تعديل تسجيل لا يخصك" });
+    return;
+  }
+
+  const source = req.body && typeof req.body === "object" ? req.body as Record<string, unknown> : {};
+  const editableKeys = ["fullName", "specialization", "email", "whatsapp", "affiliation", "country", "city", "orcid", "customFields"] as const;
+  const updates = Object.fromEntries(editableKeys
+    .filter((key) => key in source)
+    .map((key) => [key, key === "customFields" ? source[key] : typeof source[key] === "string" ? source[key].trim() : source[key]]));
+  const parsed = insertRegistrationSchema.partial().safeParse(updates);
+  if (!parsed.success) {
+    res.status(400).json({ error: "بيانات الطالب غير صحيحة", details: parsed.error.issues });
+    return;
+  }
+  if (!Object.keys(parsed.data).length) {
+    res.status(400).json({ error: "لم يتم إرسال أي بيانات للتعديل" });
+    return;
+  }
+
+  const merged = { ...current, ...parsed.data };
+  const requiredFields = ["fullName", "specialization", "email", "affiliation", "country"] as const;
+  if (requiredFields.some((field) => typeof merged[field] !== "string" || !merged[field].trim())) {
+    res.status(400).json({ error: "الاسم والتخصص والبريد والجهة والدولة حقول مطلوبة." });
+    return;
+  }
+
+  const [row] = await db.update(registrationsTable).set(parsed.data).where(eq(registrationsTable.id, id)).returning();
+  res.json({
+    ...row,
+    coordinatorName: session.role === "owner" ? null : null,
+    registrationSource: row.coordinatorId ? "coordinator" : "public",
+  });
+});
+
+/* ── DELETE /api/registrations/:id ── */
+router.delete("/registrations/:id", requireCoordinator, async (req, res) => {
+  const session = readSession(req.cookies?.srma_coordinator_session);
+  if (!session) {
+    res.status(401).json({ error: "يلزم تسجيل الدخول" });
+    return;
+  }
+  const id = Number(req.params["id"]);
+  const [current] = await db.select().from(registrationsTable).where(eq(registrationsTable.id, id)).limit(1);
+  if (!current) {
+    res.status(404).json({ error: "الطالب غير موجود" });
+    return;
+  }
+  if (session.role === "coordinator" && current.coordinatorId !== session.coordinatorId) {
+    res.status(403).json({ error: "لا يمكنك حذف تسجيل لا يخصك" });
+    return;
+  }
+  await db.delete(registrationsTable).where(eq(registrationsTable.id, id));
+  res.status(204).end();
 });
 
 /* ── PATCH /api/registrations/:id/status ── */

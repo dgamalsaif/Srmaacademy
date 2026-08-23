@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X, Microscope } from "lucide-react";
+import { Menu, X } from "lucide-react";
+import { SRMA_LOGO } from "@/components/BrandBackground";
+import InstallAppButton from "@/components/InstallAppButton";
 
 const navLinks = [
   { href: "/", label: "الرئيسية" },
@@ -34,7 +36,7 @@ export default function Navbar() {
               const isActive = location === link.href;
               return (
                 <Link
-                  key={link.href}
+                  key={link.label}
                   href={link.href}
                   data-testid={`link-nav-${link.href.replace("/", "") || "home"}`}
                   className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
@@ -50,16 +52,16 @@ export default function Navbar() {
               );
             })}
           </div>
+          <div className="hidden lg:block">
+            <InstallAppButton className="flex items-center gap-1.5 rounded-full border border-[#117b59]/25 bg-[#f3fbf8] px-3 py-2 text-xs font-black text-[#117b59] transition hover:bg-[#e6f5ef]" />
+          </div>
 
           {/* Logo */}
-          <Link href="/" data-testid="link-logo" className="flex items-center gap-2 flex-shrink-0">
+          <Link href="/" data-testid="link-logo" className="flex items-center gap-2.5 flex-shrink-0">
+            <img src={SRMA_LOGO} alt="SRMA Research Academy" className="h-11 w-11 rounded-full border border-[#0C3156]/15 object-cover shadow-sm" />
             <div className="flex flex-col items-end">
               <div className="flex items-center gap-1.5">
-                <span className="text-xs bg-[#E9A020] text-white px-1.5 py-0.5 rounded font-bold tracking-wide">2026</span>
                 <span className="text-xl font-black text-[#0C3156] tracking-tight">SRMA</span>
-                <div className="w-8 h-8 bg-gradient-to-br from-[#0C3156] to-[#1A5FAE] rounded-full flex items-center justify-center shadow-sm">
-                  <Microscope size={15} className="text-white" />
-                </div>
               </div>
               <span className="text-[10px] text-slate-500 font-medium tracking-wide">SRMA Research Academy</span>
             </div>
@@ -72,7 +74,7 @@ export default function Navbar() {
         <div className="md:hidden bg-white border-t border-slate-100 px-4 pb-4 pt-2 shadow-lg">
           {navLinks.map((link) => (
             <Link
-              key={link.href}
+              key={link.label}
               href={link.href}
               data-testid={`link-mobile-${link.href.replace("/", "") || "home"}`}
               className="block py-2.5 px-3 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#0C3156]"
@@ -81,6 +83,9 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
+          <div className="px-3 pt-3">
+            <InstallAppButton className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#e6f5ef] px-4 py-3 text-sm font-black text-[#117b59]" />
+          </div>
         </div>
       )}
     </nav>

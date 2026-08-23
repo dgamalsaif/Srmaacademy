@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
-import { LockKeyhole, Loader2, ShieldCheck } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { LockKeyhole, Loader2 } from "lucide-react";
+import Footer from "@/components/Footer";
+import { SRMA_LOGO } from "@/components/BrandBackground";
 
 export default function OwnerLogin() {
   const [, setLocation] = useLocation();
@@ -33,12 +35,19 @@ export default function OwnerLogin() {
   };
 
   return (
-    <main className="min-h-screen bg-[#edf4f1] p-5" dir="rtl">
-      <div className="mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-6xl items-center justify-center">
-        <section className="w-full max-w-md rounded-[2rem] border border-emerald-100 bg-white p-7 text-center shadow-[0_28px_80px_rgba(13,118,92,0.15)] sm:p-10">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#0d765c] text-white shadow-lg">
-            <ShieldCheck size={31} />
-          </div>
+    <div className="flex min-h-screen flex-col" dir="rtl">
+      <header className="border-b border-emerald-100 bg-white/95 px-5 py-3 shadow-sm backdrop-blur">
+        <Link href="/" className="mx-auto flex max-w-6xl items-center justify-end gap-3">
+          <div className="text-right"><p className="text-lg font-black text-[#0C3156]">SRMA</p><p className="text-[10px] font-bold tracking-wide text-slate-500">RESEARCH ACADEMY</p></div>
+          <img src={SRMA_LOGO} alt="SRMA Research Academy" className="h-11 w-11 rounded-full border border-emerald-100 object-cover" />
+        </Link>
+      </header>
+      <main className="flex-1 p-5">
+        <div className="mx-auto flex min-h-[calc(100vh-2.5rem)] max-w-6xl items-center justify-center">
+          <section className="w-full max-w-md rounded-[2rem] border border-emerald-100 bg-white p-7 text-center shadow-[0_28px_80px_rgba(13,118,92,0.15)] sm:p-10">
+            <div className="mx-auto flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-emerald-100">
+              <img src={SRMA_LOGO} alt="SRMA Research Academy" className="h-full w-full object-cover" />
+            </div>
           <p className="mt-6 text-xs font-black tracking-[0.16em] text-[#117b59]">SRMA CONTROL</p>
           <h1 className="mt-2 text-2xl font-black text-slate-900">دخول مالك المنصة</h1>
           <p className="mt-3 text-sm leading-6 text-slate-500">هذه الصفحة مخصصة لمالك SRMA Research Academy فقط لإدارة المحتوى والإعدادات.</p>
@@ -54,8 +63,10 @@ export default function OwnerLogin() {
               {loading ? <><Loader2 size={18} className="animate-spin" /> جارٍ التحقق...</> : "دخول لوحة المالك"}
             </button>
           </form>
-        </section>
-      </div>
-    </main>
+          </section>
+        </div>
+      </main>
+      <Footer />
+    </div>
   );
 }

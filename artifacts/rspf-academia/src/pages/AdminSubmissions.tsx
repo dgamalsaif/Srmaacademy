@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
-import { ChevronRight, LogOut, RefreshCw, Users, FileText, Check, X, Clock, Mail, Phone, Download } from "lucide-react";
+import { ChevronRight, LogOut, RefreshCw, Users, FileText, Check, X, Clock, Mail, Phone, Download, Pencil, Trash2, Save, Loader2 } from "lucide-react";
+import Footer from "@/components/Footer";
+import { SRMA_LOGO } from "@/components/BrandBackground";
 
 const API_BASE = "/api";
 
@@ -16,6 +18,8 @@ interface Registration {
   orcid: string;
   researchId: number;
   researchTitle: string;
+  researchStatus?: string;
+  researchCategory?: string;
   coordinatorId: number | null;
   coordinatorName: string | null;
   registrationSource: "coordinator" | "public";
@@ -47,6 +51,16 @@ const STATUS_LABELS: Record<string, string> = {
   approved: "مقبول",
   rejected: "مرفوض",
   contacted: "تم التواصل",
+};
+
+const RESEARCH_STATUS_LABELS: Record<string, string> = {
+  open: "مفتوحة للتسجيل",
+  closed: "أُغلقت",
+  upcoming: "قريباً",
+  seats_full: "اكتملت المقاعد",
+  submitted: "تم الرفع في المجلة",
+  accepted: "مقبولة للنشر",
+  published: "تم النشر",
 };
 
 function StatusBadge({ status }: { status: string }) {
@@ -91,6 +105,81 @@ function StatusActions({ id, current, onUpdate, endpoint }: { id: number; curren
           <X size={16} />
         </button>
       )}
+    </div>
+  );
+}
+
+function StudentEditModal({ registration, onClose, onSaved }: { registration: Registration; onClose: () => void; onSaved: (registration: Registration) => void }) {
+  const [form, setForm] = useState({
+    fullName: registration.fullName,
+    specialization: registration.specialization,
+    email: registration.email,
+    whatsapp: registration.whatsapp,
+    affiliation: registration.affiliation,
+    country: registration.country,
+    city: registration.city,
+    orcid: registration.orcid,
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const save = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      const response = await fetch(`${API_BASE}/registrations/${registration.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      const saved = await response.json().catch(() => ({})) as Registration & { error?: string };
+      if (!response.ok) throw new Error(saved.error || "تعذر حفظ تعديلات الطالب.");
+      onSaved({ ...registration, ...saved });
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "تعذر حفظ تعديلات الطالب.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const field = (key: keyof typeof form, label: string, type = "text", dir?: "ltr") => (
+    <label className="block text-right text-sm font-bold text-slate-700">
+      <span className="mb-1.5 block">{label}</span>
+      <input required={["fullName", "specialization", "email", "affiliation", "country"].includes(key)} type={type} value={form[key]} onChange={(event) => setForm({ ...form, [key]: event.target.value })} dir={dir} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#117b59] focus:ring-2 focus:ring-[#117b59]/20" />
+    </label>
+  );
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm" />
+      <form onSubmit={save} onClick={(event) => event.stopPropagation()} className="relative max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl" dir="rtl">
+        <div className="mb-6 flex items-start justify-between border-b border-slate-100 pb-4">
+          <button type="button" onClick={onClose} className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label="إغلاق"><X size={20} /></button>
+          <div className="text-right">
+            <p className="text-xs font-black text-[#117b59]">تعديل بيانات الطالب</p>
+            <h2 className="mt-1 text-xl font-black text-slate-800">{registration.fullName}</h2>
+            <p className="mt-1 text-xs text-slate-500">{registration.researchTitle}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          {field("fullName", "الاسم الكامل")}
+          {field("specialization", "التخصص")}
+          {field("email", "البريد الإلكتروني", "email", "ltr")}
+          {field("whatsapp", "رقم واتساب", "tel", "ltr")}
+          {field("affiliation", "جهة الانتساب")}
+          {field("country", "الدولة")}
+          {field("city", "المدينة")}
+          {field("orcid", "ORCID", "text", "ltr")}
+        </div>
+        {error && <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{error}</p>}
+        <div className="mt-6 flex flex-wrap justify-end gap-3">
+          <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50">إلغاء</button>
+          <button type="submit" disabled={saving} className="flex items-center gap-2 rounded-xl bg-[#117b59] px-5 py-3 text-sm font-black text-white transition hover:bg-[#0c6549] disabled:opacity-60">
+            {saving ? <><Loader2 size={17} className="animate-spin" /> جارٍ الحفظ...</> : <><Save size={17} /> حفظ التعديلات</>}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
@@ -151,12 +240,15 @@ export default function AdminSubmissions() {
   const [, setLocation] = useLocation();
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [role, setRole] = useState<"owner" | "coordinator" | null>(null);
+  const [editingRegistration, setEditingRegistration] = useState<Registration | null>(null);
+  const [deletingRegistration, setDeletingRegistration] = useState<Registration | null>(null);
+  const [mutationError, setMutationError] = useState("");
 
   useEffect(() => {
     fetch("/api/coordinator/session")
       .then((response) => response.json() as Promise<{ authenticated?: boolean; role?: "owner" | "coordinator" }>)
       .then((result) => {
-        if (result.authenticated && result.role === "owner") {
+        if (result.authenticated && result.role) {
           setAuthorized(true);
           setRole(result.role);
         }
@@ -182,10 +274,15 @@ export default function AdminSubmissions() {
 
   const handleLogout = async () => {
     await fetch("/api/coordinator/logout", { method: "POST" });
-    setLocation("/owner-admin");
+    setLocation(role === "owner" ? "/owner-admin" : "/coordinator");
   };
 
   useEffect(() => { void fetchData(); }, [fetchData]);
+  useEffect(() => {
+    if (authorized !== true) return;
+    const timer = window.setInterval(() => void fetchData(), 30000);
+    return () => window.clearInterval(timer);
+  }, [authorized, fetchData]);
 
   if (authorized !== true) return null;
   const canManageCoordinatorRequests = role === "owner";
@@ -217,9 +314,9 @@ export default function AdminSubmissions() {
     ? registrations
     : registrations.filter((registration) => registration.researchId === selectedResearchId);
 
-  const exportRegistrations = () => {
+  const exportRegistrations = (records = filteredRegistrations, fileName?: string) => {
     setExportError("");
-    if (filteredRegistrations.length === 0) {
+    if (records.length === 0) {
       setExportError("لا توجد تسجيلات في العرض الحالي لتصديرها.");
       return;
     }
@@ -236,8 +333,8 @@ export default function AdminSubmissions() {
         year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit",
       });
       const rows = [
-        ["الاسم الكامل", "التخصص", "البريد الإلكتروني", "واتساب", "جهة الانتساب", "الدولة", "المدينة", "البرنامج / الفرصة", ...(canManageCoordinatorRequests ? ["المسجّل بواسطة"] : []), "الحالة", "تاريخ التسجيل"],
-        ...filteredRegistrations.map((registration) => [
+        ["الاسم الكامل", "التخصص", "البريد الإلكتروني", "واتساب", "جهة الانتساب", "الدولة", "المدينة", "البرنامج / الفرصة", "مرحلة الفرصة", ...(canManageCoordinatorRequests ? ["المسجّل بواسطة"] : []), "حالة الطالب", "تاريخ التسجيل"],
+        ...records.map((registration) => [
           registration.fullName,
           registration.specialization,
           registration.email,
@@ -246,6 +343,7 @@ export default function AdminSubmissions() {
           registration.country,
           registration.city || "—",
           registration.researchTitle,
+          RESEARCH_STATUS_LABELS[registration.researchStatus || ""] || registration.researchStatus || "—",
           ...(canManageCoordinatorRequests ? [registration.coordinatorName || "تسجيل عام"] : []),
           STATUS_LABELS[registration.status] || registration.status,
           formatExportDate(registration.createdAt),
@@ -274,7 +372,7 @@ export default function AdminSubmissions() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = selectedResearchId === "all" ? "srma-student-registrations.xls" : `srma-program-${selectedResearchId}-students.xls`;
+      link.download = fileName || (selectedResearchId === "all" ? "srma-student-registrations.xls" : `srma-program-${selectedResearchId}-students.xls`);
       link.rel = "noopener";
       document.body.appendChild(link);
       link.click();
@@ -287,20 +385,42 @@ export default function AdminSubmissions() {
     }
   };
 
+  const saveEditedRegistration = (saved: Registration) => {
+    setRegistrations((items) => items.map((item) => item.id === saved.id ? { ...item, ...saved } : item));
+    setEditingRegistration(null);
+  };
+
+  const deleteRegistration = async () => {
+    if (!deletingRegistration) return;
+    setMutationError("");
+    try {
+      const response = await fetch(`${API_BASE}/registrations/${deletingRegistration.id}`, { method: "DELETE" });
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({})) as { error?: string };
+        throw new Error(result.error || "تعذر حذف الطالب.");
+      }
+      setRegistrations((items) => items.filter((item) => item.id !== deletingRegistration.id));
+      setDeletingRegistration(null);
+    } catch (deleteError) {
+      setMutationError(deleteError instanceof Error ? deleteError.message : "تعذر حذف الطالب.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#f8fafc] text-right" dir="rtl">
       {/* TOP BAR */}
       <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-5 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-20">
         <div className="flex items-center gap-4">
+           <img src={SRMA_LOGO} alt="" className="h-12 w-12 rounded-2xl border border-emerald-100 object-cover shadow-sm" />
            <div className="text-right">
              <h1 className="text-2xl font-black text-slate-800">الطلبات والتسجيلات</h1>
               <p className="text-sm text-slate-500 mt-1 font-medium">{canManageCoordinatorRequests ? "بيانات جميع المستخدمين المسجلين في البرامج" : "تسجيلات الطلاب التي أنشأتها من لوحة المنسق"}</p>
            </div>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/admin" data-testid="link-submissions-dashboard" className="flex items-center gap-2 border border-slate-200 rounded-xl px-4 py-2.5 bg-slate-50 shadow-sm hover:bg-slate-100 text-slate-700 text-sm font-bold transition-colors">
+          <Link href={role === "owner" ? "/admin" : "/coordinator/dashboard"} data-testid="link-submissions-dashboard" className="flex items-center gap-2 border border-slate-200 rounded-xl px-4 py-2.5 bg-slate-50 shadow-sm hover:bg-slate-100 text-slate-700 text-sm font-bold transition-colors">
              <ChevronRight size={16} />
-             لوحة التحكم
+              {role === "owner" ? "لوحة التحكم" : "بوابة التنسيق"}
           </Link>
           <button onClick={handleLogout} data-testid="link-submissions-logout" className="flex items-center gap-2 border border-red-200 text-red-600 hover:bg-red-50 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors shadow-sm">
             خروج <LogOut size={16} />
@@ -349,7 +469,7 @@ export default function AdminSubmissions() {
           <div className="flex items-center gap-3 w-full md:w-auto justify-end">
             {tab === "registrations" && (
               <div className="flex items-center gap-3">
-              <button onClick={exportRegistrations} disabled={exporting || filteredRegistrations.length === 0}
+              <button onClick={() => exportRegistrations()} disabled={exporting || filteredRegistrations.length === 0}
                 className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm disabled:cursor-not-allowed disabled:opacity-50">
                 <Download size={16} className={exporting ? "animate-pulse" : "text-slate-400"} />
                 {exporting ? "جارٍ تجهيز Excel..." : "تنزيل Excel"}
@@ -381,14 +501,18 @@ export default function AdminSubmissions() {
                 </div>
                 <div className="flex gap-3 overflow-x-auto pb-2">
                   {Object.values(registrationGroups).map((group) => (
-                    <button key={group.id} onClick={() => setSelectedResearchId(group.id)}
-                      className={`min-w-[220px] rounded-2xl border p-4 text-right transition-all ${selectedResearchId === group.id ? "border-[#117b59] bg-[#e6f5ef] shadow-sm" : "border-slate-200 bg-slate-50 hover:border-slate-300"}`}>
-                      <p className="line-clamp-2 text-xs font-bold text-slate-800 leading-5">{group.title}</p>
-                      <div className="mt-3 flex items-center gap-3">
-                        <span className="text-xs font-bold text-slate-600"><Users size={12} className="inline mr-1 text-slate-400" /> {group.count} مسجل</span>
-                        {group.pending > 0 && <span className="text-xs font-bold text-amber-600"><Clock size={12} className="inline mr-1 text-amber-400" /> {group.pending} مراجعة</span>}
-                      </div>
-                    </button>
+                    <div key={group.id} className={`min-w-[230px] rounded-2xl border p-1.5 text-right transition-all ${selectedResearchId === group.id ? "border-[#117b59] bg-[#e6f5ef] shadow-sm" : "border-slate-200 bg-slate-50 hover:border-slate-300"}`}>
+                      <button onClick={() => setSelectedResearchId(group.id)} className="w-full rounded-xl p-2.5 text-right">
+                        <p className="line-clamp-2 text-xs font-bold leading-5 text-slate-800">{group.title}</p>
+                        <div className="mt-3 flex items-center gap-3">
+                          <span className="text-xs font-bold text-slate-600"><Users size={12} className="inline mr-1 text-slate-400" /> {group.count} مسجل</span>
+                          {group.pending > 0 && <span className="text-xs font-bold text-amber-600"><Clock size={12} className="inline mr-1 text-amber-400" /> {group.pending} مراجعة</span>}
+                        </div>
+                      </button>
+                      <button onClick={() => exportRegistrations(registrations.filter((registration) => registration.researchId === group.id), `srma-program-${group.id}-students.xls`)} className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2 text-xs font-black text-[#117b59] shadow-sm ring-1 ring-[#117b59]/15 transition hover:bg-[#f3fbf8]">
+                        <Download size={14} /> Excel لهذه الفرصة
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -408,7 +532,7 @@ export default function AdminSubmissions() {
                   <table className="w-full text-right">
                     <thead className="bg-slate-50 border-b border-slate-100">
                       <tr>
-                        {["الاسم والتخصص", "التواصل", "الجهة / المدينة", "الفرصة البحثية", ...(canManageCoordinatorRequests ? ["المسجّل بواسطة"] : []), "الحالة", "التاريخ", "إجراء"].map((h) => (
+                        {["الاسم والتخصص", "التواصل", "الجهة / المدينة", "الفرصة البحثية", ...(canManageCoordinatorRequests ? ["المسجّل بواسطة"] : []), "الحالة", "التاريخ", "إجراءات"].map((h) => (
                           <th key={h} className="px-6 py-4 text-xs font-bold text-slate-500 whitespace-nowrap">{h}</th>
                         ))}
                       </tr>
@@ -438,6 +562,7 @@ export default function AdminSubmissions() {
                           </td>
                           <td className="px-6 py-5">
                             <p className="text-xs font-bold text-slate-700 leading-5 line-clamp-2 max-w-[220px] mb-1">{reg.researchTitle}</p>
+                             {reg.researchStatus && <span className="inline-flex rounded-lg bg-blue-50 px-2 py-1 text-[10px] font-black text-blue-700">{RESEARCH_STATUS_LABELS[reg.researchStatus] || reg.researchStatus}</span>}
                             <p className="text-[11px] font-medium text-slate-400">ID: {reg.researchId}</p>
                           </td>
                           {canManageCoordinatorRequests && (
@@ -457,7 +582,11 @@ export default function AdminSubmissions() {
                             {canManageCoordinatorRequests ? (
                               <StatusActions id={reg.id} current={reg.status} onUpdate={fetchData} endpoint="registrations" />
                             ) : (
-                              <span className="text-xs font-bold text-slate-400 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">للعرض فقط</span>
+                              <div className="flex items-center gap-1">
+                                <button onClick={() => exportRegistrations([reg], `srma-student-${reg.id}.xls`)} title="تنزيل Excel للطالب" className="rounded-lg p-2 text-[#117b59] transition hover:bg-[#e6f5ef]"><Download size={16} /></button>
+                                <button onClick={() => setEditingRegistration(reg)} title="تعديل بيانات الطالب" className="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50"><Pencil size={16} /></button>
+                                <button onClick={() => { setMutationError(""); setDeletingRegistration(reg); }} title="حذف الطالب" className="rounded-lg p-2 text-red-600 transition hover:bg-red-50"><Trash2 size={16} /></button>
+                              </div>
                             )}
                           </td>
                         </tr>
@@ -551,6 +680,27 @@ export default function AdminSubmissions() {
           </div>
         )}
       </div>
+      <Footer />
+      {editingRegistration && <StudentEditModal registration={editingRegistration} onClose={() => setEditingRegistration(null)} onSaved={saveEditedRegistration} />}
+      {deletingRegistration && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" onClick={() => setDeletingRegistration(null)}>
+          <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm" />
+          <div className="relative w-full max-w-md rounded-3xl bg-white p-6 text-right shadow-2xl" dir="rtl" onClick={(event) => event.stopPropagation()}>
+            <div className="flex items-start gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600"><Trash2 size={21} /></div>
+              <div>
+                <h2 className="text-lg font-black text-slate-800">حذف تسجيل الطالب</h2>
+                <p className="mt-2 text-sm leading-6 text-slate-500">هل تريد حذف تسجيل <strong className="text-slate-800">{deletingRegistration.fullName}</strong> نهائياً؟ لا يمكن استرجاعه بعد الحذف.</p>
+              </div>
+            </div>
+            {mutationError && <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">{mutationError}</p>}
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" onClick={() => setDeletingRegistration(null)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50">إلغاء</button>
+              <button type="button" onClick={() => void deleteRegistration()} className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-red-700">حذف التسجيل</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

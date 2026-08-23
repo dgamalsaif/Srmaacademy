@@ -1,5 +1,7 @@
 import { Link } from "wouter";
-import { Microscope, Phone, Send, Radio } from "lucide-react";
+import { Phone, Send, Radio } from "lucide-react";
+import { SRMA_LOGO } from "@/components/BrandBackground";
+import InstallAppButton from "@/components/InstallAppButton";
 
 const quickLinks = [
   { href: "/", label: "الرئيسية" },
@@ -75,11 +77,11 @@ export default function Footer() {
           <div className="flex flex-col items-end gap-5">
             <div className="flex items-center gap-2">
               <div className="flex flex-col items-end">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs bg-[#E9A020] text-white px-1.5 py-0.5 rounded font-bold tracking-wide">2026</span>
-                  <span className="text-2xl font-black text-white tracking-tight">SRMA</span>
-                  <div className="w-9 h-9 bg-white/15 border border-white/20 rounded-full flex items-center justify-center">
-                    <Microscope size={18} className="text-white" />
+                <div className="flex items-center gap-3">
+                  <img src={SRMA_LOGO} alt="SRMA Research Academy" className="h-14 w-14 rounded-full border border-white/20 object-cover shadow-lg" />
+                  <div>
+                    <span className="block text-2xl font-black text-white tracking-tight">SRMA</span>
+                    <span className="mt-0.5 block text-[10px] font-medium tracking-widest text-blue-200">RESEARCH ACADEMY</span>
                   </div>
                 </div>
               </div>
@@ -97,6 +99,7 @@ export default function Footer() {
               <Send size={14} />
               اشترك في قناة Telegram
             </a>
+            <InstallAppButton className="flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-black text-[#0C3156] transition hover:bg-blue-50" />
           </div>
         </div>
       </div>

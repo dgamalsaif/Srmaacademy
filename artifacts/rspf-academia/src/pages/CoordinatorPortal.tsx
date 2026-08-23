@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Shield, X, CheckCircle2, Loader2, UserRound, Mail, Phone, Building2, Menu, Microscope, Home, BookOpen, Info, GraduationCap, UsersRound, FileText, Download, Cookie } from "lucide-react";
+import { Shield, X, CheckCircle2, Loader2, UserRound, Mail, Phone, Building2, Menu, Home, BookOpen, Info, GraduationCap, UsersRound, FileText, Download, Cookie } from "lucide-react";
 import CountrySelector from "@/components/CountrySelector";
 import FloatingButtons from "@/components/FloatingButtons";
 import { CoordinatorPortalSettings, DEFAULT_COORDINATOR_PORTAL_SETTINGS, PortalNavIcon } from "@/lib/coordinatorPortalSettings";
+import Footer from "@/components/Footer";
+import { SRMA_LOGO } from "@/components/BrandBackground";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -34,15 +36,13 @@ function CoordinatorHeader({ settings }: { settings: CoordinatorPortalSettings }
     <header className="relative z-50 border-b border-slate-100 bg-white shadow-[0_2px_12px_rgba(22,48,67,0.05)]">
       <div className="mx-auto flex h-[78px] max-w-[1450px] items-center justify-between gap-6 px-5 sm:px-8">
         <Link href="/" data-testid="link-coordinator-logo" className="flex shrink-0 items-center gap-2.5">
+          <img src={SRMA_LOGO} alt="SRMA Research Academy" className="h-11 w-11 rounded-full border border-[#0d765c]/20 object-cover shadow-sm" />
           <div className="text-right leading-none">
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-black text-[#e2a229]">{settings.brandYear}</span>
               <span className="text-[19px] font-black tracking-tight text-[#193d37]">{settings.brandName}</span>
             </div>
             <span className="mt-1 block text-[9px] font-medium tracking-wide text-slate-500">{settings.brandSubtitle}</span>
-          </div>
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#0d765c] text-white shadow-[0_5px_12px_rgba(13,118,92,0.22)]">
-            <Microscope size={20} />
           </div>
         </Link>
 
@@ -235,6 +235,7 @@ export default function CoordinatorPortal() {
           <p className="mt-6 text-center text-xs text-slate-400">{settings.footnote}</p>
         </div>
       </main>
+      <Footer />
       <FloatingButtons
         telegramUrl={settings.telegramUrl}
         whatsappUrl={settings.whatsappUrl}
@@ -266,7 +267,7 @@ export default function CoordinatorPortal() {
         <aside data-testid="coordinator-install-prompt" className="fixed bottom-5 right-5 z-[75] w-[calc(100%-2.5rem)] max-w-sm rounded-2xl border border-emerald-100 bg-white p-4 text-right shadow-[0_18px_42px_rgba(15,35,50,0.18)] page-enter">
           <button type="button" onClick={dismissInstall} className="absolute left-3 top-3 rounded-lg p-1 text-slate-400 transition hover:bg-slate-100" aria-label="إغلاق"><X size={16} /></button>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#0d765c] text-white"><Microscope size={20} /></div>
+            <img src={SRMA_LOGO} alt="" className="h-10 w-10 shrink-0 rounded-xl border border-emerald-100 object-cover" />
             <div>
               <h2 className="pl-6 text-sm font-black text-slate-800">{settings.installTitle}</h2>
               <p className="mt-1 text-xs leading-5 text-slate-500">{settings.installDescription}</p>

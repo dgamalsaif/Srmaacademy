@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import FloatingButtons from "@/components/FloatingButtons";
+import BrandBackground from "@/components/BrandBackground";
 import Home from "@/pages/Home";
 import ParticipantPortal from "@/pages/ParticipantPortal";
 import CoordinatorPortal from "@/pages/CoordinatorPortal";
@@ -27,28 +28,31 @@ function Router() {
   const isCoordinatorPortal = location === "/coordinator" || location === "/coordinator-portal";
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ fontFamily: "'Tajawal', sans-serif" }}>
-      {!isAdmin && !isCoordinatorPortal && <Navbar />}
-      <main className="flex-1">
-        <Switch>
-          <Route path="/" component={Home} />
-          <Route path="/participant-portal" component={ParticipantPortal} />
-          <Route path="/coordinator" component={CoordinatorPortal} />
-          <Route path="/coordinator-portal" component={CoordinatorPortal} />
-          <Route path="/special-requests" component={SpecialRequests} />
-          <Route path="/knowledge-center" component={KnowledgeCenter} />
-          <Route path="/about" component={About} />
-          <Route path="/faq" component={FAQ} />
-          <Route path="/admin" component={AdminDashboard} />
-          <Route path="/admin/submissions" component={AdminSubmissions} />
-          <Route path="/owner-admin" component={OwnerLogin} />
-          <Route path="/coordinator/dashboard" component={AdminDashboard} />
-          <Route path="/research/:id" component={ResearchDetail} />
-          <Route component={NotFound} />
-        </Switch>
-      </main>
-      {!isAdmin && !isCoordinatorPortal && <Footer />}
-      {!isAdmin && !isCoordinatorPortal && <FloatingButtons />}
+    <div className="relative flex min-h-screen flex-col" style={{ fontFamily: "'Tajawal', sans-serif" }}>
+      <BrandBackground />
+      <div className="relative z-10 flex min-h-screen flex-col">
+        {!isAdmin && !isCoordinatorPortal && <Navbar />}
+        <main className="flex-1">
+          <Switch>
+            <Route path="/" component={Home} />
+            <Route path="/participant-portal" component={ParticipantPortal} />
+            <Route path="/coordinator" component={CoordinatorPortal} />
+            <Route path="/coordinator-portal" component={CoordinatorPortal} />
+            <Route path="/special-requests" component={SpecialRequests} />
+            <Route path="/knowledge-center" component={KnowledgeCenter} />
+            <Route path="/about" component={About} />
+            <Route path="/faq" component={FAQ} />
+            <Route path="/admin" component={AdminDashboard} />
+            <Route path="/admin/submissions" component={AdminSubmissions} />
+            <Route path="/owner-admin" component={OwnerLogin} />
+            <Route path="/coordinator/dashboard" component={AdminDashboard} />
+            <Route path="/research/:id" component={ResearchDetail} />
+            <Route component={NotFound} />
+          </Switch>
+        </main>
+        {!isAdmin && !isCoordinatorPortal && <Footer />}
+        {!isAdmin && !isCoordinatorPortal && <FloatingButtons />}
+      </div>
     </div>
   );
 }

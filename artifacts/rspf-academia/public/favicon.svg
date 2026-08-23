@@ -1,3 +1,8 @@
-<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="180" height="180" rx="36" fill="#FF3C00"/>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="512" height="512" rx="112" fill="#0C3156"/>
+<circle cx="256" cy="224" r="156" fill="white" stroke="#117B59" stroke-width="20"/>
+<path d="M160 289V219M214 289V174M268 289V139M322 289V197" stroke="#0C3156" stroke-width="30" stroke-linecap="round"/>
+<path d="M132 294L203 226L258 259L350 168" stroke="#117B59" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="132" cy="294" r="16" fill="#117B59"/><circle cx="203" cy="226" r="16" fill="#117B59"/><circle cx="258" cy="259" r="16" fill="#117B59"/><circle cx="350" cy="168" r="16" fill="#117B59"/>
+<text x="256" y="432" fill="white" font-family="Arial, sans-serif" font-size="66" font-weight="800" text-anchor="middle">SRMA</text>
 </svg>

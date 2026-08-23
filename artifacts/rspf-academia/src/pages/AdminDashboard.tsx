@@ -7,6 +7,8 @@ import CoordinatorPortalSettingsPanel from "@/components/CoordinatorPortalSettin
 import { CoordinatorPortalSettings, DEFAULT_COORDINATOR_PORTAL_SETTINGS } from "@/lib/coordinatorPortalSettings";
 import ContentControlPanel from "@/components/ContentControlPanel";
 import { DEFAULT_SITE_CONTENT_SETTINGS, OpportunityFieldId, SiteContentSettings } from "@/lib/siteContentSettings";
+import Footer from "@/components/Footer";
+import { SRMA_LOGO } from "@/components/BrandBackground";
 
 const EMPTY_FORM: Omit<ResearchOpportunity, "id" | "createdAt"> = {
   category: "active",
@@ -620,11 +622,15 @@ export default function AdminDashboard() {
         let response = await fetch("/api/programs");
         let data = await response.json() as ResearchOpportunity[];
         setResearch(Array.isArray(data) ? data : []);
+      } catch {
+        setResearch([]);
       } finally {
         setLoadingPrograms(false);
       }
     };
     void loadPrograms();
+    const timer = window.setInterval(() => void loadPrograms(), 30000);
+    return () => window.clearInterval(timer);
   }, [role]);
 
   useEffect(() => {
@@ -821,6 +827,7 @@ export default function AdminDashboard() {
       {/* TOP BAR */}
       <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-5 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-20">
         <div className="flex items-center gap-4">
+           <img src={SRMA_LOGO} alt="" className="h-12 w-12 rounded-2xl border border-emerald-100 object-cover shadow-sm" />
            <div className="text-right">
              <h1 className="text-2xl font-black text-slate-800">لوحة تحكم المنسق</h1>
               <p className="text-sm text-slate-500 mt-1 font-medium">أهلاً بك، {accountName || (role === "owner" ? "المدير العام" : "منسق البرامج")}</p>
@@ -885,10 +892,10 @@ export default function AdminDashboard() {
             <Landmark size={18} className={view === 'programs' ? 'text-emerald-100' : 'text-slate-400'} />
             إدارة البرامج
           </button>
-           {canManage && <Link href="/admin/submissions" className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
+            <Link href="/admin/submissions" className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
              <Users size={18} className="text-slate-400" />
-             الطلاب المسجلون
-           </Link>}
+              {canManage ? "الطلاب المسجلون" : "طلابي المسجلون"}
+            </Link>
           <button onClick={() => setView('payments')} className={`flex items-center gap-2 px-6 py-3 border rounded-2xl text-sm font-bold transition-all shadow-sm ${view === 'payments' ? 'bg-[#117b59] text-white border-[#117b59]' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'}`}>
             <CreditCard size={18} className={view === 'payments' ? 'text-emerald-100' : 'text-slate-400'} />
             المستحقات
@@ -1150,6 +1157,7 @@ export default function AdminDashboard() {
           coordinatorEntry={true}
         />
       )}
+      <Footer />
     </div>
   );
 }
