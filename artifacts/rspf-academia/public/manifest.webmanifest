@@ -11,10 +11,16 @@
   "theme_color": "#0d765c",
   "icons": [
     {
+      "src": "srma-logo.jpg",
+      "sizes": "1080x1080",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
       "src": "favicon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }

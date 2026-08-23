@@ -112,7 +112,7 @@ export default function ParticipantPortal() {
                     return (
                       <div key={opp.id} className="rounded-2xl border border-slate-200 p-5 shadow-sm transition-shadow hover:shadow-md" style={{ backgroundColor: contentSettings.cardBackgroundColor }} data-testid={`card-research-${opp.id}`}>
                         <div className="flex items-center justify-between gap-3 mb-3 flex-row-reverse">
-                          {contentSettings.visibleParticipantCardParts.includes("specialty") && <span className={`text-xs font-bold px-3 py-1 rounded-full ${opp.specialtyColor}`}>{opp.specialty}</span>}
+                          {contentSettings.visibleParticipantCardParts.includes("specialty") && <span className={`text-xs font-bold px-3 py-1 rounded-full ${opp.specialtyColor}`}>{opp.specialtyAr || opp.specialty}</span>}
                           <span className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 border border-red-100 px-3 py-1 rounded-full">
                             <Flame size={11} /> متبقية مقاعد محدودة
                           </span>

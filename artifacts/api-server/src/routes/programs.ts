@@ -3,6 +3,7 @@ import { db, insertResearchProgramSchema, programCatalogBootstrapTable, research
 import { desc, eq, sql } from "drizzle-orm";
 import { requireCoordinator, requireOwner } from "../middlewares/coordinatorAuth";
 import { getSiteContentSettings, OpportunityFieldId } from "../lib/siteContentSettings";
+import { importResearchOpportunities, PROGRAM_CATALOG_LOCK_ID, type ResearchOpportunityImportRow } from "../lib/researchOpportunityImport";
 
 const router = Router();
 
@@ -60,7 +61,7 @@ const INITIAL_CATALOG_KEY = "initial-program-catalog-v1";
 
 async function listPrograms() {
   return db.transaction(async (tx) => {
-    await tx.execute(sql`SELECT pg_advisory_xact_lock(902173)`);
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(${PROGRAM_CATALOG_LOCK_ID})`);
     let rows = await tx.select().from(researchProgramsTable).orderBy(desc(researchProgramsTable.createdAt));
     const [bootstrap] = await tx
       .select()
@@ -124,6 +125,27 @@ router.post("/programs", requireOwner, async (req, res) => {
   }
   const [row] = await db.insert(researchProgramsTable).values(parsed.data).returning();
   res.status(201).json(toClient(row));
+});
+
+router.post("/programs/import", requireOwner, async (req, res) => {
+  if (!Array.isArray(req.body?.rows)) {
+    res.status(400).json({ error: "يرجى إرسال قائمة الفرص للاستيراد." });
+    return;
+  }
+  const rows: ResearchOpportunityImportRow[] = req.body.rows.flatMap((row: unknown) => {
+    if (!row || typeof row !== "object") return [];
+    const value = row as Record<string, unknown>;
+    const totalSeats = Number(value.totalSeats);
+    const seatsLeft = Number(value.seatsLeft);
+    if (typeof value.specialtyAr !== "string" || typeof value.specialtyEn !== "string" || typeof value.title !== "string" || !Number.isFinite(totalSeats) || !Number.isFinite(seatsLeft)) return [];
+    return [{ specialtyAr: value.specialtyAr, specialtyEn: value.specialtyEn, title: value.title, totalSeats, seatsLeft }];
+  });
+  if (!rows.length) {
+    res.status(400).json({ error: "لم يتم العثور على صفوف صالحة للاستيراد." });
+    return;
+  }
+  const result = await importResearchOpportunities(rows);
+  res.status(201).json({ ...result, received: req.body.rows.length });
 });
 
 router.patch("/programs/:id", requireOwner, async (req, res) => {

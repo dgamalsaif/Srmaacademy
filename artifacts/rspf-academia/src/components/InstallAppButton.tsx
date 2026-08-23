@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Download } from "lucide-react";
+import { Download, Smartphone, X } from "lucide-react";
+import { SRMA_LOGO } from "@/components/BrandBackground";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -14,7 +15,8 @@ declare global {
 
 export default function InstallAppButton({ className = "" }: { className?: string }) {
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
-  const [message, setMessage] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+  const [installing, setInstalling] = useState(false);
 
   useEffect(() => {
     const captureInstall = (event: BeforeInstallPromptEvent) => {
@@ -22,26 +24,69 @@ export default function InstallAppButton({ className = "" }: { className?: strin
       setInstallEvent(event);
     };
     window.addEventListener("beforeinstallprompt", captureInstall);
-    return () => window.removeEventListener("beforeinstallprompt", captureInstall);
+    const installed = () => {
+      setInstallEvent(null);
+      setIsOpen(false);
+      setInstalling(false);
+    };
+    window.addEventListener("appinstalled", installed);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", captureInstall);
+      window.removeEventListener("appinstalled", installed);
+    };
   }, []);
 
   const install = async () => {
     if (!installEvent) {
-      setMessage("استخدم خيار «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية» من قائمة المتصفح.");
       return;
     }
-    await installEvent.prompt();
-    const choice = await installEvent.userChoice;
-    if (choice.outcome === "accepted") setInstallEvent(null);
+    setInstalling(true);
+    try {
+      await installEvent.prompt();
+      const choice = await installEvent.userChoice;
+      if (choice.outcome === "accepted") {
+        setInstallEvent(null);
+        setIsOpen(false);
+      }
+    } finally {
+      setInstalling(false);
+    }
   };
 
   return (
-    <div className="relative">
-      <button type="button" onClick={() => void install()} data-testid="button-install-app" className={className}>
+    <>
+      <button type="button" onClick={() => setIsOpen(true)} data-testid="button-install-app" className={className}>
         <Download size={15} />
         تحميل التطبيق
       </button>
-      {message && <span role="status" className="absolute left-0 top-[calc(100%+0.5rem)] z-[90] w-64 rounded-xl bg-slate-900 px-3 py-2 text-right text-[11px] font-medium leading-5 text-white shadow-xl">{message}</span>}
-    </div>
+      {isOpen && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center p-4" onClick={() => setIsOpen(false)} role="dialog" aria-modal="true" aria-label="تثبيت تطبيق SRMA Research Academy">
+          <div className="absolute inset-0 bg-slate-950/55 backdrop-blur-sm" />
+          <section className="relative w-full max-w-sm rounded-3xl border border-emerald-100 bg-white p-6 text-right shadow-2xl" dir="rtl" onClick={(event) => event.stopPropagation()}>
+            <button type="button" onClick={() => setIsOpen(false)} className="absolute left-4 top-4 rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label="إغلاق نافذة التثبيت"><X size={18} /></button>
+            <div className="flex items-center gap-3 pl-8">
+              <img src={SRMA_LOGO} alt="شعار SRMA Research Academy" className="h-14 w-14 rounded-2xl border border-emerald-100 object-cover shadow-sm" />
+              <div>
+                <p className="text-xs font-black text-[#117b59]">تطبيق SRMA</p>
+                <h2 className="mt-1 text-lg font-black text-slate-800">SRMA Research Academy</h2>
+              </div>
+            </div>
+            {installEvent ? (
+              <>
+                <p className="mt-5 text-sm leading-7 text-slate-600">ثبّت المنصة على جهازك للوصول السريع إلى الفرص البحثية وبوابة المنسق مباشرة من شاشة الهاتف أو سطح المكتب.</p>
+                <button type="button" onClick={() => void install()} disabled={installing} className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-[#117b59] px-5 py-3.5 text-sm font-black text-white shadow-lg shadow-emerald-900/15 transition hover:bg-[#0c6549] disabled:cursor-wait disabled:opacity-70">
+                  <Download size={17} /> {installing ? "جارٍ فتح التثبيت..." : "تثبيت التطبيق الآن"}
+                </button>
+              </>
+            ) : (
+              <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="flex items-center gap-2 text-[#117b59]"><Smartphone size={18} /><h3 className="text-sm font-black">أضف التطبيق إلى جهازك</h3></div>
+                <p className="mt-2 text-xs leading-6 text-slate-600">من قائمة المتصفح اختر <strong>«تثبيت التطبيق»</strong> أو <strong>«إضافة إلى الشاشة الرئيسية»</strong>. قد يظهر خيار التثبيت بعد فتح الموقع من Chrome أو Edge مرة أخرى.</p>
+              </div>
+            )}
+          </section>
+        </div>
+      )}
+    </>
   );
 }
