@@ -10,6 +10,7 @@ import { DEFAULT_SITE_CONTENT_SETTINGS, OpportunityFieldId, SiteContentSettings 
 import Footer from "@/components/Footer";
 import { SRMA_LOGO } from "@/components/BrandBackground";
 import ResearchImagePicker from "@/components/ResearchImagePicker";
+import OpportunityMedia from "@/components/OpportunityMedia";
 
 const EMPTY_FORM: Omit<ResearchOpportunity, "id" | "createdAt"> = {
   category: "active",
@@ -465,7 +466,9 @@ const STATUS_MAP: Record<string, { label: string, className: string }> = {
   draft: { label: "مسودة", className: "bg-slate-100 text-slate-600" },
   upcoming: { label: "قادم", className: "bg-amber-50 text-amber-600" },
   seats_full: { label: "اكتملت المقاعد", className: "bg-teal-50 text-teal-700" },
+  ethics_approved: { label: "موافقة أخلاقية / PROSPERO", className: "bg-cyan-50 text-cyan-700" },
   submitted: { label: "تم الرفع في المجلة", className: "bg-sky-50 text-sky-700" },
+  under_review: { label: "قيد مراجعة المجلة", className: "bg-indigo-50 text-indigo-700" },
   accepted: { label: "مقبولة", className: "bg-violet-50 text-violet-700" },
   published: { label: "تم النشر", className: "bg-[#e6f5ef] text-[#117b59]" },
 };
@@ -516,6 +519,10 @@ function ProgramCard({ research, onRegister, onEdit, onDelete, canManage }: any)
           </button>
         </div>
       )}
+
+      <div className="mb-4">
+        <OpportunityMedia research={research} className="h-44" />
+      </div>
 
       <div className="flex justify-between items-start mb-4 gap-4">
         <h3 className="font-bold text-slate-800 text-sm leading-6 line-clamp-2 flex-1" dir="rtl">{research.titleAr || research.title}</h3>
