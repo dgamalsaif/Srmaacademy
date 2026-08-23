@@ -11,35 +11,95 @@ interface SpecialtyFilterProps {
   className?: string;
 }
 
+interface CanonicalSpecialty {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  aliases: string[];
+}
+
+const CANONICAL_SPECIALTIES: CanonicalSpecialty[] = [
+  {
+    id: "specialty-endocrinology",
+    nameAr: "الغدد الصماء",
+    nameEn: "Endocrinology",
+    aliases: ["الغدد", "غدد", "السمنة", "سمنة", "السكري", "سكري", "endocrinology", "obesity", "diabetes"],
+  },
+  {
+    id: "specialty-neurosurgery",
+    nameAr: "جراحة المخ والأعصاب",
+    nameEn: "Neurosurgery",
+    aliases: ["جراحة المخ", "جراحة مخ", "جراحة الأعصاب", "جراحة الاعصاب", "neurosurgery"],
+  },
+];
+
 export function buildSpecialtyOptions(
   configuredOptions: SpecialtyOption[],
   opportunities: ResearchOpportunity[],
 ): SpecialtyOption[] {
   const seen = new Set<string>();
   const result: SpecialtyOption[] = [];
+  const sourceOptions = [
+    ...configuredOptions,
+    ...opportunities.map((opportunity) => ({
+      id: `program-specialty-${opportunity.id}`,
+      nameAr: opportunity.specialtyAr || opportunity.specialty || "",
+      nameEn: opportunity.specialtyEn || opportunity.specialty || "",
+    })),
+  ];
+  const preferredArabicById = new Map<string, string>();
+
+  sourceOptions.forEach((option) => {
+    const canonical = canonicalSpecialty(option.nameAr, option.nameEn);
+    const candidate = canonical.nameAr;
+    const current = preferredArabicById.get(canonical.id);
+    if (!current || arabicQuality(candidate) > arabicQuality(current)) {
+      preferredArabicById.set(canonical.id, candidate);
+    }
+  });
+
   const add = (option: SpecialtyOption) => {
-    const nameAr = option.nameAr?.trim() || "";
-    const nameEn = option.nameEn?.trim() || "";
-    const key = `${nameEn.toLowerCase()}|${nameAr.toLowerCase()}`;
-    if (!key || key === "|" || seen.has(key)) return;
+    const canonical = canonicalSpecialty(option.nameAr, option.nameEn);
+    const key = canonical.id;
+    if (seen.has(key)) return;
     seen.add(key);
-    result.push({ ...option, nameAr, nameEn });
+    const isKnownCanonicalSpecialty = CANONICAL_SPECIALTIES.some((specialty) => specialty.id === key);
+    result.push({
+      id: key,
+      nameAr: isKnownCanonicalSpecialty ? canonical.nameAr : preferredArabicById.get(key) || canonical.nameAr,
+      nameEn: canonical.nameEn,
+    });
   };
 
-  configuredOptions.forEach(add);
-  opportunities.forEach((opportunity) => add({
-    id: `program-specialty-${opportunity.id}`,
-    nameAr: opportunity.specialtyAr || opportunity.specialty || "",
-    nameEn: opportunity.specialtyEn || opportunity.specialty || "",
-  }));
+  sourceOptions.forEach(add);
   return result;
 }
 
 export function specialtyMatches(opportunity: ResearchOpportunity, specialty: string | null) {
   if (!specialty) return true;
-  return [opportunity.specialty, opportunity.specialtyAr, opportunity.specialtyEn]
-    .filter(Boolean)
-    .some((value) => value === specialty);
+  const canonical = canonicalSpecialty(opportunity.specialtyAr || opportunity.specialty, opportunity.specialtyEn || opportunity.specialty);
+  return canonical.nameEn === specialty || canonical.id === specialty;
+}
+
+export function canonicalSpecialty(nameAr = "", nameEn = ""): CanonicalSpecialty {
+  const normalized = normalizeSearchText(`${nameAr} ${nameEn}`);
+  const mapped = CANONICAL_SPECIALTIES.find((specialty) => specialty.aliases.some((alias) => normalized.includes(normalizeSearchText(alias))));
+  if (mapped) return mapped;
+
+  const primaryAr = primarySpecialtyName(nameAr);
+  const primaryEn = primarySpecialtyName(nameEn);
+  const stableName = primaryEn || primaryAr;
+  return {
+    id: `specialty-${normalizeSearchText(stableName).replace(/[^\p{L}\p{N}]+/gu, "-") || "other"}`,
+    nameAr: primaryAr,
+    nameEn: primaryEn,
+    aliases: [nameAr, nameEn, primaryAr, primaryEn],
+  };
+}
+
+export function specialtySearchTerms(option: SpecialtyOption) {
+  const canonical = canonicalSpecialty(option.nameAr, option.nameEn);
+  return [option.nameAr, option.nameEn, ...canonical.aliases];
 }
 
 export default function SpecialtyFilter({
@@ -53,7 +113,7 @@ export default function SpecialtyFilter({
   const normalizedQuery = normalizeSearchText(query);
   const visibleOptions = useMemo(() => {
     if (!normalizedQuery) return options;
-    return options.filter((option) => [option.nameAr, option.nameEn]
+    return options.filter((option) => specialtySearchTerms(option)
       .some((name) => normalizeSearchText(name).includes(normalizedQuery)));
   }, [normalizedQuery, options]);
 
@@ -145,4 +205,15 @@ function normalizeSearchText(value = "") {
     .replace(/ة/g, "ه")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function primarySpecialtyName(value = "") {
+  return value
+    .trim()
+    .split(/\s*(?:\+|\/)\s*/)[0]
+    ?.trim() || "";
+}
+
+function arabicQuality(value: string) {
+  return (value.match(/[\u0600-\u06FF]/g) || []).length * 100 + value.length;
 }

@@ -2,7 +2,7 @@ import { programCatalogBootstrapTable, researchProgramsTable } from "@workspace/
 import { eq, sql } from "drizzle-orm";
 import { PROGRAM_CAPACITY_LOCK_NAMESPACE, type DatabaseTransaction } from "./programCapacity";
 
-const SNAPSHOT_KEY = "research-catalog-seats-2026-08-23";
+const SNAPSHOT_KEY = "research-catalog-capacity-2026-08-23";
 const SNAPSHOT_LOCK_ID = 9_021_741;
 
 export const RESEARCH_CATALOG_SEAT_SNAPSHOT = [
@@ -94,6 +94,9 @@ export async function applyResearchCatalogSeatSnapshot(tx: DatabaseTransaction) 
     await tx
       .update(researchProgramsTable)
       .set({
+        totalSeats: 15,
+        firstAuthorSeats: 1,
+        coAuthorSeats: 14,
         seatsLeft: entry.seatsLeft,
         firstAuthorSeatsLeft,
         coAuthorSeatsLeft,

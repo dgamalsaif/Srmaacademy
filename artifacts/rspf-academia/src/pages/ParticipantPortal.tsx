@@ -8,7 +8,7 @@ import OpportunityMedia from "@/components/OpportunityMedia";
 import OpportunityPrice from "@/components/OpportunityPrice";
 import { OpportunityCurrency } from "@/lib/opportunityPricing";
 import { useLanguage } from "@/lib/i18n";
-import SpecialtyFilter, { buildSpecialtyOptions, specialtyMatches } from "@/components/SpecialtyFilter";
+import SpecialtyFilter, { buildSpecialtyOptions, canonicalSpecialty, specialtyMatches } from "@/components/SpecialtyFilter";
 
 const hallOfFame = [
   { specialty: "ENT – Head and Neck Surgery", specialtyColor: "bg-indigo-100 text-indigo-700", title: "Efficacy of Biologic Therapy versus Conventional Treatment in Chronic Rhinosinusitis" },
@@ -55,6 +55,10 @@ export default function ParticipantPortal() {
   const participantTitle = language === "en" ? contentSettings.participantTitleEn : contentSettings.participantTitle;
   const participantDescription = language === "en" ? contentSettings.participantDescriptionEn : contentSettings.participantDescription;
   const specialtyOptions = buildSpecialtyOptions(contentSettings.specialtyOptions, opportunities);
+  const displaySpecialty = (opportunity: ResearchOpportunity) => {
+    const canonical = canonicalSpecialty(opportunity.specialtyAr || opportunity.specialty, opportunity.specialtyEn || opportunity.specialty);
+    return specialtyOptions.find((option) => option.id === canonical.id) || canonical;
+  };
   const visibleOpportunities = opportunities.filter((opportunity) => specialtyMatches(opportunity, selectedSpecialty));
   const groupedOpportunities = specialtyOptions
     .map((option) => {
@@ -180,7 +184,7 @@ export default function ParticipantPortal() {
                     return (
                       <div key={opp.id} className={`${isSpecialtyScroll ? "w-[min(88vw,390px)] shrink-0 snap-start" : ""} rounded-2xl border border-slate-200 p-5 shadow-sm transition-shadow hover:shadow-md`} style={{ backgroundColor: contentSettings.cardBackgroundColor }} data-testid={`card-research-${opp.id}`}>
                         <div className={`flex items-center justify-between gap-3 mb-3 ${contentFlow}`}>
-                          {contentSettings.visibleParticipantCardParts.includes("specialty") && <span className={`text-xs font-bold px-3 py-1 rounded-full ${opp.specialtyColor}`}>{localize(opp.specialtyAr, opp.specialtyEn, opp.specialty)}</span>}
+                          {contentSettings.visibleParticipantCardParts.includes("specialty") && <span className={`text-xs font-bold px-3 py-1 rounded-full ${opp.specialtyColor}`}>{localize(displaySpecialty(opp).nameAr, displaySpecialty(opp).nameEn, opp.specialty)}</span>}
                           <span className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 border border-red-100 px-3 py-1 rounded-full">
                             <Flame size={11} /> {localize("مقاعد محدودة متبقية", "Limited seats remaining")}
                           </span>
