@@ -111,6 +111,11 @@ export default function OpportunityMedia({ research, className = "h-56" }: { res
     stageRef.current?.style.setProperty("--srma-tilt-y", "0deg");
   };
 
+  const handleImageFailure = () => {
+    setImageFailed(true);
+    setIsPanoramaOpen(false);
+  };
+
   const openPanoramaWithKeyboard = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (!canShowImage || (event.key !== "Enter" && event.key !== " ")) return;
     event.preventDefault();
@@ -131,10 +136,14 @@ export default function OpportunityMedia({ research, className = "h-56" }: { res
           {canShowImage ? (
             <>
               <img src={research.imageUrl} alt="" aria-hidden="true" draggable={false} className="absolute inset-0 h-full w-full scale-110 object-cover opacity-45 blur-xl" />
-              <img data-testid={`img-opportunity-${research.id}`} src={research.imageUrl} alt={`صورة ${research.titleAr || research.title}`} draggable={false} onError={() => setImageFailed(true)} className="srma-media-image relative h-full w-full" />
+              <img data-testid={`img-opportunity-${research.id}`} src={research.imageUrl} alt={`صورة ${research.titleAr || research.title}`} draggable={false} onError={handleImageFailure} className="srma-media-image relative h-full w-full" />
             </>
           ) : (
-            <div className="flex h-full items-center justify-center"><img src={SRMA_LOGO} alt="" className="h-[80%] w-[80%] rounded-full object-cover opacity-20 blur-[0.3px]" /><BookOpen size={38} className="absolute text-white/80" /></div>
+            <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
+              <img src={SRMA_LOGO} alt="" className="h-[80%] w-[80%] rounded-full object-cover opacity-20 blur-[0.3px]" />
+              <BookOpen size={38} className="absolute text-white/80" />
+              {imageFailed && <p role="status" className="relative px-4 text-xs font-bold text-white/90">تعذر عرض الصورة المحمية حالياً</p>}
+            </div>
           )}
           <img src={SRMA_LOGO} alt="" aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 h-[135%] w-[135%] -translate-x-1/2 -translate-y-1/2 rounded-full object-cover opacity-[0.11] mix-blend-screen" />
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#061f35]/80 via-transparent to-[#061f35]/50" />
@@ -151,8 +160,8 @@ export default function OpportunityMedia({ research, className = "h-56" }: { res
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#041829]/[.94] p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={`صورة ${research.titleAr || research.title}`} onClick={() => setIsPanoramaOpen(false)}>
           <div className="relative flex h-[min(94vh,980px)] w-full max-w-7xl flex-col gap-3" onClick={(event) => event.stopPropagation()} onContextMenu={(event) => event.preventDefault()}>
             <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-2xl border border-white/15 bg-[#082c4a] shadow-2xl">
-              <img src={research.imageUrl} alt={`صورة ${research.titleAr || research.title}`} draggable={false} className="absolute inset-0 h-full w-full scale-110 object-cover opacity-35 blur-2xl" />
-              <img src={research.imageUrl} alt={`صورة ${research.titleAr || research.title}`} draggable={false} className="srma-protected-image relative max-h-full max-w-full object-contain shadow-2xl" />
+              <img src={research.imageUrl} alt="" aria-hidden="true" draggable={false} onError={handleImageFailure} className="absolute inset-0 h-full w-full scale-110 object-cover opacity-35 blur-2xl" />
+              <img src={research.imageUrl} alt={`صورة ${research.titleAr || research.title}`} draggable={false} onError={handleImageFailure} className="srma-protected-image relative max-h-full max-w-full object-contain shadow-2xl" />
             </div>
             <button type="button" data-testid={`button-close-image-${research.id}`} onClick={() => setIsPanoramaOpen(false)} className="absolute right-1 top-1 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/30 bg-[#0b3657] text-white transition-transform hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" aria-label="إغلاق عرض الصورة"><X size={20} /></button>
             <OpportunityMetadata research={research} className="mx-auto w-full max-w-4xl shrink-0" />

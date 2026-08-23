@@ -84,6 +84,12 @@
   user-select: none;
   -webkit-user-select: none;
   -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.srma-protected-image img {
+  pointer-events: none;
 }
 
 .srma-media-stage {

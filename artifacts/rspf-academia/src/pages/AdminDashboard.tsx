@@ -46,12 +46,12 @@ const EMPTY_FORM: Omit<ResearchOpportunity, "id" | "createdAt"> = {
 
 type FormData = Omit<ResearchOpportunity, "id" | "createdAt">;
 
-function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, settings }: { initial: FormData; onSave: (data: FormData, imagePath: string | null) => void; onClose: () => void; isEdit: boolean; requiredFields: OpportunityFieldId[]; settings: SiteContentSettings; }) {
+function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, settings }: { initial: FormData; onSave: (data: FormData, imageToken: string | null) => void; onClose: () => void; isEdit: boolean; requiredFields: OpportunityFieldId[]; settings: SiteContentSettings; }) {
   const [form, setForm] = useState<FormData>({ ...initial, benefits: [...(initial.benefits || ["", "", ""])] });
   const [indexedStr, setIndexedStr] = useState((initial.indexedIn || []).join("، "));
   const [benefitsArr, setBenefitsArr] = useState<string[]>(initial.benefits?.length ? [...initial.benefits] : ["", "", ""]);
   const [formError, setFormError] = useState("");
-  const [imagePath, setImagePath] = useState<string | null>(null);
+  const [imageToken, setImageToken] = useState<string | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
   const isCompletedResearch = form.category === "completed";
   const completedStatus = ["seats_full", "ethics_approved", "submitted", "under_review", "accepted", "published"].includes(form.status) ? form.status : "seats_full";
@@ -110,7 +110,7 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, s
       return;
     }
     setFormError("");
-    onSave(nextForm, imagePath);
+    onSave(nextForm, imageToken);
   };
 
   return (
@@ -123,7 +123,7 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, s
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-6 space-y-5">
-          <ResearchImagePicker initialImageUrl={initial.imageUrl} onImagePathChange={setImagePath} onUploadingChange={setImageUploading} />
+          <ResearchImagePicker initialImageUrl={initial.imageUrl} onImageTokenChange={setImageToken} onUploadingChange={setImageUploading} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2 text-right">عنوان البرنامج (بالعربية){isRequired("titleAr") && " *"}</label>
@@ -693,7 +693,7 @@ export default function AdminDashboard() {
       .catch(() => setPayments([]));
   }, [role]);
 
-  const toPayload = (form: FormData, imagePath: string | null) => ({
+  const toPayload = (form: FormData, imageToken: string | null) => ({
     category: form.category || "active",
     titleAr: form.titleAr || form.title,
     titleEn: form.titleEn || form.title,
@@ -715,14 +715,14 @@ export default function AdminDashboard() {
     supervisor: form.supervisor,
     priceOriginalSar: form.priceOriginalSar ?? 1500,
     priceDiscountedSar: form.priceDiscountedSar ?? 1000,
-    ...(typeof imagePath === "string" ? { imagePath } : {}),
+    ...(typeof imageToken === "string" ? { imageToken } : {}),
   });
 
-  const handleAdd = async (form: FormData, imagePath: string | null) => {
+  const handleAdd = async (form: FormData, imageToken: string | null) => {
     const response = await fetch("/api/programs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(toPayload(form, imagePath)),
+      body: JSON.stringify(toPayload(form, imageToken)),
     });
     const saved = await response.json() as ResearchOpportunity;
     if (!response.ok) return;
@@ -730,12 +730,12 @@ export default function AdminDashboard() {
     setFormOpen(false);
   };
 
-  const handleEdit = async (form: FormData, imagePath: string | null) => {
+  const handleEdit = async (form: FormData, imageToken: string | null) => {
     if (!editItem) return;
     const response = await fetch(`/api/programs/${editItem.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(toPayload(form, imagePath)),
+      body: JSON.stringify(toPayload(form, imageToken)),
     });
     const saved = await response.json() as ResearchOpportunity;
     if (response.ok) setResearch((items) => items.map((item) => item.id === saved.id ? saved : item));

@@ -1,10 +1,10 @@
-import { Router, type Request } from "express";
+import { raw, Router, type Request } from "express";
 import { db, insertResearchProgramSchema, programCatalogBootstrapTable, researchProgramsTable } from "@workspace/db";
 import { desc, eq, sql } from "drizzle-orm";
 import { readSession, requireOwner } from "../middlewares/coordinatorAuth";
 import { getSiteContentSettings, OpportunityFieldId } from "../lib/siteContentSettings";
 import { importResearchOpportunities, PROGRAM_CATALOG_LOCK_ID, type ResearchOpportunityImportRow } from "../lib/researchOpportunityImport";
-import { getResearchImageUrl, requestResearchImageUpload, ResearchImageValidationError } from "../lib/researchImageStorage";
+import { getResearchImageUrl, ResearchImageValidationError, resolveResearchImageUploadToken, uploadResearchImage } from "../lib/researchImageStorage";
 import { ensureProgramCapacityModel } from "../lib/programCapacity";
 
 const router = Router();
@@ -140,11 +140,17 @@ router.get("/programs", async (req, res) => {
   res.json((isStaff ? rows : rows.filter(isPublicProgram)).map(toClient));
 });
 
-router.post("/program-images/request-upload", requireOwner, async (req, res) => {
+router.post("/program-images/upload", requireOwner, raw({
+  type: ["image/jpeg", "image/png", "image/webp"],
+  limit: "5mb",
+}), async (req, res) => {
   try {
-    const upload = await requestResearchImageUpload({
-      size: req.body?.size,
-      contentType: req.body?.contentType,
+    if (!Buffer.isBuffer(req.body)) {
+      throw new ResearchImageValidationError("يرجى اختيار ملف صورة صالح.");
+    }
+    const upload = await uploadResearchImage({
+      data: req.body,
+      contentType: req.get("content-type"),
     });
     res.status(201).json(upload);
   } catch (error) {
@@ -168,9 +174,24 @@ router.get("/programs/:id/image", async (req, res) => {
 
   try {
     const imageUrl = await getResearchImageUrl(program.imagePath);
-    res.setHeader("Cache-Control", "no-store");
+    const imageResponse = await fetch(imageUrl, { signal: AbortSignal.timeout(30_000) });
+    if (!imageResponse.ok) throw new Error(`Failed to retrieve research image (status ${imageResponse.status}).`);
+    const contentType = imageResponse.headers.get("content-type")?.split(";")[0].trim().toLowerCase();
+    if (!contentType || !["image/jpeg", "image/png", "image/webp"].includes(contentType)) {
+      throw new Error("Research image storage returned an unexpected content type.");
+    }
+    const imageBytes = Buffer.from(await imageResponse.arrayBuffer());
+
+    res.setHeader("Cache-Control", "private, no-store, max-age=0, must-revalidate");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    res.setHeader("Content-Disposition", 'inline; filename="srma-research-image"');
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Length", String(imageBytes.length));
     res.setHeader("X-Content-Type-Options", "nosniff");
-    res.redirect(302, imageUrl);
+    res.setHeader("Referrer-Policy", "same-origin");
+    res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
+    res.status(200).send(imageBytes);
   } catch (error) {
     req.log.error({ err: error, programId: id }, "Failed to serve research image");
     res.status(404).end();
@@ -219,7 +240,7 @@ router.get("/programs/:id/share", async (req, res) => {
 });
 
 router.post("/programs", requireOwner, async (req, res) => {
-  const body = normalizeProgramPayload({
+  const body = await normalizeProgramPayload({
     ...req.body,
     indexedIn: Array.isArray(req.body?.indexedIn) ? req.body.indexedIn.join("|") : req.body?.indexedIn || "",
     benefits: Array.isArray(req.body?.benefits) ? req.body.benefits.join("|") : req.body?.benefits || "",
@@ -272,7 +293,7 @@ router.post("/programs/import", requireOwner, async (req, res) => {
 
 router.patch("/programs/:id", requireOwner, async (req, res) => {
   const id = Number(req.params["id"]);
-  const body = normalizeProgramPayload({
+  const body = await normalizeProgramPayload({
     ...req.body,
     indexedIn: Array.isArray(req.body?.indexedIn) ? req.body.indexedIn.join("|") : req.body?.indexedIn || "",
     benefits: Array.isArray(req.body?.benefits) ? req.body.benefits.join("|") : req.body?.benefits || "",
@@ -327,8 +348,11 @@ function isProgramStatus(status: string) {
   return PROGRAM_STATUSES.has(status);
 }
 
-function normalizeProgramPayload(source: Record<string, unknown>, mode: "create" | "update") {
+async function normalizeProgramPayload(source: Record<string, unknown>, mode: "create" | "update") {
   const result: Record<string, unknown> = { ...source };
+  const imageToken = source.imageToken;
+  delete result.imageToken;
+  delete result.imagePath;
   delete result.firstAuthorSeats;
   delete result.firstAuthorSeatsLeft;
   delete result.coAuthorSeats;
@@ -350,6 +374,10 @@ function normalizeProgramPayload(source: Record<string, unknown>, mode: "create"
   } else {
     if ("priceOriginalSar" in source) result.priceOriginalSar = numberOrDefault(source.priceOriginalSar, 1500);
     if ("priceDiscountedSar" in source) result.priceDiscountedSar = numberOrDefault(source.priceDiscountedSar, 1000);
+  }
+
+  if (typeof imageToken === "string") {
+    result.imagePath = imageToken ? resolveResearchImageUploadToken(imageToken) : "";
   }
 
   return result;

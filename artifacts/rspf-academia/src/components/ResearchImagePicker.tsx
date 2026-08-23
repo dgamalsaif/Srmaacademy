@@ -3,7 +3,7 @@ import { ImagePlus, Loader2, ShieldCheck, X } from "lucide-react";
 
 interface ResearchImagePickerProps {
   initialImageUrl?: string;
-  onImagePathChange: (imagePath: string) => void;
+  onImageTokenChange: (imageToken: string) => void;
   onUploadingChange: (uploading: boolean) => void;
 }
 
@@ -11,7 +11,7 @@ const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const ALLOWED_IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 
-export default function ResearchImagePicker({ initialImageUrl = "", onImagePathChange, onUploadingChange }: ResearchImagePickerProps) {
+export default function ResearchImagePicker({ initialImageUrl = "", onImageTokenChange, onUploadingChange }: ResearchImagePickerProps) {
   const [previewUrl, setPreviewUrl] = useState(initialImageUrl);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -41,30 +41,18 @@ export default function ResearchImagePicker({ initialImageUrl = "", onImagePathC
     setUploadingState(true);
     try {
       const protectedImage = await createWatermarkedImage(file);
-      const request = await fetch("/api/program-images/request-upload", {
+      const request = await fetch("/api/program-images/upload", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          size: protectedImage.size,
-          contentType: protectedImage.type,
-        }),
-      });
-      const upload = await request.json() as { uploadURL?: string; objectPath?: string; error?: string };
-      if (!request.ok || !upload.uploadURL || !upload.objectPath) {
-        throw new Error(upload.error || "تعذر تجهيز رفع الصورة.");
-      }
-
-      const response = await fetch(upload.uploadURL, {
-        method: "PUT",
         headers: { "Content-Type": protectedImage.type },
         body: protectedImage,
       });
-      if (!response.ok) throw new Error("تعذر رفع الصورة إلى التخزين.");
+      const upload = await request.json() as { imageToken?: string; error?: string };
+      if (!request.ok || !upload.imageToken) throw new Error(upload.error || "تعذر رفع الصورة.");
 
       if (previewObjectUrl.current) URL.revokeObjectURL(previewObjectUrl.current);
       previewObjectUrl.current = URL.createObjectURL(protectedImage);
       setPreviewUrl(previewObjectUrl.current);
-      onImagePathChange(upload.objectPath);
+      onImageTokenChange(upload.imageToken);
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "تعذر رفع الصورة. حاول مرة أخرى.");
     } finally {
@@ -79,7 +67,7 @@ export default function ResearchImagePicker({ initialImageUrl = "", onImagePathC
     }
     setPreviewUrl("");
     setError("");
-    onImagePathChange("");
+    onImageTokenChange("");
   };
 
   return (
@@ -90,7 +78,7 @@ export default function ResearchImagePicker({ initialImageUrl = "", onImagePathC
             <h3 className="font-black text-slate-800">صورة الفرصة ومعاينة المشاركة</h3>
             <ShieldCheck size={18} className="text-[#117b59]" />
           </div>
-          <p className="mt-1 max-w-xl text-xs leading-5 text-slate-500">تُدمج علامة SRMA المائية داخل الصورة، وتظهر في بطاقة الفرصة ومعاينة واتساب عند نسخ رابط المعاينة.</p>
+          <p className="mt-1 max-w-xl text-xs leading-5 text-slate-500">تُدمج علامة SRMA المائية داخل الصورة، وتُعرض برابط محمي قصير العمر. تقلل الحماية النسخ والتنزيل المباشر، لكن لا يستطيع أي موقع منع لقطات الشاشة بشكل كامل.</p>
         </div>
         <label className={`shrink-0 cursor-pointer rounded-xl bg-[#117b59] px-4 py-2.5 text-xs font-black text-white transition hover:bg-[#0c6549] ${uploading ? "pointer-events-none opacity-60" : ""}`}>
           {uploading ? <span className="flex items-center gap-2"><Loader2 size={15} className="animate-spin" /> جارٍ الرفع...</span> : <span className="flex items-center gap-2"><ImagePlus size={15} /> {previewUrl ? "استبدال الصورة" : "اختيار صورة"}</span>}

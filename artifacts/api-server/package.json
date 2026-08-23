@@ -8,7 +8,8 @@
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test:import-concurrency": "node ./scripts/testConcurrentProgramImport.mjs"
+    "test:import-concurrency": "node ./scripts/testConcurrentProgramImport.mjs",
+    "test:image-protection": "node ./scripts/testImageProtection.mjs"
   },
   "dependencies": {
     "@types/nodemailer": "^8.0.0",
