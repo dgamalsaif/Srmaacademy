@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronUp, Eye, EyeOff, Palette, Save, SlidersHorizontal } from "lucide-react";
 import { useState } from "react";
-import { CARD_PARTS, OPPORTUNITY_FIELDS, OpportunityFieldId, RegistrationFieldSetting, SiteContentSettings, SpecialtyOption, JournalOption } from "@/lib/siteContentSettings";
+import { CARD_PARTS, OPPORTUNITY_FIELDS, OpportunityDisplayMode, OpportunityFieldId, RegistrationFieldSetting, SiteContentSettings, SpecialtyOption, JournalOption } from "@/lib/siteContentSettings";
 
 interface Props {
   settings: SiteContentSettings;
@@ -191,6 +191,19 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
               <ColorField label="خلفية البطاقة" value={settings.cardBackgroundColor} onChange={(value) => update("cardBackgroundColor", value)} />
             </div>
           </Panel>
+           <Panel title="عرض الفرص حسب التخصص" icon={SlidersHorizontal}>
+             <p className="mb-4 text-xs leading-5 text-slate-500">ينطبق هذا الاختيار على بوابة المشارك ولوحة المنسق بعد تسجيل الدخول.</p>
+             <label className="mb-2 block text-xs font-bold text-slate-500">طريقة عرض فرص كل تخصص</label>
+             <select
+               data-testid="select-opportunity-display-mode"
+               value={settings.opportunityDisplayMode}
+               onChange={(event) => update("opportunityDisplayMode", event.target.value as OpportunityDisplayMode)}
+               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm font-bold outline-none focus:border-[#117b59]"
+             >
+               <option value="grid">بطاقات متجاورة (شبكة)</option>
+               <option value="scroll">شريط تمرير أفقي</option>
+             </select>
+           </Panel>
           <CardParts title="بطاقة المشارك" audience="participant" settings={settings} onToggle={togglePart} onMove={movePart} />
           <CardParts title="بطاقة المنسق" audience="coordinator" settings={settings} onToggle={togglePart} onMove={movePart} />
         </div>

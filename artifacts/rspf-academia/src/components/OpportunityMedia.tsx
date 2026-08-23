@@ -129,8 +129,9 @@ export default function OpportunityMedia({ research, className = "h-56" }: { res
 
   return (
     <>
-      <div ref={stageRef} className={`srma-media-stage srma-protected-image relative ${className}`} onPointerMove={handlePointerMove} onPointerLeave={resetTilt} onContextMenu={(event) => event.preventDefault()} onDragStart={(event) => event.preventDefault()}>
-        <div
+      <div className="space-y-2">
+        <div ref={stageRef} className={`srma-media-stage srma-protected-image relative ${className}`} onPointerMove={handlePointerMove} onPointerLeave={resetTilt} onContextMenu={(event) => event.preventDefault()} onDragStart={(event) => event.preventDefault()}>
+          <div
           className={`srma-media-surface relative h-full overflow-hidden rounded-2xl border border-[#c5dce0] bg-[#082c4a] shadow-sm ${canShowImage ? "cursor-zoom-in" : ""}`}
           role={canShowImage ? "button" : undefined}
           tabIndex={canShowImage ? 0 : undefined}
@@ -151,16 +152,14 @@ export default function OpportunityMedia({ research, className = "h-56" }: { res
             </div>
           )}
           <img src={SRMA_LOGO} alt="" aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 h-[135%] w-[135%] -translate-x-1/2 -translate-y-1/2 rounded-full object-cover opacity-[0.11] mix-blend-screen" />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#061f35]/35 via-transparent to-[#061f35]/45" />
-          <div className="srma-media-copy absolute inset-x-3 top-3 flex items-start justify-between gap-2" dir={direction}>
-            <span data-testid={`status-opportunity-${research.id}`} className="rounded-full border border-[#8ee0c3]/45 bg-[#07634e]/95 px-3 py-1 text-[11px] font-black text-white shadow-sm">{status}</span>
-            <span className="srma-media-chip max-w-[55%] truncate rounded-full px-3 py-1 text-[11px] font-bold">{specialty}</span>
           </div>
-          <div className="srma-media-copy absolute inset-x-3 bottom-3 flex items-end justify-between gap-2" dir={direction}>
-            <span className="srma-media-chip max-w-[68%] truncate rounded-full px-3 py-1 text-[10px] font-bold">{research.journalTarget || localize("المجلة المستهدفة", "Target journal")}</span>
-            <span className="rounded-full border border-white/25 bg-[#061f35]/85 px-3 py-1 text-[10px] font-black text-white shadow-sm">{localize(`${research.seatsLeft} مقاعد`, `${research.seatsLeft} seats`)}</span>
-          </div>
-          {canShowImage && <button type="button" data-testid={`button-expand-image-${research.id}`} onClick={(event) => { event.stopPropagation(); setIsPanoramaOpen(true); }} className="srma-media-open absolute bottom-3 left-3 inline-flex h-9 w-9 items-center justify-center rounded-xl transition-transform duration-300 hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" aria-label={localize(`عرض صورة ${title} بالحجم الكامل`, `View ${title} full size`)}><Expand size={17} /></button>}
+        </div>
+        <div className="flex flex-wrap items-center gap-1.5" dir={direction}>
+          <span data-testid={`status-opportunity-${research.id}`} className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-700">{status}</span>
+          <span className="max-w-[50%] truncate rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-bold text-slate-700">{specialty}</span>
+          <span className="max-w-[55%] truncate rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-bold text-slate-600">{research.journalTarget || localize("المجلة المستهدفة", "Target journal")}</span>
+          <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-[10px] font-black text-slate-700">{localize(`${research.seatsLeft} مقاعد`, `${research.seatsLeft} seats`)}</span>
+          {canShowImage && <button type="button" data-testid={`button-expand-image-${research.id}`} onClick={() => setIsPanoramaOpen(true)} className="ml-auto inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-[#0C3156] transition hover:border-[#0C3156]/40 hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0C3156]" aria-label={localize(`عرض صورة ${title} بالحجم الكامل`, `View ${title} full size`)}><Expand size={15} /></button>}
         </div>
       </div>
       {isPanoramaOpen && canShowImage && (

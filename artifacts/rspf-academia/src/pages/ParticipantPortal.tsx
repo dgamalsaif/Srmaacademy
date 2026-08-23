@@ -56,6 +56,26 @@ export default function ParticipantPortal() {
   const participantDescription = language === "en" ? contentSettings.participantDescriptionEn : contentSettings.participantDescription;
   const specialtyOptions = buildSpecialtyOptions(contentSettings.specialtyOptions, opportunities);
   const visibleOpportunities = opportunities.filter((opportunity) => specialtyMatches(opportunity, selectedSpecialty));
+  const groupedOpportunities = specialtyOptions
+    .map((option) => {
+      const specialty = option.nameEn || option.nameAr;
+      return {
+        id: option.id,
+        label: localize(option.nameAr, option.nameEn),
+        items: visibleOpportunities.filter((opportunity) => specialtyMatches(opportunity, specialty)),
+      };
+    })
+    .filter((group) => group.items.length > 0);
+  const groupedOpportunityIds = new Set(groupedOpportunities.flatMap((group) => group.items.map((opportunity) => opportunity.id)));
+  const ungroupedOpportunities = visibleOpportunities.filter((opportunity) => !groupedOpportunityIds.has(opportunity.id));
+  if (ungroupedOpportunities.length > 0) {
+    groupedOpportunities.push({
+      id: "other-specialties",
+      label: localize("تخصصات أخرى", "Other specialties"),
+      items: ungroupedOpportunities,
+    });
+  }
+  const isSpecialtyScroll = contentSettings.opportunityDisplayMode === "scroll";
 
   return (
     <div className="min-h-screen bg-white" dir={direction}>
@@ -120,13 +140,21 @@ export default function ParticipantPortal() {
                   <p className="text-sm mt-1">{selectedSpecialty ? localize("اختر كل التخصصات لعرض جميع الفرص.", "Choose all specialties to view every opportunity.") : localize("تابع قناتنا على Telegram للإشعارات الفورية", "Follow our Telegram channel for instant notifications.")}</p>
                 </div>
               ) : (
-                <div className="space-y-5">
-                   {visibleOpportunities.map((opp) => {
+                <div className="space-y-10">
+                   {groupedOpportunities.map((group) => (
+                    <section key={group.id} data-testid={`specialty-section-${group.id}`}>
+                      <div className="mb-4 flex items-center gap-3">
+                        <div className="h-px flex-1 bg-slate-200" />
+                        <h3 className="rounded-full border border-emerald-100 bg-emerald-50 px-4 py-2 text-sm font-black text-[#117b59]">{group.label}</h3>
+                        <div className="h-px flex-1 bg-slate-200" />
+                      </div>
+                      <div className={isSpecialtyScroll ? "flex snap-x snap-mandatory gap-5 overflow-x-auto pb-4" : "grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-3"}>
+                   {group.items.map((opp) => {
                     const isExpanded = expandedCards.includes(opp.id);
                     const seatsUsed = opp.totalSeats - opp.seatsLeft;
                     const pct = Math.round((seatsUsed / opp.totalSeats) * 100);
                     return (
-                      <div key={opp.id} className="rounded-2xl border border-slate-200 p-5 shadow-sm transition-shadow hover:shadow-md" style={{ backgroundColor: contentSettings.cardBackgroundColor }} data-testid={`card-research-${opp.id}`}>
+                      <div key={opp.id} className={`${isSpecialtyScroll ? "w-[min(88vw,390px)] shrink-0 snap-start" : ""} rounded-2xl border border-slate-200 p-5 shadow-sm transition-shadow hover:shadow-md`} style={{ backgroundColor: contentSettings.cardBackgroundColor }} data-testid={`card-research-${opp.id}`}>
                         <div className="flex items-center justify-between gap-3 mb-3 flex-row-reverse">
                           {contentSettings.visibleParticipantCardParts.includes("specialty") && <span className={`text-xs font-bold px-3 py-1 rounded-full ${opp.specialtyColor}`}>{localize(opp.specialtyAr, opp.specialtyEn, opp.specialty)}</span>}
                           <span className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 border border-red-100 px-3 py-1 rounded-full">
@@ -151,8 +179,8 @@ export default function ParticipantPortal() {
                             if (part === "supervisor" && opp.supervisor) return <p key={part}><strong>{localize("المشرف:", "Supervisor:")}</strong> {opp.supervisor}</p>;
                             if (part === "journal" && opp.journalTarget) return <div key={part} className="space-y-1"><p><strong>{localize("المجلة المستهدفة:", "Target journal:")}</strong> {opp.journalTarget}</p>{opp.journalIssn && <p className="text-xs"><strong>ISSN:</strong> {opp.journalIssn}</p>}</div>;
                             return null;
-                          })}
-                        </div>
+                   })}
+                       </div>
 
                         <div className="mb-4"><OpportunityPrice originalSar={opp.priceOriginalSar} discountedSar={opp.priceDiscountedSar} currency={currency} onCurrencyChange={setCurrency} compact /></div>
 
@@ -201,6 +229,9 @@ export default function ParticipantPortal() {
                       </div>
                     );
                   })}
+                      </div>
+                    </section>
+                   ))}
                 </div>
               )}
             </>

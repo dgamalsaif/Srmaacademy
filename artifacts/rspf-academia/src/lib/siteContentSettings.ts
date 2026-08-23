@@ -1,5 +1,6 @@
 export type Audience = "participant" | "coordinator";
 export type TitleLanguage = "arabic" | "english" | "both";
+export type OpportunityDisplayMode = "grid" | "scroll";
 export type RegistrationFieldId = "fullName" | "specialization" | "email" | "affiliation" | "whatsapp" | "city" | "orcid" | "country";
 export type OpportunityFieldId = "titleAr" | "titleEn" | "specialtyAr" | "specialtyEn" | "status" | "totalSeats" | "seatsLeft" | "descriptionAr" | "descriptionEn" | "journalTarget" | "journalIssn" | "journalPubmed" | "journalScopus" | "journalWos" | "duration" | "supervisor" | "indexedIn" | "benefits";
 
@@ -47,6 +48,7 @@ export interface SiteContentSettings {
   primaryColor: string;
   accentColor: string;
   cardBackgroundColor: string;
+  opportunityDisplayMode: OpportunityDisplayMode;
   participantCardOrder: string[];
   coordinatorCardOrder: string[];
   visibleParticipantCardParts: string[];
@@ -102,6 +104,7 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
   primaryColor: "#0C3156",
   accentColor: "#117b59",
   cardBackgroundColor: "#ffffff",
+  opportunityDisplayMode: "grid",
   participantCardOrder: ["description", "specialty", "seats", "duration", "supervisor", "journal", "benefits"],
   coordinatorCardOrder: ["specialty", "supervisor", "seats", "duration", "journal", "benefits", "description"],
   visibleParticipantCardParts: ["description", "specialty", "seats", "duration", "supervisor", "journal", "benefits"],

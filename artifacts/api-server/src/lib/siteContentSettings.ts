@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 
 export type Audience = "participant" | "coordinator";
 type TitleLanguage = "arabic" | "english" | "both";
+type OpportunityDisplayMode = "grid" | "scroll";
 type FieldId = "fullName" | "specialization" | "email" | "affiliation" | "whatsapp" | "city" | "orcid" | "country";
 export type OpportunityFieldId = "titleAr" | "titleEn" | "specialtyAr" | "specialtyEn" | "status" | "totalSeats" | "seatsLeft" | "descriptionAr" | "descriptionEn" | "journalTarget" | "journalIssn" | "journalPubmed" | "journalScopus" | "journalWos" | "duration" | "supervisor" | "indexedIn" | "benefits";
 export interface SpecialtyOption { id: string; nameAr: string; nameEn: string; }
@@ -37,6 +38,7 @@ export interface SiteContentSettings {
   primaryColor: string;
   accentColor: string;
   cardBackgroundColor: string;
+  opportunityDisplayMode: OpportunityDisplayMode;
   participantCardOrder: string[];
   coordinatorCardOrder: string[];
   visibleParticipantCardParts: string[];
@@ -66,6 +68,7 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
   primaryColor: "#0C3156",
   accentColor: "#117b59",
   cardBackgroundColor: "#ffffff",
+  opportunityDisplayMode: "grid",
   participantCardOrder: [...PARTS],
   coordinatorCardOrder: ["specialty", "supervisor", "seats", "duration", "journal", "benefits", "description"],
   visibleParticipantCardParts: [...PARTS],
@@ -167,6 +170,9 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
     primaryColor: color("primaryColor"),
     accentColor: color("accentColor"),
     cardBackgroundColor: color("cardBackgroundColor"),
+    opportunityDisplayMode: input.opportunityDisplayMode === "scroll" || input.opportunityDisplayMode === "grid"
+      ? input.opportunityDisplayMode
+      : DEFAULT_SITE_CONTENT_SETTINGS.opportunityDisplayMode,
     participantCardOrder: parts("participantCardOrder"),
     coordinatorCardOrder: parts("coordinatorCardOrder"),
     visibleParticipantCardParts: parts("visibleParticipantCardParts"),

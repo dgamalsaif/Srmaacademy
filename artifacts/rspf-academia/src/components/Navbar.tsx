@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X } from "lucide-react";
+import { Check, ChevronDown, Languages, Menu, X } from "lucide-react";
 import { SRMA_LOGO } from "@/components/BrandBackground";
 import InstallAppButton from "@/components/InstallAppButton";
 import { useLanguage } from "@/lib/i18n";
@@ -8,7 +8,12 @@ import { useLanguage } from "@/lib/i18n";
 export default function Navbar() {
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const { t, language, toggleLanguage } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
+  const languageLabel = language === "ar" ? "اللغة" : "Language";
+  const languageOptions = [
+    { value: "ar" as const, label: "العربية" },
+    { value: "en" as const, label: "English" },
+  ];
   const navLinks = [
     { href: "/", label: t("nav.home") },
     { href: "/knowledge-center", label: t("nav.knowledge") },
@@ -56,9 +61,13 @@ export default function Navbar() {
           <div className="hidden lg:block">
             <InstallAppButton className="flex items-center gap-1.5 rounded-full border border-[#117b59]/25 bg-[#f3fbf8] px-3 py-2 text-xs font-black text-[#117b59] transition hover:bg-[#e6f5ef]" />
           </div>
-          <button type="button" data-testid="button-language-toggle" onClick={toggleLanguage} className="hidden rounded-full border border-[#0C3156]/20 px-3 py-2 text-xs font-black text-[#0C3156] transition hover:bg-[#0C3156] hover:text-white sm:inline-flex" aria-label={language === "ar" ? "Switch to English" : "التبديل إلى العربية"}>
-            {t("language.switch")}
-          </button>
+          <LanguageMenu
+            language={language}
+            label={languageLabel}
+            options={languageOptions}
+            onSelect={setLanguage}
+            triggerClassName="hidden sm:inline-flex"
+          />
 
           {/* Logo */}
           <Link href="/" data-testid="link-logo" className="flex items-center gap-2.5 flex-shrink-0">
@@ -88,13 +97,72 @@ export default function Navbar() {
             </Link>
           ))}
           <div className="px-3 pt-3">
-            <button type="button" data-testid="button-language-toggle-mobile" onClick={() => { toggleLanguage(); setMobileOpen(false); }} className="mb-2 flex w-full items-center justify-center rounded-xl border border-[#0C3156]/20 px-4 py-3 text-sm font-black text-[#0C3156]">
-              {t("language.switch")}
-            </button>
+            <LanguageMenu
+              language={language}
+              label={languageLabel}
+              options={languageOptions}
+              onSelect={(nextLanguage) => { setLanguage(nextLanguage); setMobileOpen(false); }}
+              triggerClassName="mb-2 flex w-full"
+              mobile
+            />
             <InstallAppButton className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#e6f5ef] px-4 py-3 text-sm font-black text-[#117b59]" />
           </div>
         </div>
       )}
     </nav>
+  );
+}
+
+function LanguageMenu({
+  language,
+  label,
+  options,
+  onSelect,
+  triggerClassName,
+  mobile = false,
+}: {
+  language: "ar" | "en";
+  label: string;
+  options: { value: "ar" | "en"; label: string }[];
+  onSelect: (language: "ar" | "en") => void;
+  triggerClassName: string;
+  mobile?: boolean;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className={`${triggerClassName} relative`}>
+      <button
+        type="button"
+        data-testid={mobile ? "button-language-menu-mobile" : "button-language-menu"}
+        onClick={() => setIsOpen((open) => !open)}
+        aria-expanded={isOpen}
+        aria-haspopup="menu"
+        className={`${mobile ? "w-full" : ""} inline-flex items-center justify-center gap-1.5 rounded-full border border-[#0C3156]/20 px-3 py-2 text-xs font-black text-[#0C3156] transition hover:bg-[#0C3156] hover:text-white`}
+        aria-label={label}
+      >
+        <Languages size={15} />
+        {label}
+        <ChevronDown size={14} className={isOpen ? "rotate-180 transition-transform" : "transition-transform"} />
+      </button>
+      {isOpen && (
+        <div role="menu" className={`absolute z-[60] mt-2 min-w-36 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl ${mobile ? "left-0 right-0" : "right-0"}`}>
+        {options.map((option) => (
+          <button
+            type="button"
+            key={option.value}
+            data-testid={`button-language-${option.value}`}
+            onClick={() => { onSelect(option.value); setIsOpen(false); }}
+            role="menuitemradio"
+            aria-checked={language === option.value}
+            className="flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2.5 text-right text-sm font-bold text-slate-700 transition hover:bg-[#e6f5ef] hover:text-[#117b59] focus:bg-[#e6f5ef] focus:text-[#117b59]"
+          >
+            {option.label}
+            {language === option.value && <Check size={15} className="text-[#117b59]" />}
+          </button>
+        ))}
+        </div>
+      )}
+    </div>
   );
 }

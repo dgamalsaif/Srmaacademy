@@ -854,6 +854,7 @@ export default function AdminDashboard() {
     });
     return groups;
   }, [filtered]);
+  const isSpecialtyScroll = contentSettings.opportunityDisplayMode === "scroll";
 
   const stats = {
     total: research.length,
@@ -1060,16 +1061,17 @@ export default function AdminDashboard() {
                       <div className="h-px bg-slate-200 flex-1"></div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-5">
+                    <div className={isSpecialtyScroll ? "flex snap-x snap-mandatory gap-5 overflow-x-auto pb-4" : "grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3"}>
                       {items.map(r => (
-                        <ProgramCard
-                          key={r.id}
-                          research={r}
-                          onRegister={setStudentResearch}
-                          onEdit={setEditItem}
-                          onDelete={setDeleteItem}
-                          canManage={canManage}
-                        />
+                        <div key={r.id} className={isSpecialtyScroll ? "w-[min(88vw,360px)] shrink-0 snap-start" : ""}>
+                          <ProgramCard
+                            research={r}
+                            onRegister={setStudentResearch}
+                            onEdit={setEditItem}
+                            onDelete={setDeleteItem}
+                            canManage={canManage}
+                          />
+                        </div>
                       ))}
                     </div>
                   </div>
