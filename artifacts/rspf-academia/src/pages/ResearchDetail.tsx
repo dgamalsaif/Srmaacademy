@@ -57,7 +57,7 @@ export default function ResearchDetail() {
   const statusLabel = localize(RESEARCH_STATUS_LABELS[research.status] || "دراسة منجزة", ({
     ethics_approved: "Ethics approved", under_review: "Under review", completed: "Completed study",
   } as Record<string, string>)[research.status], research.status);
-  const title = localize(research.titleAr, research.titleEn, research.title);
+  const title = research.titleEn || research.title;
   const specialty = localize(research.specialtyAr, research.specialtyEn, research.specialty);
   const description = localize(research.descriptionAr, research.descriptionEn, research.description);
 
@@ -105,7 +105,7 @@ export default function ResearchDetail() {
                   </span>
                 )}
               </div>
-              <h1 className="text-xl sm:text-2xl font-black leading-snug mb-2 whitespace-pre-line">{contentSettings.participantTitleLanguage === "both" ? `${research.titleAr || research.title}\n${research.titleEn || research.title}` : title}</h1>
+              <h1 className="text-xl sm:text-2xl font-black leading-snug mb-2" dir="ltr">{title}</h1>
               <p className="text-blue-200 text-sm">{localize("تاريخ الإضافة:", "Date added:")} {research.createdAt}</p>
             </div>
             <OpportunityMedia research={research} className="h-[320px] sm:h-[420px]" />
@@ -242,7 +242,7 @@ export default function ResearchDetail() {
                   <span className={`text-xs font-bold px-2.5 py-1 rounded-full inline-block mb-3 ${r.specialtyColor}`}>
                     {localize(r.specialtyAr, r.specialtyEn, r.specialty)}
                   </span>
-                  <p className="font-semibold text-slate-800 text-sm line-clamp-2 text-right mb-3">{localize(r.titleAr, r.titleEn, r.title)}</p>
+                  <p className="font-semibold text-slate-800 text-sm line-clamp-2 text-right mb-3" dir="ltr">{r.titleEn || r.title}</p>
                   <div className="flex items-center justify-between flex-row-reverse text-xs text-slate-500">
                     <span>{localize(`${r.seatsLeft} مقعد متبقي`, `${r.seatsLeft} seats remaining`)}</span>
                     <span className="text-[#0C3156] font-semibold flex items-center gap-1">

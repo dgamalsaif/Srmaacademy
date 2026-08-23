@@ -11,6 +11,7 @@ import Footer from "@/components/Footer";
 import { SRMA_LOGO } from "@/components/BrandBackground";
 import ResearchImagePicker from "@/components/ResearchImagePicker";
 import OpportunityMedia from "@/components/OpportunityMedia";
+import SpecialtyFilter, { buildSpecialtyOptions, specialtyMatches } from "@/components/SpecialtyFilter";
 
 const EMPTY_FORM: Omit<ResearchOpportunity, "id" | "createdAt"> = {
   category: "active",
@@ -298,7 +299,7 @@ function DeleteConfirmModal({ research, onConfirm, onClose }: { research: Resear
         </div>
         <h3 className="text-xl font-black text-slate-800 text-center mb-2">حذف الفرصة البحثية</h3>
         <p className="text-slate-500 text-sm text-center mb-6">هل أنت متأكد من حذف هذه الفرصة؟ لا يمكن التراجع عن هذا الإجراء.</p>
-        <p className="text-xs text-slate-700 font-bold bg-slate-50 border border-slate-100 rounded-xl p-4 mb-6 line-clamp-2 text-center">{research.titleAr || research.title}</p>
+        <p className="text-xs text-slate-700 font-bold bg-slate-50 border border-slate-100 rounded-xl p-4 mb-6 line-clamp-2 text-center" dir="ltr">{research.titleEn || research.title}</p>
         <div className="flex gap-3">
           <button onClick={onClose} className="flex-1 border border-slate-200 text-slate-600 font-bold py-3 rounded-2xl hover:bg-slate-50 transition-colors text-sm shadow-sm">
             إلغاء
@@ -525,7 +526,7 @@ function ProgramCard({ research, onRegister, onEdit, onDelete, canManage }: any)
       </div>
 
       <div className="flex justify-between items-start mb-4 gap-4">
-        <h3 className="font-bold text-slate-800 text-sm leading-6 line-clamp-2 flex-1" dir="rtl">{research.titleAr || research.title}</h3>
+        <h3 className="font-bold text-slate-800 text-sm leading-6 line-clamp-2 flex-1" dir="ltr">{research.titleEn || research.title}</h3>
         <span className={`px-2.5 py-1 rounded-md text-[11px] font-black whitespace-nowrap shrink-0 ${statusColor}`}>
           {statusLabel}
         </span>
@@ -614,6 +615,7 @@ export default function AdminDashboard() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | ResearchOpportunity["status"]>("all");
   const [categoryFilter, setCategoryFilter] = useState<NonNullable<ResearchOpportunity["category"]>>("active");
+  const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
   const [loadingPrograms, setLoadingPrograms] = useState(true);
   const [view, setView] = useState<"programs" | "payments" | "settings" | "portal-settings" | "content-settings">("programs");
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
@@ -670,11 +672,11 @@ export default function AdminDashboard() {
   }, [role]);
 
   useEffect(() => {
-    if (role !== "owner") return;
+    if (!role) return;
     fetch("/api/site-content-settings")
       .then((response) => response.ok ? response.json() : Promise.reject())
       .then((settings: SiteContentSettings) => setContentSettings(settings))
-      .catch(() => setContentSettingsMessage("تعذر تحميل إعدادات المحتوى حالياً."));
+      .catch(() => role === "owner" && setContentSettingsMessage("تعذر تحميل إعدادات المحتوى حالياً."));
   }, [role]);
 
   useEffect(() => {
@@ -835,8 +837,13 @@ export default function AdminDashboard() {
       .filter(Boolean).some((value) => value!.toLowerCase().includes(search.toLowerCase()));
     const matchStatus = statusFilter === "all" || r.status === statusFilter;
     const matchCategory = (r.category || "active") === categoryFilter;
-    return matchSearch && matchStatus && matchCategory;
+    const matchSpecialty = specialtyMatches(r, selectedSpecialty);
+    return matchSearch && matchStatus && matchCategory && matchSpecialty;
   });
+  const specialtyOptions = buildSpecialtyOptions(
+    contentSettings.specialtyOptions,
+    research.filter((item) => (item.category || "active") === categoryFilter),
+  );
 
   const groupedResearch = useMemo(() => {
     const groups: Record<string, ResearchOpportunity[]> = {};
@@ -1015,15 +1022,23 @@ export default function AdminDashboard() {
                 </section>
               )}
 
-              <div className="relative mb-10">
-                <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                <input
-                  type="text"
-                  placeholder="ابحث بالعنوان أو التخصص أو الكلمات المفتاحية..."
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-2xl py-4 pr-12 pl-4 outline-none focus:border-[#117b59] focus:ring-2 focus:ring-[#117b59]/20 transition-all text-sm font-bold shadow-sm"
+              <div className="mb-10">
+                <SpecialtyFilter
+                  options={specialtyOptions}
+                  selectedSpecialty={selectedSpecialty}
+                  onSelect={setSelectedSpecialty}
+                  className="mb-5"
                 />
+                <div className="relative">
+                  <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                  <input
+                    type="text"
+                    placeholder="ابحث بالعنوان أو التخصص أو الكلمات المفتاحية..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-2xl py-4 pr-12 pl-4 outline-none focus:border-[#117b59] focus:ring-2 focus:ring-[#117b59]/20 transition-all text-sm font-bold shadow-sm"
+                  />
+                </div>
               </div>
 
               {Object.keys(groupedResearch).length === 0 ? (
@@ -1191,7 +1206,7 @@ export default function AdminDashboard() {
         <RegistrationModal
           isOpen={!!studentResearch}
           onClose={() => setStudentResearch(null)}
-          researchTitle={studentResearch.titleAr || studentResearch.title}
+          researchTitle={studentResearch.titleEn || studentResearch.title}
           researchId={studentResearch.id}
           coordinatorEntry={true}
         />

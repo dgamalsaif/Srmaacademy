@@ -8,6 +8,7 @@ import OpportunityMedia from "@/components/OpportunityMedia";
 import OpportunityPrice from "@/components/OpportunityPrice";
 import { OpportunityCurrency } from "@/lib/opportunityPricing";
 import { useLanguage } from "@/lib/i18n";
+import SpecialtyFilter, { buildSpecialtyOptions, specialtyMatches } from "@/components/SpecialtyFilter";
 
 const hallOfFame = [
   { specialty: "ENT – Head and Neck Surgery", specialtyColor: "bg-indigo-100 text-indigo-700", title: "Efficacy of Biologic Therapy versus Conventional Treatment in Chronic Rhinosinusitis" },
@@ -25,6 +26,7 @@ export default function ParticipantPortal() {
   const [opportunities, setOpportunities] = useState<ResearchOpportunity[]>([]);
   const [currency, setCurrency] = useState<OpportunityCurrency>("SAR");
   const [contentSettings, setContentSettings] = useState<SiteContentSettings>(DEFAULT_SITE_CONTENT_SETTINGS);
+  const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
 
   const refreshOpportunities = () => {
     fetch("/api/programs")
@@ -49,12 +51,11 @@ export default function ParticipantPortal() {
   };
 
   const openModal = (research: ResearchOpportunity) => { setSelectedResearch(research); setModalOpen(true); };
-  const displayTitle = (research: ResearchOpportunity) => {
-    if (contentSettings.participantTitleLanguage === "both") return `${research.titleAr || research.title}\n${research.titleEn || research.title}`;
-    return localize(research.titleAr, research.titleEn, research.title);
-  };
+  const displayTitle = (research: ResearchOpportunity) => research.titleEn || research.title;
   const participantTitle = language === "en" ? contentSettings.participantTitleEn : contentSettings.participantTitle;
   const participantDescription = language === "en" ? contentSettings.participantDescriptionEn : contentSettings.participantDescription;
+  const specialtyOptions = buildSpecialtyOptions(contentSettings.specialtyOptions, opportunities);
+  const visibleOpportunities = opportunities.filter((opportunity) => specialtyMatches(opportunity, selectedSpecialty));
 
   return (
     <div className="min-h-screen bg-white" dir={direction}>
@@ -105,18 +106,24 @@ export default function ParticipantPortal() {
               <div className="flex items-center justify-between mb-6 flex-row-reverse">
                 <h2 className="text-xl font-black text-slate-900">✨ {localize("الفرص البحثية المتاحة للتسجيل", "Research opportunities open for registration")}</h2>
                 <span className="bg-[#0C3156]/8 text-[#0C3156] text-xs font-bold px-3 py-1.5 rounded-full border border-[#0C3156]/12">
-                  {localize(`${opportunities.length} فرصة متاحة`, `${opportunities.length} opportunities available`)}
+                   {localize(`${visibleOpportunities.length} فرصة متاحة`, `${visibleOpportunities.length} opportunities available`)}
                 </span>
               </div>
-              {opportunities.length === 0 ? (
+              <SpecialtyFilter
+                options={specialtyOptions}
+                selectedSpecialty={selectedSpecialty}
+                onSelect={setSelectedSpecialty}
+                className="mb-5"
+              />
+              {visibleOpportunities.length === 0 ? (
                 <div className="text-center py-16 text-slate-400">
                   <div className="text-5xl mb-4">🔬</div>
-                  <p className="font-medium">{localize("لا توجد فرص متاحة حالياً", "There are currently no opportunities available.")}</p>
-                  <p className="text-sm mt-1">{localize("تابع قناتنا على Telegram للإشعارات الفورية", "Follow our Telegram channel for instant notifications.")}</p>
+                  <p className="font-medium">{selectedSpecialty ? localize("لا توجد فرص متاحة في هذا التخصص حالياً", "There are currently no opportunities in this specialty.") : localize("لا توجد فرص متاحة حالياً", "There are currently no opportunities available.")}</p>
+                  <p className="text-sm mt-1">{selectedSpecialty ? localize("اختر كل التخصصات لعرض جميع الفرص.", "Choose all specialties to view every opportunity.") : localize("تابع قناتنا على Telegram للإشعارات الفورية", "Follow our Telegram channel for instant notifications.")}</p>
                 </div>
               ) : (
                 <div className="space-y-5">
-                  {opportunities.map((opp) => {
+                   {visibleOpportunities.map((opp) => {
                     const isExpanded = expandedCards.includes(opp.id);
                     const seatsUsed = opp.totalSeats - opp.seatsLeft;
                     const pct = Math.round((seatsUsed / opp.totalSeats) * 100);
@@ -254,7 +261,7 @@ export default function ParticipantPortal() {
         </div>
       </section>
 
-      <RegistrationModal isOpen={modalOpen} onClose={() => { setModalOpen(false); setSelectedResearch(null); }} researchTitle={selectedResearch ? localize(selectedResearch.titleAr, selectedResearch.titleEn, selectedResearch.title) : ""} researchId={selectedResearch?.id} firstAuthorSeatsLeft={selectedResearch?.firstAuthorSeatsLeft} coAuthorSeatsLeft={selectedResearch?.coAuthorSeatsLeft} onRegistered={refreshOpportunities} />
+      <RegistrationModal isOpen={modalOpen} onClose={() => { setModalOpen(false); setSelectedResearch(null); }} researchTitle={selectedResearch ? displayTitle(selectedResearch) : ""} researchId={selectedResearch?.id} firstAuthorSeatsLeft={selectedResearch?.firstAuthorSeatsLeft} coAuthorSeatsLeft={selectedResearch?.coAuthorSeatsLeft} onRegistered={refreshOpportunities} />
     </div>
   );
 }

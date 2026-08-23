@@ -80,7 +80,7 @@ function OpportunityMetadata({ research, className = "" }: { research: ResearchO
 export default function OpportunityMedia({ research, className = "h-56" }: { research: ResearchOpportunity; className?: string }) {
   const { direction, language, localize } = useLanguage();
   const status = getResearchStatusLabel(research.status, language);
-  const title = localize(research.titleAr, research.titleEn, research.title);
+  const title = research.titleEn || research.title;
   const specialty = localize(research.specialtyAr, research.specialtyEn, research.specialty);
   const [imageFailed, setImageFailed] = useState(false);
   const [isPanoramaOpen, setIsPanoramaOpen] = useState(false);
@@ -151,14 +151,16 @@ export default function OpportunityMedia({ research, className = "h-56" }: { res
             </div>
           )}
           <img src={SRMA_LOGO} alt="" aria-hidden="true" className="pointer-events-none absolute left-1/2 top-1/2 h-[135%] w-[135%] -translate-x-1/2 -translate-y-1/2 rounded-full object-cover opacity-[0.11] mix-blend-screen" />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#061f35]/80 via-transparent to-[#061f35]/50" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#061f35]/35 via-transparent to-[#061f35]/45" />
           <div className="srma-media-copy absolute inset-x-3 top-3 flex items-start justify-between gap-2" dir={direction}>
             <span data-testid={`status-opportunity-${research.id}`} className="rounded-full border border-[#8ee0c3]/45 bg-[#07634e]/95 px-3 py-1 text-[11px] font-black text-white shadow-sm">{status}</span>
             <span className="srma-media-chip max-w-[55%] truncate rounded-full px-3 py-1 text-[11px] font-bold">{specialty}</span>
           </div>
-          <OpportunityMetadata research={research} className="srma-media-copy absolute inset-x-3 bottom-3" />
-          <img src={SRMA_LOGO} alt={localize("شعار SRMA", "SRMA logo")} className="pointer-events-none absolute bottom-3 left-3 h-9 w-9 rounded-xl border border-white/40 bg-white/90 object-cover p-0.5 shadow-lg" />
-          {canShowImage && <button type="button" data-testid={`button-expand-image-${research.id}`} onClick={(event) => { event.stopPropagation(); setIsPanoramaOpen(true); }} className="srma-media-open absolute left-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-xl transition-transform duration-300 hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" aria-label={localize(`عرض صورة ${title} بالحجم الكامل`, `View ${title} full size`)}><Expand size={17} /></button>}
+          <div className="srma-media-copy absolute inset-x-3 bottom-3 flex items-end justify-between gap-2" dir={direction}>
+            <span className="srma-media-chip max-w-[68%] truncate rounded-full px-3 py-1 text-[10px] font-bold">{research.journalTarget || localize("المجلة المستهدفة", "Target journal")}</span>
+            <span className="rounded-full border border-white/25 bg-[#061f35]/85 px-3 py-1 text-[10px] font-black text-white shadow-sm">{localize(`${research.seatsLeft} مقاعد`, `${research.seatsLeft} seats`)}</span>
+          </div>
+          {canShowImage && <button type="button" data-testid={`button-expand-image-${research.id}`} onClick={(event) => { event.stopPropagation(); setIsPanoramaOpen(true); }} className="srma-media-open absolute bottom-3 left-3 inline-flex h-9 w-9 items-center justify-center rounded-xl transition-transform duration-300 hover:scale-105 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" aria-label={localize(`عرض صورة ${title} بالحجم الكامل`, `View ${title} full size`)}><Expand size={17} /></button>}
         </div>
       </div>
       {isPanoramaOpen && canShowImage && (
