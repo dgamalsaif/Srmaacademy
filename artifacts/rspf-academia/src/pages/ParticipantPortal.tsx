@@ -90,12 +90,10 @@ export default function ParticipantPortal() {
 
       {/* TICKER */}
       <div className="py-2.5 text-white overflow-hidden" style={{ backgroundColor: contentSettings.primaryColor }}>
-        <div className="animate-marquee">
-          {[...Array(3)].map((_, i) => (
-            <span key={i} className="inline-block mx-10 text-sm font-medium whitespace-nowrap">
-              ⚡ {localize("انضم لأكثر من 500 طبيب وباحث حققوا متطلبات الهيئة السعودية للتخصصات الصحية مع SRMA | سجل الآن وابدأ رحلتك البحثية اليوم", "Join over 500 physicians and researchers who have met Saudi Commission for Health Specialties requirements with SRMA | Register now and begin your research journey today")}
-            </span>
-          ))}
+        <div className="w-max whitespace-nowrap">
+          <span className="block px-10 text-sm font-medium whitespace-nowrap">
+            ⚡ {localize("انضم لأكثر من 500 طبيب وباحث حققوا متطلبات الهيئة السعودية للتخصصات الصحية مع SRMA | سجل الآن وابدأ رحلتك البحثية اليوم", "Join over 500 physicians and researchers who have met Saudi Commission for Health Specialties requirements with SRMA | Register now and begin your research journey today")}
+          </span>
         </div>
       </div>
 
