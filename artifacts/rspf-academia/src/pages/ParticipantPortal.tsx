@@ -33,7 +33,7 @@ export default function ParticipantPortal() {
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("programs unavailable")))
       .then((data: ResearchOpportunity[]) => {
         const available = data.filter((item) => item.status === "open" && (item.category || "active") === "active");
-        setOpportunities(available);
+        setOpportunities(uniqueResearchOpportunities(available));
       })
       .catch(() => setOpportunities([]));
   };
@@ -321,4 +321,23 @@ export default function ParticipantPortal() {
       <RegistrationModal isOpen={modalOpen} onClose={() => { setModalOpen(false); setSelectedResearch(null); }} researchTitle={selectedResearch ? displayTitle(selectedResearch) : ""} researchId={selectedResearch?.id} firstAuthorSeatsLeft={selectedResearch?.firstAuthorSeatsLeft} coAuthorSeatsLeft={selectedResearch?.coAuthorSeatsLeft} onRegistered={refreshOpportunities} />
     </div>
   );
+}
+
+function uniqueResearchOpportunities(opportunities: ResearchOpportunity[]) {
+  const seenTitles = new Set<string>();
+  return opportunities.filter((opportunity) => {
+    const title = normalizeResearchTitle(opportunity.titleEn || opportunity.titleAr || opportunity.title || String(opportunity.id));
+    if (seenTitles.has(title)) return false;
+    seenTitles.add(title);
+    return true;
+  });
+}
+
+function normalizeResearchTitle(value: string) {
+  return value
+    .normalize("NFKD")
+    .replace(/\p{M}/gu, "")
+    .toLocaleLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
 }
