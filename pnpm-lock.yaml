@@ -415,10 +415,6 @@ importers:
         version: 3.25.76
 
   artifacts/rspf-academia:
-    dependencies:
-      xlsx:
-        specifier: ^0.18.5
-        version: 0.18.5
     devDependencies:
       '@clerk/react':
         specifier: ^6.14.5
@@ -612,6 +608,9 @@ importers:
       wouter:
         specifier: ^3.3.5
         version: 3.9.0(react@19.1.0)
+      xlsx:
+        specifier: ^0.18.5
+        version: 0.18.5
       zod:
         specifier: 'catalog:'
         version: 3.25.76
