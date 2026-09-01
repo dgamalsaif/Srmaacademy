@@ -1268,4 +1268,3 @@ export default function AdminDashboard() {
       <Footer />
     </div>
   );
-  
