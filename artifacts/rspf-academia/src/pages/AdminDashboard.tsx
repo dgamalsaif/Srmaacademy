@@ -398,7 +398,7 @@ function SettingsPanel({ role, accountName, onNameUpdated }: { role: "owner" | "
   const changeName = async (event: React.FormEvent) => {
     event.preventDefault();
     setNameMessage("");
-    const response = await fetch("/api/coordinator/change-name", {
+    const response = await apiFetch("/api/coordinator/change-name", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fullName }),
@@ -420,7 +420,7 @@ function SettingsPanel({ role, accountName, onNameUpdated }: { role: "owner" | "
       setCodeMessage("تأكيد رمز الوصول لا يطابق الرمز الجديد.");
       return;
     }
-    const response = await fetch("/api/coordinator/change-access-code", {
+    const response = await apiFetch("/api/coordinator/change-access-code", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ currentCode, newCode }),
@@ -654,7 +654,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const workspace = ownerWorkspace ? "owner" : "coordinator";
-    fetch(`/api/coordinator/session?workspace=${workspace}`, { cache: "no-store", credentials: "same-origin" })
+    apiFetch(`/api/coordinator/session?workspace=${workspace}`, { cache: "no-store", credentials: "same-origin" })
       .then((response) => {
         if (!response.ok) throw new Error("Unable to verify staff session");
         return response.json() as Promise<{ authenticated?: boolean; role?: "owner" | "coordinator"; coordinatorName?: string | null }>;
@@ -679,7 +679,7 @@ export default function AdminDashboard() {
     const loadPrograms = async () => {
       setLoadingPrograms(true);
       try {
-        let response = await fetch("/api/programs");
+        let response = await apiFetch("/api/programs");
         let data = await response.json() as ResearchOpportunity[];
         setResearch(Array.isArray(data) ? data : []);
       } catch {
@@ -695,7 +695,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!role) return;
-    fetch("/api/site-content-settings")
+    apiFetch("/api/site-content-settings")
       .then((response) => response.ok ? response.json() : Promise.reject())
       .then((settings: SiteContentSettings) => setContentSettings(settings))
       .catch(() => role === "owner" && setContentSettingsMessage("تعذر تحميل إعدادات المحتوى حالياً."));
@@ -703,7 +703,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (role !== "owner") return;
-    fetch("/api/coordinator-portal-settings")
+    apiFetch("/api/coordinator-portal-settings")
       .then((response) => response.ok ? response.json() : Promise.reject())
       .then((settings: CoordinatorPortalSettings) => setPortalSettings(settings))
       .catch(() => setPortalSettingsMessage("تعذر تحميل إعدادات البوابة حالياً."));
@@ -711,7 +711,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!role) return;
-    fetch("/api/payments")
+    apiFetch("/api/payments")
       .then((response) => response.ok ? response.json() : [])
       .then((data) => setPayments(Array.isArray(data) ? data : []))
       .catch(() => setPayments([]));
@@ -743,7 +743,7 @@ export default function AdminDashboard() {
   });
 
   const handleAdd = async (form: FormData, imageToken: string | null) => {
-    const response = await fetch("/api/programs", {
+    const response = await apiFetch("/api/programs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(toPayload(form, imageToken)),
@@ -756,7 +756,7 @@ export default function AdminDashboard() {
 
   const handleEdit = async (form: FormData, imageToken: string | null) => {
     if (!editItem) return;
-    const response = await fetch(`/api/programs/${editItem.id}`, {
+    const response = await apiFetch(`/api/programs/${editItem.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(toPayload(form, imageToken)),
@@ -768,7 +768,7 @@ export default function AdminDashboard() {
 
   const handleDelete = async () => {
     if (!deleteItem) return;
-    const response = await fetch(`/api/programs/${deleteItem.id}`, { method: "DELETE" });
+    const response = await apiFetch(`/api/programs/${deleteItem.id}`, { method: "DELETE" });
     if (response.ok) {
       setResearch((items) => items.filter((item) => item.id !== deleteItem.id));
       setDeleteItem(null);
@@ -781,7 +781,7 @@ export default function AdminDashboard() {
   };
 
   const handlePaymentAdd = async (payment: Omit<PaymentRecord, "id">) => {
-    const response = await fetch("/api/payments", {
+    const response = await apiFetch("/api/payments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payment),
@@ -794,7 +794,7 @@ export default function AdminDashboard() {
   };
 
   const markPaymentPaid = async (payment: PaymentRecord) => {
-    const response = await fetch(`/api/payments/${payment.id}`, {
+    const response = await apiFetch(`/api/payments/${payment.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "paid" }),
@@ -808,7 +808,7 @@ export default function AdminDashboard() {
       await signOut({ redirectUrl: `${import.meta.env.BASE_URL.replace(/\/$/, "") || "/"}/sign-in` });
       return;
     }
-    await fetch("/api/coordinator/logout", { method: "POST" });
+    await apiFetch("/api/coordinator/logout", { method: "POST" });
     setLocation("/coordinator");
   };
 
@@ -816,7 +816,7 @@ export default function AdminDashboard() {
     setPortalSettingsSaving(true);
     setPortalSettingsMessage("");
     try {
-      const response = await fetch("/api/coordinator-portal-settings", {
+      const response = await apiFetch("/api/coordinator-portal-settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(portalSettings),
@@ -839,7 +839,7 @@ export default function AdminDashboard() {
     setContentSettingsSaving(true);
     setContentSettingsMessage("");
     try {
-      const response = await fetch("/api/site-content-settings", {
+      const response = await apiFetch("/api/site-content-settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(contentSettings),
@@ -1269,3 +1269,4 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
