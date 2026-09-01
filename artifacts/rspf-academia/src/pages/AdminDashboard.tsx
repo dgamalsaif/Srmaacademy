@@ -15,7 +15,7 @@ import OpportunityMedia from "@/components/OpportunityMedia";
 import SpecialtyFilter, { buildSpecialtyOptions, specialtyMatches } from "@/components/SpecialtyFilter";
 import OwnerSecurityPanel from "@/components/OwnerSecurityPanel";
 import OpportunityImportModal from "@/components/OpportunityImportModal";
-
+import { apiFetch } from "@/lib/api";
 const EMPTY_FORM: Omit<ResearchOpportunity, "id" | "createdAt"> = {
   category: "active",
   specialty: "",
