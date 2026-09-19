@@ -8,6 +8,7 @@ import Footer from "@/components/Footer";
 import { SRMA_LOGO } from "@/components/BrandBackground";
 import { useLanguage } from "@/lib/i18n";
 import { LanguageMenu } from "@/components/Navbar";
+import { apiFetch } from "@/lib/api";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -141,7 +142,7 @@ export default function CoordinatorPortal() {
 
   useEffect(() => {
     let active = true;
-    fetch("/api/coordinator-portal-settings")
+    apiFetch("/api/coordinator-portal-settings")
       .then((response) => response.ok ? response.json() : Promise.reject())
       .then((saved: CoordinatorPortalSettings) => { if (active) setSettings(saved); })
       .catch(() => undefined);
@@ -169,7 +170,7 @@ export default function CoordinatorPortal() {
     if (loggingIn) return;
     setLoggingIn(true);
     try {
-      const response = await fetch("/api/coordinator/login", {
+      const response = await apiFetch("/api/coordinator/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
@@ -337,7 +338,7 @@ function CoordinatorRequestModal({ onClose, whatsappUrl }: CoordinatorRequestMod
     setLoading(true);
     setError("");
     try {
-      const response = await fetch("/api/service-requests", {
+      const response = await apiFetch("/api/service-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -454,4 +455,4 @@ function CoordinatorRequestModal({ onClose, whatsappUrl }: CoordinatorRequestMod
       </div>
     </div>
   );
-}
+              }
