@@ -176,6 +176,10 @@ export default function CoordinatorPortal() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
       });
+      const contentType = response.headers.get("content-type") || "";
+      if (!contentType.toLowerCase().includes("application/json")) {
+        throw new Error("API returned a non-JSON response");
+      }
       const result = await response.json() as { error?: string };
       if (response.ok) {
         setError("");
