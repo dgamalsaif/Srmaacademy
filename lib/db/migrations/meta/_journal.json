@@ -64,6 +64,20 @@
       "when": 1790000000000,
       "tag": "0008_research_group_url",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790003600000,
+      "tag": "0009_repair_migration_baseline",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790007200000,
+      "tag": "0010_sync_schema_metadata",
+      "breakpoints": true
     }
   ]
 }

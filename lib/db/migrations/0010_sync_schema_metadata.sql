@@ -1,0 +1,2 @@
+-- No database changes are required here. This migration records the complete
+-- current Drizzle snapshot after the historical 0007 and 0008 SQL migrations.
