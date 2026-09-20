@@ -1,4 +1,6 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from "node:crypto";
+import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const REPLIT_SIDECAR_ENDPOINT = "http://127.0.0.1:1106";
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -139,6 +141,15 @@ async function signObjectUrl({
   method: SignedMethod;
   ttlSeconds: number;
 }) {
+  const r2 = getR2Storage();
+  if (r2) {
+    const objectName = `${r2.prefix}/research-images/${objectPath.slice(IMAGE_PATH_PREFIX.length)}`;
+    const command = method === "PUT"
+      ? new PutObjectCommand({ Bucket: r2.bucket, Key: objectName })
+      : new GetObjectCommand({ Bucket: r2.bucket, Key: objectName });
+    return getSignedUrl(r2.client, command, { expiresIn: ttlSeconds });
+  }
+
   const { bucketName, privatePrefix } = getStorageLocation();
   const objectName = `${privatePrefix}/research-images/${objectPath.slice(IMAGE_PATH_PREFIX.length)}`;
 
@@ -163,6 +174,28 @@ async function signObjectUrl({
     throw new Error("Object storage did not return a signed URL.");
   }
   return body.signed_url;
+}
+
+function getR2Storage() {
+  const accountId = process.env["R2_ACCOUNT_ID"]?.trim();
+  const accessKeyId = process.env["R2_ACCESS_KEY_ID"]?.trim();
+  const secretAccessKey = process.env["R2_SECRET_ACCESS_KEY"]?.trim();
+  const bucket = process.env["R2_BUCKET"]?.trim();
+  const configured = [accountId, accessKeyId, secretAccessKey, bucket].filter(Boolean).length;
+  if (configured === 0) return null;
+  if (configured !== 4) {
+    throw new Error("R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and R2_BUCKET must all be configured.");
+  }
+
+  return {
+    bucket: bucket!,
+    prefix: (process.env["R2_PRIVATE_PREFIX"] || "srma-private").replace(/^\/+|\/+$/g, ""),
+    client: new S3Client({
+      region: "auto",
+      endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+      credentials: { accessKeyId: accessKeyId!, secretAccessKey: secretAccessKey! },
+    }),
+  };
 }
 
 function getStorageLocation() {

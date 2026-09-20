@@ -1,6 +1,7 @@
 import { programCatalogBootstrapTable, researchProgramsTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { PROGRAM_CAPACITY_LOCK_NAMESPACE, type DatabaseTransaction } from "./programCapacity";
+import { logger } from "./logger";
 
 const SNAPSHOT_KEY = "research-catalog-capacity-2026-08-23";
 const SNAPSHOT_LOCK_ID = 9_021_741;
@@ -83,7 +84,12 @@ export async function applyResearchCatalogSeatSnapshot(tx: DatabaseTransaction) 
     .map((entry) => entry.titleEn);
 
   if (missingTitles.length > 0) {
-    throw new Error(`Seat snapshot was not applied because ${missingTitles.length} research titles were not found.`);
+    logger.warn(
+      { missingTitleCount: missingTitles.length, snapshotKey: SNAPSHOT_KEY },
+      "Skipping research catalog seat snapshot because it does not match this catalog",
+    );
+    await tx.insert(programCatalogBootstrapTable).values({ key: SNAPSHOT_KEY });
+    return;
   }
 
   for (const entry of RESEARCH_CATALOG_SEAT_SNAPSHOT) {
