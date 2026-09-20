@@ -58,6 +58,7 @@ function Router() {
   const { language } = useLanguage();
   const isAdmin = location === "/admin" || location === "/admin/submissions" || location === "/owner-admin" || location === "/sign-in" || location.startsWith("/sign-in/") || location === "/sign-up" || location.startsWith("/sign-up/") || location === "/coordinator/dashboard" || location === "/coordinator/submissions";
   const isCoordinatorPortal = location === "/coordinator" || location === "/coordinator-portal";
+  const floatingAudience = location === "/participant-portal" || location.startsWith("/research/") ? "participant" as const : "public" as const;
   const isPrivate = isAdmin || isCoordinatorPortal;
 
   return (
@@ -89,7 +90,7 @@ function Router() {
           </Switch>
         </main>
         {!isAdmin && !isCoordinatorPortal && <Footer />}
-        {!isAdmin && !isCoordinatorPortal && <FloatingButtons />}
+        {!isAdmin && !isCoordinatorPortal && <FloatingButtons audience={floatingAudience} />}
       </div>
     </div>
   );

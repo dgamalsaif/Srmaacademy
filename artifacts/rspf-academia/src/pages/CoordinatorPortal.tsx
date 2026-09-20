@@ -273,6 +273,7 @@ export default function CoordinatorPortal() {
       </main>
       <Footer />
       <FloatingButtons
+        audience="coordinator"
         showTelegram={settings.showTelegram}
         showWhatsapp={settings.showWhatsapp}
       />
@@ -311,21 +312,21 @@ export default function CoordinatorPortal() {
           <button type="button" onClick={dismissInstall} className="mt-2 w-full py-1.5 text-xs font-bold text-slate-500 hover:text-[#117b59]">{localize(settings.installDismissLabel, settings.translations.installDismissLabel)}</button>
         </aside>
       )}
-      {requestOpen && <CoordinatorRequestModal whatsappUrl={settings.whatsappUrl} onClose={() => setRequestOpen(false)} />}
+      {requestOpen && <CoordinatorRequestModal onClose={() => setRequestOpen(false)} />}
     </div>
   );
 }
 
 interface CoordinatorRequestModalProps {
   onClose: () => void;
-  whatsappUrl: string;
 }
 
-function CoordinatorRequestModal({ onClose, whatsappUrl }: CoordinatorRequestModalProps) {
+function CoordinatorRequestModal({ onClose }: CoordinatorRequestModalProps) {
   const { language, direction } = useLanguage();
   const { data: siteContent } = useSiteContentSettings();
   const isEnglish = language === "en";
   const siteName = isEnglish ? siteContent?.brand.siteNameEn || "Research Academy" : siteContent?.brand.siteNameAr || "أكاديمية الأبحاث";
+  const coordinatorWhatsapp = siteContent?.brand.coordinatorWhatsapp || siteContent?.brand.whatsapp || "966562159258";
   const [form, setForm] = useState({
     fullName: "",
     phone: "",
@@ -366,8 +367,7 @@ function CoordinatorRequestModal({ onClose, whatsappUrl }: CoordinatorRequestMod
           ? `New research coordinator accreditation request\n\nName: ${form.fullName}\nPhone: ${form.dialCode} ${form.phone}\nEmail: ${form.email}\nAffiliation: ${form.affiliation}\nCountry: ${form.country}\nRequest number: ${number}`
           : `طلب اعتماد منسق بحثي جديد\n\nالاسم: ${form.fullName}\nالهاتف: ${form.dialCode} ${form.phone}\nالبريد: ${form.email}\nجهة الانتساب: ${form.affiliation}\nالدولة: ${form.country}\nرقم الطلب: ${number}`
       );
-      const separator = whatsappUrl.includes("?") ? "&" : "?";
-      window.open(`${whatsappUrl}${separator}text=${message}`, "_blank", "noopener,noreferrer");
+      window.open(`https://wa.me/${coordinatorWhatsapp.replace(/\D/g, "")}?text=${message}`, "_blank", "noopener,noreferrer");
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : (isEnglish ? "An unexpected error occurred" : "حدث خطأ غير متوقع"));
     } finally {

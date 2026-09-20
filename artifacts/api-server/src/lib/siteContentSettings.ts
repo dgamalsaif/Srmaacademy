@@ -44,6 +44,8 @@ export interface BrandContactSettings {
   appThemeColor: string;
   phone: string;
   whatsapp: string;
+  participantWhatsapp: string;
+  coordinatorWhatsapp: string;
   whatsappChannelUrl: string;
   email: string;
   telegramUsername: string;
@@ -54,7 +56,17 @@ export interface BrandContactSettings {
   tiktokUrl: string;
   youtubeUrl: string;
   snapchatUrl: string;
+  publicSocialIcons: SocialIconId[];
+  participantSocialIcons: SocialIconId[];
+  coordinatorSocialIcons: SocialIconId[];
+  publicIconPosition: FloatingIconPosition;
+  participantIconPosition: FloatingIconPosition;
+  coordinatorIconPosition: FloatingIconPosition;
 }
+type SocialIconId = "whatsapp" | "telegram" | "instagram" | "x" | "linkedin" | "facebook" | "tiktok" | "youtube" | "snapchat" | "email" | "phone";
+type FloatingIconPosition = "bottom-left" | "bottom-right" | "middle-left" | "middle-right";
+const SOCIAL_ICON_IDS: SocialIconId[] = ["whatsapp", "telegram", "instagram", "x", "linkedin", "facebook", "tiktok", "youtube", "snapchat", "email", "phone"];
+const ICON_POSITIONS: FloatingIconPosition[] = ["bottom-left", "bottom-right", "middle-left", "middle-right"];
 
 export interface SiteContentSettings {
   participantTitle: string;
@@ -131,6 +143,8 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
     appThemeColor: "#0d765c",
     phone: "",
     whatsapp: "966562159258",
+    participantWhatsapp: "966562159258",
+    coordinatorWhatsapp: "966562159258",
     whatsappChannelUrl: "",
     email: "",
     telegramUsername: "SRMAAcademy",
@@ -141,6 +155,12 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
     tiktokUrl: "",
     youtubeUrl: "",
     snapchatUrl: "",
+    publicSocialIcons: ["whatsapp", "telegram"],
+    participantSocialIcons: ["whatsapp", "telegram"],
+    coordinatorSocialIcons: ["whatsapp", "telegram"],
+    publicIconPosition: "bottom-left",
+    participantIconPosition: "bottom-left",
+    coordinatorIconPosition: "bottom-left",
   },
   pages: {
     home: { titleAr: "أكاديمية SRMA للأبحاث", titleEn: "SRMA Research Academy", descriptionAr: "نحو مجتمع بحثي أكثر تأثيراً", descriptionEn: "Building a more impactful research community", contentAr: "", contentEn: "" },
@@ -225,9 +245,22 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
     ? input[key] as Record<string, unknown>
     : {};
   const brandInput = object("brand");
-  const brandText = (key: keyof BrandContactSettings, max = 200) => typeof brandInput[key] === "string"
+  type BrandTextKey = { [K in keyof BrandContactSettings]: BrandContactSettings[K] extends string ? K : never }[keyof BrandContactSettings];
+  const brandText = (key: BrandTextKey, max = 200): string => typeof brandInput[key] === "string"
     ? (brandInput[key] as string).trim().slice(0, max)
-    : DEFAULT_SITE_CONTENT_SETTINGS.brand[key];
+    : DEFAULT_SITE_CONTENT_SETTINGS.brand[key] as string;
+  const brandIcons = (key: "publicSocialIcons" | "participantSocialIcons" | "coordinatorSocialIcons") => {
+    const candidate = brandInput[key];
+    return Array.isArray(candidate)
+      ? [...new Set(candidate.filter((id): id is SocialIconId => typeof id === "string" && SOCIAL_ICON_IDS.includes(id as SocialIconId)))]
+      : DEFAULT_SITE_CONTENT_SETTINGS.brand[key];
+  };
+  const brandPosition = (key: "publicIconPosition" | "participantIconPosition" | "coordinatorIconPosition") => {
+    const candidate = brandInput[key];
+    return typeof candidate === "string" && ICON_POSITIONS.includes(candidate as FloatingIconPosition)
+      ? candidate as FloatingIconPosition
+      : DEFAULT_SITE_CONTENT_SETTINGS.brand[key];
+  };
   const safeUrl = (candidate: string, fallback = "") => {
     if (candidate === "") return "";
     if (candidate.startsWith("/") && !candidate.startsWith("//") && !candidate.split("/").includes("..") && !/[\u0000-\u001f]/.test(candidate)) return candidate;
@@ -269,6 +302,11 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
       contentEn: pageText("contentEn", 12000),
     }];
   })) as Record<PublicPageId, PublicPageContent>;
+  const globalWhatsapp = brandText("whatsapp", 40).replace(/[^\d+]/g, "");
+  const audienceWhatsapp = (key: "participantWhatsapp" | "coordinatorWhatsapp") => {
+    const supplied = brandInput[key];
+    return (typeof supplied === "string" ? supplied : globalWhatsapp).replace(/[^\d+]/g, "").slice(0, 40);
+  };
   return {
     participantTitle: text("participantTitle", 120),
     participantTitleEn: translatedText("participantTitleEn", "participantTitle", 120),
@@ -304,7 +342,9 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
       appIconUrl: safeAppIcon(brandText("appIconUrl", 1000)),
       appThemeColor: /^#[0-9a-fA-F]{6}$/.test(brandText("appThemeColor", 7)) ? brandText("appThemeColor", 7) : DEFAULT_SITE_CONTENT_SETTINGS.brand.appThemeColor,
       phone: brandText("phone", 40).replace(/[^\d+]/g, ""),
-      whatsapp: brandText("whatsapp", 40).replace(/[^\d+]/g, ""),
+      whatsapp: globalWhatsapp,
+      participantWhatsapp: audienceWhatsapp("participantWhatsapp"),
+      coordinatorWhatsapp: audienceWhatsapp("coordinatorWhatsapp"),
       whatsappChannelUrl: safeUrl(brandText("whatsappChannelUrl", 1000), ""),
       email: brandText("email", 254),
       telegramUsername: brandText("telegramUsername", 100).replace(/^@/, ""),
@@ -315,6 +355,12 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
       tiktokUrl: safeUrl(brandText("tiktokUrl", 1000), ""),
       youtubeUrl: safeUrl(brandText("youtubeUrl", 1000), ""),
       snapchatUrl: safeUrl(brandText("snapchatUrl", 1000), ""),
+      publicSocialIcons: brandIcons("publicSocialIcons"),
+      participantSocialIcons: brandIcons("participantSocialIcons"),
+      coordinatorSocialIcons: brandIcons("coordinatorSocialIcons"),
+      publicIconPosition: brandPosition("publicIconPosition"),
+      participantIconPosition: brandPosition("participantIconPosition"),
+      coordinatorIconPosition: brandPosition("coordinatorIconPosition"),
     },
     pages,
   };

@@ -39,10 +39,21 @@ export interface PublicPageContent { titleAr: string; titleEn: string; descripti
 export interface BrandContactSettings {
   siteNameAr: string; siteNameEn: string; logoUrl: string;
   appNameAr: string; appNameEn: string; appShortName: string; appIconUrl: string; appThemeColor: string;
-  phone: string; whatsapp: string; whatsappChannelUrl: string; email: string;
+  phone: string; whatsapp: string; participantWhatsapp: string; coordinatorWhatsapp: string; whatsappChannelUrl: string; email: string;
   telegramUsername: string; instagramUsername: string; xUsername: string; linkedinUsername: string;
   facebookUrl: string; tiktokUrl: string; youtubeUrl: string; snapchatUrl: string;
+  publicSocialIcons: SocialIconId[]; participantSocialIcons: SocialIconId[]; coordinatorSocialIcons: SocialIconId[];
+  publicIconPosition: FloatingIconPosition; participantIconPosition: FloatingIconPosition; coordinatorIconPosition: FloatingIconPosition;
 }
+export type SocialIconId = "whatsapp" | "telegram" | "instagram" | "x" | "linkedin" | "facebook" | "tiktok" | "youtube" | "snapchat" | "email" | "phone";
+export type FloatingIconPosition = "bottom-left" | "bottom-right" | "middle-left" | "middle-right";
+export const SOCIAL_ICON_OPTIONS: { id: SocialIconId; label: string }[] = [
+  { id: "whatsapp", label: "واتساب" }, { id: "telegram", label: "تيليجرام" },
+  { id: "instagram", label: "إنستجرام" }, { id: "x", label: "X" },
+  { id: "linkedin", label: "لينكد إن" }, { id: "facebook", label: "فيسبوك" },
+  { id: "tiktok", label: "تيك توك" }, { id: "youtube", label: "يوتيوب" },
+  { id: "snapchat", label: "سناب شات" }, { id: "email", label: "البريد" }, { id: "phone", label: "الهاتف" },
+];
 
 export interface SiteContentSettings {
   participantTitle: string;
@@ -137,8 +148,10 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
   brand: {
     siteNameAr: "أكاديمية SRMA للأبحاث", siteNameEn: "SRMA Research Academy", logoUrl: "/srma-logo.jpg",
     appNameAr: "أكاديمية SRMA للأبحاث", appNameEn: "SRMA Research Academy", appShortName: "SRMA", appIconUrl: "/srma-logo.jpg", appThemeColor: "#0d765c",
-    phone: "", whatsapp: "966562159258", whatsappChannelUrl: "", email: "", telegramUsername: "SRMAAcademy", instagramUsername: "", xUsername: "", linkedinUsername: "",
+    phone: "", whatsapp: "966562159258", participantWhatsapp: "966562159258", coordinatorWhatsapp: "966562159258", whatsappChannelUrl: "", email: "", telegramUsername: "SRMAAcademy", instagramUsername: "", xUsername: "", linkedinUsername: "",
     facebookUrl: "", tiktokUrl: "", youtubeUrl: "", snapchatUrl: "",
+    publicSocialIcons: ["whatsapp", "telegram"], participantSocialIcons: ["whatsapp", "telegram"], coordinatorSocialIcons: ["whatsapp", "telegram"],
+    publicIconPosition: "bottom-left", participantIconPosition: "bottom-left", coordinatorIconPosition: "bottom-left",
   },
   pages: {
     home: { titleAr: "أكاديمية SRMA للأبحاث", titleEn: "SRMA Research Academy", descriptionAr: "نحو مجتمع بحثي أكثر تأثيراً", descriptionEn: "Building a more impactful research community", contentAr: "", contentEn: "" },

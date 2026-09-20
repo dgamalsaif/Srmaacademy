@@ -1,6 +1,6 @@
 import { ChevronDown, ChevronUp, Eye, EyeOff, Palette, Save, SlidersHorizontal, Image, Phone, Mail, Link as LinkIcon, FileText } from "lucide-react";
 import { useState } from "react";
-import { CARD_PARTS, OPPORTUNITY_FIELDS, OpportunityDisplayMode, OpportunityFieldId, RegistrationFieldSetting, SiteContentSettings, SpecialtyOption, JournalOption, PublicPageId, BrandContactSettings, PublicPageContent } from "@/lib/siteContentSettings";
+import { CARD_PARTS, OPPORTUNITY_FIELDS, OpportunityDisplayMode, OpportunityFieldId, RegistrationFieldSetting, SiteContentSettings, SpecialtyOption, JournalOption, PublicPageId, BrandContactSettings, PublicPageContent, SOCIAL_ICON_OPTIONS, SocialIconId, FloatingIconPosition } from "@/lib/siteContentSettings";
 
 interface Props {
   settings: SiteContentSettings;
@@ -45,6 +45,15 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
     update("requiredOpportunityFields", fields.includes(fieldId) ? fields.filter((id) => id !== fieldId) : [...fields, fieldId]);
   };
   const updateBrand = (key: keyof BrandContactSettings, value: string) => {
+    update("brand", { ...settings.brand, [key]: value });
+  };
+  const toggleSocialIcon = (audience: "public" | "participant" | "coordinator", id: SocialIconId) => {
+    const key = `${audience}SocialIcons` as const;
+    const current = settings.brand[key];
+    update("brand", { ...settings.brand, [key]: current.includes(id) ? current.filter((item) => item !== id) : [...current, id] });
+  };
+  const updateIconPosition = (audience: "public" | "participant" | "coordinator", value: FloatingIconPosition) => {
+    const key = `${audience}IconPosition` as const;
     update("brand", { ...settings.brand, [key]: value });
   };
   const updatePage = (pageId: PublicPageId, key: keyof PublicPageContent, value: string) => {
@@ -103,6 +112,8 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
               <ColorField label="لون التطبيق عند التشغيل" value={settings.brand.appThemeColor} onChange={(v) => updateBrand("appThemeColor", v)} />
               <TextField label="رقم الهاتف للاتصال" value={settings.brand.phone} onChange={(v) => updateBrand("phone", v)} />
               <TextField label="رقم واتساب مع رمز الدولة" value={settings.brand.whatsapp} onChange={(v) => updateBrand("whatsapp", v)} />
+              <TextField label="رقم واتساب للمشاركين" value={settings.brand.participantWhatsapp} onChange={(v) => updateBrand("participantWhatsapp", v)} />
+              <TextField label="رقم واتساب للمنسقين وطلبات الاعتماد" value={settings.brand.coordinatorWhatsapp} onChange={(v) => updateBrand("coordinatorWhatsapp", v)} />
               <TextField label="رابط قناة واتساب" value={settings.brand.whatsappChannelUrl} onChange={(v) => updateBrand("whatsappChannelUrl", v)} />
               <TextField label="البريد الإلكتروني" value={settings.brand.email} onChange={(v) => updateBrand("email", v)} />
               <TextField label="رابط أو معرف تيليجرام" value={settings.brand.telegramUsername} onChange={(v) => updateBrand("telegramUsername", v)} />
@@ -113,6 +124,24 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
               <TextField label="رابط تيك توك الكامل" value={settings.brand.tiktokUrl} onChange={(v) => updateBrand("tiktokUrl", v)} />
               <TextField label="رابط يوتيوب الكامل" value={settings.brand.youtubeUrl} onChange={(v) => updateBrand("youtubeUrl", v)} />
               <TextField label="رابط سناب شات الكامل" value={settings.brand.snapchatUrl} onChange={(v) => updateBrand("snapchatUrl", v)} />
+              {(["public", "participant", "coordinator"] as const).map((audience) => {
+                const title = audience === "public" ? "بقية الموقع" : audience === "participant" ? "بوابة المشاركين" : "بوابة المنسقين";
+                const icons = settings.brand[`${audience}SocialIcons`];
+                const position = settings.brand[`${audience}IconPosition`];
+                return <div key={audience} className="md:col-span-2 rounded-2xl border border-slate-200 p-4">
+                  <h3 className="mb-3 font-black text-slate-800">أيقونات {title}</h3>
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    {SOCIAL_ICON_OPTIONS.map((option) => <button key={option.id} type="button" onClick={() => toggleSocialIcon(audience, option.id)} className={`rounded-xl border px-3 py-2 text-xs font-bold ${icons.includes(option.id) ? "border-[#117b59] bg-[#e6f5ef] text-[#117b59]" : "border-slate-200 text-slate-500"}`}>
+                      {icons.includes(option.id) ? "✓ " : ""}{option.label}
+                    </button>)}
+                  </div>
+                  <label className="block text-xs font-bold text-slate-600">مكان الظهور</label>
+                  <select value={position} onChange={(event) => updateIconPosition(audience, event.target.value as FloatingIconPosition)} className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm">
+                    <option value="bottom-left">أسفل اليسار</option><option value="bottom-right">أسفل اليمين</option>
+                    <option value="middle-left">منتصف اليسار</option><option value="middle-right">منتصف اليمين</option>
+                  </select>
+                </div>;
+              })}
             </div>
           </Panel>
 

@@ -97,7 +97,8 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
         const message = encodeURIComponent(language === "en"
           ? `Hello, I am ${form.fullName} — ${form.specialization}\nI would like to register for the research opportunity:\n${researchTitle}\n\n📧 ${form.email}\n🏥 ${form.affiliation}`
           : `مرحباً، أنا ${form.fullName} — ${form.specialization}\nأودّ التسجيل في الفرصة البحثية:\n${researchTitle}\n\n📧 ${form.email}\n🏥 ${form.affiliation}`);
-        window.setTimeout(() => window.open(`https://wa.me/${contentSettings.brand.whatsapp || "966562159258"}?text=${message}`, "_blank"), 900);
+        const participantWhatsapp = contentSettings.brand.participantWhatsapp || contentSettings.brand.whatsapp || "966562159258";
+        window.setTimeout(() => window.open(`https://wa.me/${participantWhatsapp.replace(/\D/g, "")}?text=${message}`, "_blank"), 900);
       }
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : localize("حدث خطأ غير متوقع", "An unexpected error occurred."));

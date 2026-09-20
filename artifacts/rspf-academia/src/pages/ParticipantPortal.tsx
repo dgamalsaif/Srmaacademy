@@ -64,7 +64,7 @@ export default function ParticipantPortal() {
   const participantTitle = language === "en" ? contentSettings.pages.participant.titleEn : contentSettings.pages.participant.titleAr;
   const participantDescription = language === "en" ? contentSettings.pages.participant.descriptionEn : contentSettings.pages.participant.descriptionAr;
   const siteName = language === "en" ? contentSettings.brand.siteNameEn : contentSettings.brand.siteNameAr;
-  const whatsappUrl = `https://wa.me/${contentSettings.brand.whatsapp || "966562159258"}`;
+  const whatsappUrl = `https://wa.me/${contentSettings.brand.participantWhatsapp || contentSettings.brand.whatsapp || "966562159258"}`;
 
   const specialtyOptions = buildSpecialtyOptions(contentSettings.specialtyOptions, opportunities);
   const displaySpecialty = (opportunity: ResearchOpportunity) => {
