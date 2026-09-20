@@ -102,6 +102,7 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
               </div>
               <ColorField label="لون التطبيق عند التشغيل" value={settings.brand.appThemeColor} onChange={(v) => updateBrand("appThemeColor", v)} />
               <TextField label="رقم الواتساب" value={settings.brand.whatsapp} onChange={(v) => updateBrand("whatsapp", v)} />
+              <TextField label="رابط قناة واتساب" value={settings.brand.whatsappChannelUrl} onChange={(v) => updateBrand("whatsappChannelUrl", v)} />
               <TextField label="البريد الإلكتروني" value={settings.brand.email} onChange={(v) => updateBrand("email", v)} />
               <TextField label="معرف تيليجرام" value={settings.brand.telegramUsername} onChange={(v) => updateBrand("telegramUsername", v)} />
               <TextField label="معرف إنستجرام" value={settings.brand.instagramUsername} onChange={(v) => updateBrand("instagramUsername", v)} />

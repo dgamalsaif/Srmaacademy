@@ -97,7 +97,7 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
         const message = encodeURIComponent(language === "en"
           ? `Hello, I am ${form.fullName} — ${form.specialization}\nI would like to register for the research opportunity:\n${researchTitle}\n\n📧 ${form.email}\n🏥 ${form.affiliation}`
           : `مرحباً، أنا ${form.fullName} — ${form.specialization}\nأودّ التسجيل في الفرصة البحثية:\n${researchTitle}\n\n📧 ${form.email}\n🏥 ${form.affiliation}`);
-        window.setTimeout(() => window.open(`https://wa.me/966562159258?text=${message}`, "_blank"), 900);
+        window.setTimeout(() => window.open(`https://wa.me/${contentSettings.brand.whatsapp || "966562159258"}?text=${message}`, "_blank"), 900);
       }
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : localize("حدث خطأ غير متوقع", "An unexpected error occurred."));
@@ -119,7 +119,7 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
         <div className="sticky top-0 z-10 flex items-start justify-between rounded-t-[1.35rem] border-b border-slate-100 bg-white/95 px-6 py-5 backdrop-blur">
           <button data-testid="button-modal-close" aria-label={localize("إغلاق نافذة التسجيل", "Close registration dialog")} onClick={handleClose} className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"><X size={20} /></button>
           <div className="text-right">
-            <p className="mb-1 text-xs font-bold" style={{ color: contentSettings.accentColor }}>{coordinatorEntry ? localize("تسجيل جديد من لوحة المنسق", "New registration from the coordinator dashboard") : "SRMA Research Academy"}</p>
+            <p className="mb-1 text-xs font-bold" style={{ color: contentSettings.accentColor }}>{coordinatorEntry ? localize("تسجيل جديد من لوحة المنسق", "New registration from the coordinator dashboard") : (language === "en" ? contentSettings.brand.siteNameEn : contentSettings.brand.siteNameAr)}</p>
             <h2 id="registration-dialog-title" className="text-lg font-black text-[#102b4d]">{coordinatorEntry ? localizedSetting(contentSettings.coordinatorFormTitle, contentSettings.coordinatorFormTitleEn, "Register a student for a research opportunity") : localize("التسجيل في الفرصة البحثية", "Register for the research opportunity")}</h2>
             <p className="mt-1 max-w-sm text-xs leading-5 text-slate-500">{coordinatorEntry ? localizedSetting(contentSettings.coordinatorFormDescription, contentSettings.coordinatorFormDescriptionEn, "Enter the student's details exactly as they appear in their academic documents.") : researchTitle}</p>
           </div>
@@ -129,7 +129,7 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
           <div className="px-7 py-12 text-center">
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#e7f3ef]"><CheckCircle2 size={34} style={{ color: contentSettings.accentColor }} /></div>
             <h3 className="text-xl font-black text-[#172238]">{localize("تم حفظ التسجيل بنجاح", "Registration saved successfully")}</h3>
-            <p className="mx-auto mt-3 max-w-sm text-sm leading-7 text-slate-500">{coordinatorEntry ? localize("تمت إضافة بيانات الطالب إلى لوحة التسجيلات بنجاح.", "The student's details have been added to the registrations dashboard.") : localize("تم حفظ بياناتك وسيتم التواصل معك من فريق SRMA قريباً.", "Your details have been saved and the SRMA team will contact you soon.")}</p>
+            <p className="mx-auto mt-3 max-w-sm text-sm leading-7 text-slate-500">{coordinatorEntry ? localize("تمت إضافة بيانات الطالب إلى لوحة التسجيلات بنجاح.", "The student's details have been added to the registrations dashboard.") : localize(`تم حفظ بياناتك وسيتم التواصل معك من فريق ${contentSettings.brand.siteNameAr} قريباً.`, `Your details have been saved and the ${contentSettings.brand.siteNameEn} team will contact you soon.`)}</p>
             {!coordinatorEntry && researchGroupUrl && (
               <a href={researchGroupUrl} target="_blank" rel="noopener noreferrer" className="mx-auto mt-6 flex w-full max-w-sm items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 py-3.5 text-sm font-black text-white transition hover:bg-[#1eb856]">
                 <ExternalLink size={17} />{localize("الانضمام إلى قروب الباحثين", "Join the researchers group")}

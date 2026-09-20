@@ -43,6 +43,7 @@ export interface BrandContactSettings {
   appIconUrl: string;
   appThemeColor: string;
   whatsapp: string;
+  whatsappChannelUrl: string;
   email: string;
   telegramUsername: string;
   instagramUsername: string;
@@ -124,6 +125,7 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
     appIconUrl: "/srma-logo.jpg",
     appThemeColor: "#0d765c",
     whatsapp: "966562159258",
+    whatsappChannelUrl: "",
     email: "",
     telegramUsername: "SRMAAcademy",
     instagramUsername: "",
@@ -292,6 +294,7 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
       appIconUrl: safeAppIcon(brandText("appIconUrl", 1000)),
       appThemeColor: /^#[0-9a-fA-F]{6}$/.test(brandText("appThemeColor", 7)) ? brandText("appThemeColor", 7) : DEFAULT_SITE_CONTENT_SETTINGS.brand.appThemeColor,
       whatsapp: brandText("whatsapp", 40).replace(/[^\d+]/g, ""),
+      whatsappChannelUrl: safeUrl(brandText("whatsappChannelUrl", 1000), ""),
       email: brandText("email", 254),
       telegramUsername: brandText("telegramUsername", 100).replace(/^@/, ""),
       instagramUsername: brandText("instagramUsername", 100).replace(/^@/, ""),

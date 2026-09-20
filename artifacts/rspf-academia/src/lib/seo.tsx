@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import type { SiteLanguage } from "@/lib/i18n";
+import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
 
 const SITE_URL = "https://srmaacademy.com";
-const SITE_NAME = "SRMA Research Academy";
 
 const pageMetadata: Record<string, Record<SiteLanguage, { title: string; description: string }>> = {
   "/": {
@@ -102,11 +102,17 @@ export function PageSeo({ pathname, language, title, description, jsonLd, noInde
   jsonLd?: Record<string, unknown> | Array<Record<string, unknown>>;
   noIndex?: boolean;
 }) {
+  const { data: settings } = useSiteContentSettings();
   useEffect(() => {
     const knownPage = pageMetadata[pathname]?.[language] || pageMetadata["/"][language];
-    const pageTitle = title || knownPage.title;
+    const siteName = language === "ar"
+      ? settings?.brand.siteNameAr || "SRMA Research Academy"
+      : settings?.brand.siteNameEn || "SRMA Research Academy";
+    const pageTitle = (title || knownPage.title).replace(/SRMA Research Academy|SRMA/g, siteName);
     const pageDescription = description || knownPage.description;
     const canonical = buildPublicUrl(pathname, language);
+    const configuredLogo = settings?.brand.logoUrl || "/srma-logo.jpg";
+    const logo = configuredLogo.startsWith("https://") ? configuredLogo : `${SITE_URL}${configuredLogo}`;
 
     document.title = pageTitle;
     setMeta('meta[name="description"]', "name", pageDescription);
@@ -127,14 +133,14 @@ export function PageSeo({ pathname, language, title, description, jsonLd, noInde
       "@graph": [
         {
           "@type": "Organization",
-          name: SITE_NAME,
+          name: siteName,
           url: SITE_URL,
-          logo: `${SITE_URL}/srma-logo.jpg`,
+          logo,
           description: "Medical research opportunities and scientific publication support for physicians.",
         },
         {
           "@type": "WebSite",
-          name: SITE_NAME,
+          name: siteName,
           url: SITE_URL,
           inLanguage: language,
         },
@@ -155,7 +161,7 @@ export function PageSeo({ pathname, language, title, description, jsonLd, noInde
       document.head.appendChild(script);
     }
     script.text = JSON.stringify(structuredData);
-  }, [description, jsonLd, language, noIndex, pathname, title]);
+  }, [description, jsonLd, language, noIndex, pathname, settings, title]);
 
   return null;
 }

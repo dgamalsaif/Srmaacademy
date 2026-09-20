@@ -71,10 +71,10 @@ export default function KnowledgeCenter() {
                 : "We can help plan your study, select a journal, and prepare a manuscript; editors and reviewers determine final acceptance and publication."}
             </p>
             <div className="flex flex-wrap justify-center gap-3">
-              <a href="https://wa.me/966562159258" target="_blank" rel="noopener noreferrer" data-testid="button-knowledge-whatsapp" className="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-6 py-3 text-sm font-bold text-white shadow-md transition-colors hover:bg-[#1eb856]">
+              <a href={`https://wa.me/${settings?.brand.whatsapp || "966562159258"}`} target="_blank" rel="noopener noreferrer" data-testid="button-knowledge-whatsapp" className="inline-flex items-center gap-2 rounded-full bg-[#25D366] px-6 py-3 text-sm font-bold text-white shadow-md transition-colors hover:bg-[#1eb856]">
                 {t("common.whatsapp")}
               </a>
-              <a href="https://t.me/SRMAAcademy" target="_blank" rel="noopener noreferrer" data-testid="button-knowledge-telegram" className="inline-flex items-center gap-2 rounded-full border border-white/30 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-white/10">
+              <a href={`https://t.me/${settings?.brand.telegramUsername || "SRMAAcademy"}`} target="_blank" rel="noopener noreferrer" data-testid="button-knowledge-telegram" className="inline-flex items-center gap-2 rounded-full border border-white/30 px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-white/10">
                 {t("common.telegram")}
               </a>
             </div>

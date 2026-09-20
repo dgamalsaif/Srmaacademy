@@ -67,10 +67,11 @@ export default function ResearchDetail() {
   const specialty = localize(research.specialtyAr, research.specialtyEn, research.specialty);
   const description = localize(research.descriptionAr, research.descriptionEn, research.description);
   const contentFlow = direction === "rtl" ? "flex-row-reverse" : "flex-row";
+  const siteName = language === "ar" ? contentSettings.brand.siteNameAr : contentSettings.brand.siteNameEn;
 
   return (
     <>
-      <PageSeo pathname={`/research/${research.id}`} language={language} title={`${title} | SRMA Research Academy`} description={description} />
+      <PageSeo pathname={`/research/${research.id}`} language={language} title={`${title} | ${siteName}`} description={description} />
       <div className="min-h-screen bg-white" dir={direction}>
       {/* BREADCRUMB */}
       <div className="bg-slate-50 border-b border-slate-200 px-4 py-3">
@@ -237,7 +238,7 @@ export default function ResearchDetail() {
               )}
 
               <a
-                href="https://wa.me/966562159258"
+                href={`https://wa.me/${contentSettings.brand.whatsapp || "966562159258"}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 data-testid="link-detail-whatsapp"

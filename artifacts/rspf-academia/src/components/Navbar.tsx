@@ -76,7 +76,7 @@ export default function Navbar() {
             <img src={settings?.brand.logoUrl || SRMA_LOGO} alt={language === "ar" ? settings?.brand.siteNameAr : settings?.brand.siteNameEn} className="h-11 w-11 rounded-full border border-[#0C3156]/15 object-cover shadow-sm" />
             <div className="flex flex-col items-end">
               <div className="flex items-center gap-1.5">
-                <span className="text-xl font-black text-[#0C3156] tracking-tight">{language === "ar" ? settings?.brand.siteNameAr.split(" ")[0] : settings?.brand.siteNameEn.split(" ")[0] || "SRMA"}</span>
+                <span className="max-w-48 truncate text-xl font-black tracking-tight text-[#0C3156]">{language === "ar" ? settings?.brand.siteNameAr : settings?.brand.siteNameEn || "SRMA"}</span>
               </div>
               <span className="text-[10px] text-slate-500 font-medium tracking-wide">{language === "ar" ? settings?.brand.siteNameAr : settings?.brand.siteNameEn}</span>
             </div>

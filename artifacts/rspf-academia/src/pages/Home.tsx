@@ -70,7 +70,7 @@ export default function Home() {
         <div className="max-w-5xl mx-auto text-center relative">
           <div className="inline-flex items-center gap-2 bg-[#0C3156]/8 border border-[#0C3156]/15 text-[#0C3156] px-5 py-2 rounded-full text-sm font-semibold mb-7 shadow-sm">
             <span className="w-2 h-2 rounded-full bg-[#E9A020] animate-pulse" />
-            {localize("أكاديمية SRMA البحثية · إصدار 2026", "SRMA Research Academy · Edition 2026")}
+            {localize(`${settings?.brand.siteNameAr || "أكاديمية الأبحاث"} · إصدار 2026`, `${settings?.brand.siteNameEn || "Research Academy"} · Edition 2026`)}
           </div>
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-black leading-tight mb-6 tracking-tight text-slate-900">
             {language === "ar" ? settings?.pages.home.titleAr : settings?.pages.home.titleEn}
@@ -242,7 +242,7 @@ export default function Home() {
               ))}
             </ul>
             <div className="flex flex-col sm:flex-row gap-3">
-              <a href="https://wa.me/966562159258" target="_blank" rel="noopener noreferrer" data-testid="button-path-whatsapp"
+              <a href={`https://wa.me/${settings?.brand.whatsapp || "966562159258"}`} target="_blank" rel="noopener noreferrer" data-testid="button-path-whatsapp"
                 className="bg-[#E9A020] text-white px-6 py-3 rounded-full font-bold text-sm hover:bg-[#d08e10] transition-colors inline-flex items-center gap-2 justify-center shadow-lg shadow-black/20">
                  {localize("ابدأ الآن عبر واتساب", "Start now via WhatsApp")} <ChevronLeft size={16} />
               </a>
@@ -299,7 +299,7 @@ export default function Home() {
               </div>
             ))}
           </div>
-          <a href="https://wa.me/966562159258" target="_blank" rel="noopener noreferrer" data-testid="button-revive-whatsapp"
+          <a href={`https://wa.me/${settings?.brand.whatsapp || "966562159258"}`} target="_blank" rel="noopener noreferrer" data-testid="button-revive-whatsapp"
             className="inline-flex items-center gap-2 bg-[#0C3156] text-white px-8 py-4 rounded-full font-bold text-base hover:bg-[#0a2847] transition-colors shadow-lg shadow-[#0C3156]/25">
              {localize("تحدث معنا الآن لإحياء بحثك", "Talk to us now to revive your research")} <ChevronLeft size={18} />
           </a>
@@ -372,7 +372,7 @@ export default function Home() {
       <section className="py-16 px-4 bg-[#0C3156]">
         <div className="max-w-3xl mx-auto text-center text-white">
            <h2 className="text-3xl sm:text-4xl font-black mb-3">{localize("جاهز للبدء في بحثك القادم؟", "Ready to start your next research project?")}</h2>
-           <p className="text-blue-200 mb-8 max-w-xl mx-auto">{localize("فريق SRMA جاهز لمساعدتك في كل خطوة من خطوات رحلتك البحثية", "The SRMA team is ready to help at every step of your research journey.")}</p>
+           <p className="text-blue-200 mb-8 max-w-xl mx-auto">{localize(`فريق ${settings?.brand.siteNameAr || "المنصة"} جاهز لمساعدتك في كل خطوة من خطوات رحلتك البحثية`, `The ${settings?.brand.siteNameEn || "platform"} team is ready to help at every step of your research journey.`)}</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link href="/participant-portal" data-testid="button-cta-portal"
               className="bg-[#E9A020] text-white px-8 py-4 rounded-full font-bold text-base hover:bg-[#d08e10] transition-colors shadow-lg inline-flex items-center gap-2 justify-center">

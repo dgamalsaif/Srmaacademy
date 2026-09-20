@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { X, CheckCircle2, Loader2 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
+import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
 
 interface ServiceModalProps {
   isOpen: boolean;
@@ -23,6 +24,8 @@ const serviceTypes = [
 
 export default function ServiceModal({ isOpen, onClose, serviceName }: ServiceModalProps) {
   const { language, localize } = useLanguage();
+  const { data: settings } = useSiteContentSettings();
+  const whatsapp = settings?.brand.whatsapp || "966562159258";
   const [form, setForm] = useState({
     fullName: "",
     phone: "",
@@ -76,7 +79,7 @@ export default function ServiceModal({ isOpen, onClose, serviceName }: ServiceMo
           : `مرحباً، أنا ${form.fullName}\nأطلب خدمة: ${form.serviceType}\n\n📱 ${form.phone}\n📧 ${form.email}\n\nالتفاصيل: ${form.details}`
       );
       setTimeout(() => {
-        window.open(`https://wa.me/966562159258?text=${waMessage}`, "_blank");
+        window.open(`https://wa.me/${whatsapp}?text=${waMessage}`, "_blank");
       }, 1200);
 
     } catch (err: unknown) {
@@ -117,7 +120,7 @@ export default function ServiceModal({ isOpen, onClose, serviceName }: ServiceMo
             <p className="text-slate-500 text-sm mb-6">{localize("سيفتح واتساب تلقائياً...", "WhatsApp will open automatically...")}</p>
             <div className="flex gap-3 justify-center">
               <a
-                href={`https://wa.me/966562159258?text=${encodeURIComponent(language === "en" ? `Hello, I am ${form.fullName} — I am requesting: ${serviceLabel(form.serviceType)}` : `مرحباً، أنا ${form.fullName} — أطلب خدمة: ${form.serviceType}`)}`}
+                href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(language === "en" ? `Hello, I am ${form.fullName} — I am requesting: ${serviceLabel(form.serviceType)}` : `مرحباً، أنا ${form.fullName} — أطلب خدمة: ${form.serviceType}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-[#25D366] text-white font-bold px-6 py-2.5 rounded-full text-sm hover:bg-[#1eb856] transition-colors"

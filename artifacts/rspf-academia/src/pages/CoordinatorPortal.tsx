@@ -8,7 +8,7 @@ import Footer from "@/components/Footer";
 import { SRMA_LOGO } from "@/components/BrandBackground";
 import { useLanguage } from "@/lib/i18n";
 import { LanguageMenu } from "@/components/Navbar";
-import { apiFetch } from "@/lib/api";
+import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -34,13 +34,14 @@ function CoordinatorHeader({ settings }: { settings: CoordinatorPortalSettings }
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { language, localize, setLanguage } = useLanguage();
+  const { data: siteContent } = useSiteContentSettings();
   const navLinks = settings.navItems.filter((item) => item.visible);
 
   return (
     <header className="relative z-50 border-b border-slate-100 bg-white shadow-[0_2px_12px_rgba(22,48,67,0.05)]">
       <div className="mx-auto flex h-[78px] max-w-[1450px] items-center justify-between gap-6 px-5 sm:px-8">
         <Link href="/" data-testid="link-coordinator-logo" className="flex shrink-0 items-center gap-2.5">
-          <img src={SRMA_LOGO} alt="SRMA Research Academy" className="h-11 w-11 rounded-full border border-[#0d765c]/20 object-cover shadow-sm" />
+          <img src={siteContent?.brand.logoUrl || SRMA_LOGO} alt={language === "ar" ? siteContent?.brand.siteNameAr : siteContent?.brand.siteNameEn} className="h-11 w-11 rounded-full border border-[#0d765c]/20 object-cover shadow-sm" />
           <div className="text-right leading-none">
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-black text-[#e2a229]">{settings.brandYear}</span>
@@ -142,7 +143,7 @@ export default function CoordinatorPortal() {
 
   useEffect(() => {
     let active = true;
-    apiFetch("/api/coordinator-portal-settings")
+    fetch("/api/coordinator-portal-settings")
       .then((response) => response.ok ? response.json() : Promise.reject())
       .then((saved: CoordinatorPortalSettings) => { if (active) setSettings(saved); })
       .catch(() => undefined);
@@ -170,7 +171,7 @@ export default function CoordinatorPortal() {
     if (loggingIn) return;
     setLoggingIn(true);
     try {
-      const response = await apiFetch("/api/coordinator/login", {
+      const response = await fetch("/api/coordinator/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
@@ -320,7 +321,9 @@ interface CoordinatorRequestModalProps {
 
 function CoordinatorRequestModal({ onClose, whatsappUrl }: CoordinatorRequestModalProps) {
   const { language, direction } = useLanguage();
+  const { data: siteContent } = useSiteContentSettings();
   const isEnglish = language === "en";
+  const siteName = isEnglish ? siteContent?.brand.siteNameEn || "Research Academy" : siteContent?.brand.siteNameAr || "أكاديمية الأبحاث";
   const [form, setForm] = useState({
     fullName: "",
     phone: "",
@@ -338,7 +341,7 @@ function CoordinatorRequestModal({ onClose, whatsappUrl }: CoordinatorRequestMod
     setLoading(true);
     setError("");
     try {
-      const response = await apiFetch("/api/service-requests", {
+      const response = await fetch("/api/service-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -347,8 +350,8 @@ function CoordinatorRequestModal({ onClose, whatsappUrl }: CoordinatorRequestMod
           email: form.email,
           serviceType: isEnglish ? "Research coordinator accreditation request" : "طلب اعتماد منسق بحثي",
           details: isEnglish
-            ? `I would like to join SRMA Research Academy as a research coordinator. Affiliation: ${form.affiliation}. Country: ${form.country}`
-            : `أرغب في الانضمام كمنسق للأبحاث العلمية في SRMA Research Academy. جهة الانتساب: ${form.affiliation}. الدولة: ${form.country}`,
+            ? `I would like to join ${siteName} as a research coordinator. Affiliation: ${form.affiliation}. Country: ${form.country}`
+            : `أرغب في الانضمام كمنسق للأبحاث العلمية في ${siteName}. جهة الانتساب: ${form.affiliation}. الدولة: ${form.country}`,
           fileLink: "",
         }),
       });
@@ -455,4 +458,4 @@ function CoordinatorRequestModal({ onClose, whatsappUrl }: CoordinatorRequestMod
       </div>
     </div>
   );
-              }
+}

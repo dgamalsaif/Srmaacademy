@@ -63,6 +63,8 @@ export default function ParticipantPortal() {
   const displayTitle = (research: ResearchOpportunity) => research.titleEn || research.title;
   const participantTitle = language === "en" ? contentSettings.pages.participant.titleEn : contentSettings.pages.participant.titleAr;
   const participantDescription = language === "en" ? contentSettings.pages.participant.descriptionEn : contentSettings.pages.participant.descriptionAr;
+  const siteName = language === "en" ? contentSettings.brand.siteNameEn : contentSettings.brand.siteNameAr;
+  const whatsappUrl = `https://wa.me/${contentSettings.brand.whatsapp || "966562159258"}`;
 
   const specialtyOptions = buildSpecialtyOptions(contentSettings.specialtyOptions, opportunities);
   const displaySpecialty = (opportunity: ResearchOpportunity) => {
@@ -135,8 +137,8 @@ export default function ParticipantPortal() {
       {/* TICKER */}
       <div className="srma-ticker py-2.5 text-white" style={{ backgroundColor: contentSettings.primaryColor }}>
         <div className="srma-ticker-track" dir="ltr">
-          <span>⚡ {localize("انضم لأكثر من 500 طبيب وباحث حققوا متطلبات الهيئة السعودية للتخصصات الصحية مع SRMA | سجل الآن وابدأ رحلتك البحثية اليوم", "Join over 500 physicians and researchers who have met Saudi Commission for Health Specialties requirements with SRMA | Register now and begin your research journey today")}</span>
-          <span aria-hidden="true">⚡ {localize("انضم لأكثر من 500 طبيب وباحث حققوا متطلبات الهيئة السعودية للتخصصات الصحية مع SRMA | سجل الآن وابدأ رحلتك البحثية اليوم", "Join over 500 physicians and researchers who have met Saudi Commission for Health Specialties requirements with SRMA | Register now and begin your research journey today")}</span>
+          <span>⚡ {localize(`انضم لأكثر من 500 طبيب وباحث حققوا متطلبات الهيئة السعودية للتخصصات الصحية مع ${siteName} | سجل الآن وابدأ رحلتك البحثية اليوم`, `Join over 500 physicians and researchers who have met Saudi Commission for Health Specialties requirements with ${siteName} | Register now and begin your research journey today`)}</span>
+          <span aria-hidden="true">⚡ {localize(`انضم لأكثر من 500 طبيب وباحث حققوا متطلبات الهيئة السعودية للتخصصات الصحية مع ${siteName} | سجل الآن وابدأ رحلتك البحثية اليوم`, `Join over 500 physicians and researchers who have met Saudi Commission for Health Specialties requirements with ${siteName} | Register now and begin your research journey today`)}</span>
         </div>
       </div>
 
@@ -145,7 +147,7 @@ export default function ParticipantPortal() {
           <section data-testid="participant-welcome" className="srma-welcome-card mb-8 rounded-3xl border border-emerald-100 bg-gradient-to-l from-[#f3fbf8] via-white to-[#eff6ff] p-6 text-start shadow-sm sm:p-8">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-sm font-black text-[#117b59]">{localize("مرحباً بك في SRMA 👋", "Welcome to SRMA 👋")}</p>
+                <p className="text-sm font-black text-[#117b59]">{localize(`مرحباً بك في ${siteName} 👋`, `Welcome to ${siteName} 👋`)}</p>
                 <h2 className="mt-1 text-2xl font-black text-slate-900">{localize("ابدأ رحلتك البحثية بخطوات بسيطة", "Start your research journey in a few simple steps")}</h2>
                 <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">{localize("اختر التخصص، راجع تفاصيل الفرصة ومقاعدها المتبقية، ثم اضغط «سجل الآن» لإرسال بياناتك.", "Choose a specialty, review the opportunity details and remaining seats, then select “Register now” to submit your details.")}</p>
               </div>
@@ -208,7 +210,7 @@ export default function ParticipantPortal() {
                         <div className="mb-4"><OpportunityMedia research={opp} className="aspect-[4/3] min-h-[172px]" /></div>
 
                         <p className="mb-3 text-start text-sm font-medium italic text-[#0C3156]">
-                          🏆 {localize("نحن في SRMA – نبني ملفك البحثي ونصنع الفارق", "At SRMA, we build your research profile and make the difference.")}
+                           🏆 {localize(`نحن في ${siteName} – نبني ملفك البحثي ونصنع الفارق`, `At ${siteName}, we build your research profile and make the difference.`)}
                         </p>
                         <div className="mb-4 space-y-2 text-start text-sm leading-6 text-slate-600">
                           {contentSettings.participantCardOrder.filter((part) => contentSettings.visibleParticipantCardParts.includes(part) && !["specialty", "seats", "benefits"].includes(part)).map((part) => {
@@ -282,7 +284,7 @@ export default function ParticipantPortal() {
               <p className="text-slate-500 max-w-md mx-auto mb-6 leading-relaxed">
                 {localize("برنامج تدريبي متكامل يأخذك من الصفر إلى النشر الدولي. تدريب عملي مع إشراف متخصص وفرصة نشر حقيقية في نهاية البرنامج.", "A comprehensive training program that takes you from the basics to international publication, with practical training, specialized supervision, and a real publication opportunity at the end.")}
               </p>
-              <a href="https://wa.me/966562159258" target="_blank" rel="noopener noreferrer" data-testid="button-trainer-whatsapp"
+              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" data-testid="button-trainer-whatsapp"
                 className="inline-flex items-center gap-2 bg-[#0369A1] text-white px-7 py-3.5 rounded-full font-bold hover:bg-[#025b88] transition-colors shadow-md">
                 {localize("تواصل معنا للتسجيل ←", "Contact us to register →")}
               </a>
@@ -296,7 +298,7 @@ export default function ParticipantPortal() {
               <p className="text-slate-500 max-w-md mx-auto mb-6 leading-relaxed">
                 {localize("دورات طبية معتمدة من الهيئة السعودية للتخصصات الصحية. احصل على نقاطك CME مع شهادة رسمية معتمدة.", "Medical courses accredited by the Saudi Commission for Health Specialties. Earn your CME points with an official accredited certificate.")}
               </p>
-              <a href="https://wa.me/966562159258" target="_blank" rel="noopener noreferrer" data-testid="button-cme-whatsapp"
+              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" data-testid="button-cme-whatsapp"
                 className="inline-flex items-center gap-2 bg-violet-600 text-white px-7 py-3.5 rounded-full font-bold hover:bg-violet-700 transition-colors shadow-md">
                 {localize("تواصل معنا للتسجيل ←", "Contact us to register →")}
               </a>

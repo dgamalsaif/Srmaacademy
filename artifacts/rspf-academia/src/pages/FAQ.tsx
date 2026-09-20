@@ -20,6 +20,12 @@ export default function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const { language, localize } = useLanguage();
   const { data: settings } = useSiteContentSettings();
+  const siteName = language === "ar" ? settings?.brand.siteNameAr || "المنصة" : settings?.brand.siteNameEn || "the platform";
+  const formatText = (value: string) => value
+    .replace(/SRMA Research Academy|SRMA/g, siteName)
+    .replace(/\+966 56 215 9258/g, `+${settings?.brand.whatsapp || "966562159258"}`)
+    .replace(/@SRMAAcademy/g, `@${settings?.brand.telegramUsername || "SRMAAcademy"}`)
+    .replace(/whatsapp\.com\/channel\/0029Vb7QxGE1iUxikfgEFJ0I/g, settings?.brand.whatsappChannelUrl || "");
   return <div className="min-h-screen bg-white">
     <section className="bg-gradient-to-br from-slate-50 via-blue-50/30 to-white py-14 px-4 text-center"><div className="max-w-2xl mx-auto">
       <div className="inline-flex items-center gap-2 bg-[#0C3156]/8 border border-[#0C3156]/15 text-[#0C3156] px-4 py-1.5 rounded-full text-sm font-semibold mb-4">{language === "ar" ? settings?.pages.faq.titleAr : settings?.pages.faq.titleEn}</div>
@@ -38,14 +44,14 @@ export default function FAQ() {
       return <div key={index} className="border border-slate-200 rounded-2xl overflow-hidden hover:border-[#0C3156]/25 transition-colors" data-testid={`accordion-faq-${index}`}>
         <button className="w-full flex items-center justify-between gap-4 px-6 py-5 text-right hover:bg-slate-50 transition-colors" onClick={() => setOpenIndex(openIndex === index ? null : index)} data-testid={`button-faq-toggle-${index}`}>
           <div className="flex items-center gap-2">{openIndex === index ? <ChevronUp size={18} className="text-[#0C3156] flex-shrink-0" /> : <ChevronDown size={18} className="text-slate-400 flex-shrink-0" />}</div>
-          <div className="flex items-center gap-3 flex-row-reverse flex-1"><span className="w-7 h-7 rounded-full bg-[#0C3156]/10 text-[#0C3156] text-xs font-bold flex items-center justify-center flex-shrink-0">{index + 1}</span><span className="font-semibold text-slate-900 text-right">{item.q}</span></div>
+          <div className="flex items-center gap-3 flex-row-reverse flex-1"><span className="w-7 h-7 rounded-full bg-[#0C3156]/10 text-[#0C3156] text-xs font-bold flex items-center justify-center flex-shrink-0">{index + 1}</span><span className="font-semibold text-slate-900 text-right">{formatText(item.q)}</span></div>
         </button>
-        {openIndex === index && <div className="px-6 pb-5 border-t border-slate-100 bg-[#EFF6FF]/60"><p className="text-slate-600 leading-relaxed pt-4 text-sm text-right">{item.a}</p></div>}
+        {openIndex === index && <div className="px-6 pb-5 border-t border-slate-100 bg-[#EFF6FF]/60"><p className="text-slate-600 leading-relaxed pt-4 text-sm text-right">{formatText(item.a)}</p></div>}
       </div>;
     })}</div></section>
     <section className="py-12 px-4"><div className="max-w-3xl mx-auto"><div className="bg-gradient-to-br from-[#0C3156] to-[#1A5FAE] rounded-2xl p-7 text-right text-white shadow-xl">
       <h3 className="text-xl font-black mb-2">{localize("هل لديك سؤال آخر؟", "Do you have another question?")}</h3><p className="text-blue-100 text-sm mb-5">{localize("فريقنا جاهز للإجابة على جميع استفساراتك عبر قنوات التواصل المختلفة", "Our team is ready to answer all your questions through our communication channels.")}</p>
-      <div className="flex gap-3 flex-wrap"><a href="https://wa.me/966562159258" target="_blank" rel="noopener noreferrer" data-testid="button-faq-whatsapp" className="inline-flex items-center gap-2 bg-[#25D366] text-white px-5 py-2.5 rounded-full font-bold text-sm hover:bg-[#1eb856] transition-colors">{localize("واتساب ←", "WhatsApp →")}</a><a href="https://t.me/SRMAAcademy" target="_blank" rel="noopener noreferrer" data-testid="button-faq-telegram" className="inline-flex items-center gap-2 border border-white/30 text-white px-5 py-2.5 rounded-full font-bold text-sm hover:bg-white/10 transition-colors">@SRMAAcademy {language === "ar" ? "←" : "→"}</a></div>
+      <div className="flex gap-3 flex-wrap"><a href={`https://wa.me/${settings?.brand.whatsapp || "966562159258"}`} target="_blank" rel="noopener noreferrer" data-testid="button-faq-whatsapp" className="inline-flex items-center gap-2 bg-[#25D366] text-white px-5 py-2.5 rounded-full font-bold text-sm hover:bg-[#1eb856] transition-colors">{localize("واتساب ←", "WhatsApp →")}</a><a href={`https://t.me/${settings?.brand.telegramUsername || "SRMAAcademy"}`} target="_blank" rel="noopener noreferrer" data-testid="button-faq-telegram" className="inline-flex items-center gap-2 border border-white/30 text-white px-5 py-2.5 rounded-full font-bold text-sm hover:bg-white/10 transition-colors">@{settings?.brand.telegramUsername || "SRMAAcademy"} {language === "ar" ? "←" : "→"}</a></div>
     </div></div></section>
   </div>;
 }

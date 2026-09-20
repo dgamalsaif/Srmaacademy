@@ -4,6 +4,7 @@ import { Link, useLocation } from "wouter";
 import { ChevronRight, LogOut, RefreshCw, Users, FileText, Check, X, Clock, Mail, Phone, Download, Pencil, Trash2, Save, Loader2 } from "lucide-react";
 import Footer from "@/components/Footer";
 import { SRMA_LOGO } from "@/components/BrandBackground";
+import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
 
 const API_BASE = "/api";
 
@@ -192,6 +193,7 @@ function StudentEditModal({ registration, onClose, onSaved }: { registration: Re
 function CoordinatorApproval({ requestId, fullName, phone, status, onUpdate }: {
   requestId: number; fullName: string; phone: string; status: string; onUpdate: () => void;
 }) {
+  const { data: settings } = useSiteContentSettings();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -208,7 +210,7 @@ function CoordinatorApproval({ requestId, fullName, phone, status, onUpdate }: {
       if (!response.ok || !result.accessCode) throw new Error(result.error || "تعذر إصدار الرمز");
       setMessage(`تم الإصدار: ${result.accessCode}`);
       const text = encodeURIComponent(
-        `مرحباً ${fullName}\nتم اعتمادك كمنسق في SRMA Research Academy.\n\nرمز الدخول الخاص بك: ${result.accessCode}\nبوابة المنسق: ${window.location.origin}/coordinator\n\nاحتفظ بالرمز ولا تشاركه مع الآخرين.`
+        `مرحباً ${fullName}\nتم اعتمادك كمنسق في ${settings?.brand.siteNameAr || "أكاديمية الأبحاث"}.\n\nرمز الدخول الخاص بك: ${result.accessCode}\nبوابة المنسق: ${window.location.origin}/coordinator\n\nاحتفظ بالرمز ولا تشاركه مع الآخرين.`
       );
       window.open(`https://wa.me/${phone.replace(/\D/g, "")}?text=${text}`, "_blank");
       onUpdate();

@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Phone, Send, Radio } from "lucide-react";
+import { AtSign, Instagram, Linkedin, Mail, Phone, Radio, Send } from "lucide-react";
 import { SRMA_LOGO } from "@/components/BrandBackground";
 import InstallAppButton from "@/components/InstallAppButton";
 import { useLanguage } from "@/lib/i18n";
@@ -18,6 +18,11 @@ const quickLinks = [
 export default function Footer() {
   const { localize, t, language } = useLanguage();
   const { data: settings } = useSiteContentSettings();
+  const brand = settings?.brand;
+  const siteName = language === "ar" ? brand?.siteNameAr : brand?.siteNameEn;
+  const linkedinUrl = brand?.linkedinUsername?.startsWith("https://")
+    ? brand.linkedinUsername
+    : `https://www.linkedin.com/in/${brand?.linkedinUsername || ""}`;
 
   return (
     <footer className="bg-[#0C3156] text-white">
@@ -47,8 +52,8 @@ export default function Footer() {
                 <Send size={15} />
                 @{settings?.brand.telegramUsername || "SRMAAcademy"} ({t("common.telegram")})
               </a>
-              <a
-                href="https://whatsapp.com/channel/0029Vb7QxGE1iUxikfgEFJ0I"
+              {brand?.whatsappChannelUrl && <a
+                href={brand.whatsappChannelUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 data-testid="link-footer-telegram-channel"
@@ -56,7 +61,11 @@ export default function Footer() {
               >
                 <Radio size={15} />
                 {localize("قناة WhatsApp", "WhatsApp Channel")}
-              </a>
+              </a>}
+              {brand?.email && <a href={`mailto:${brand.email}`} className="flex items-center gap-2 text-sm text-blue-200 transition-colors hover:text-white"><Mail size={15} />{brand.email}</a>}
+              {brand?.instagramUsername && <a href={`https://instagram.com/${brand.instagramUsername}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-200 transition-colors hover:text-white"><Instagram size={15} />@{brand.instagramUsername}</a>}
+              {brand?.xUsername && <a href={`https://x.com/${brand.xUsername}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-200 transition-colors hover:text-white"><AtSign size={15} />@{brand.xUsername}</a>}
+              {brand?.linkedinUsername && <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-200 transition-colors hover:text-white"><Linkedin size={15} />{brand.linkedinUsername}</a>}
             </div>
           </div>
 
@@ -85,7 +94,7 @@ export default function Footer() {
                 <div className="flex items-center gap-3">
                   <img src={settings?.brand.logoUrl || SRMA_LOGO} alt={language === "ar" ? settings?.brand.siteNameAr : settings?.brand.siteNameEn} className="h-14 w-14 rounded-full border border-white/20 object-cover shadow-lg bg-white" />
                   <div>
-                    <span className="block text-2xl font-black text-white tracking-tight">{language === "ar" ? settings?.brand.siteNameAr.split(" ")[0] : settings?.brand.siteNameEn.split(" ")[0] || "SRMA"}</span>
+                    <span className="block max-w-56 truncate text-2xl font-black tracking-tight text-white">{siteName || "SRMA"}</span>
                     <span className="mt-0.5 block text-[10px] font-medium tracking-widest text-blue-200">{language === "ar" ? settings?.brand.siteNameAr : settings?.brand.siteNameEn}</span>
                   </div>
                 </div>
@@ -111,8 +120,8 @@ export default function Footer() {
 
       <div className="border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between flex-wrap gap-2">
-          <p className="text-blue-300 text-xs">{localize("© SRMA Research Academy 2026. جميع الحقوق محفوظة.", "© SRMA Research Academy 2026. All rights reserved.")}</p>
-          <p className="text-blue-300 text-xs">SRMA Research Academy</p>
+           <p className="text-blue-300 text-xs">© {siteName || "SRMA"} {new Date().getFullYear()}. {localize("جميع الحقوق محفوظة.", "All rights reserved.")}</p>
+           <p className="text-blue-300 text-xs">{siteName || "SRMA"}</p>
         </div>
       </div>
     </footer>
