@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { AtSign, Instagram, Linkedin, Mail, Phone, Radio, Send } from "lucide-react";
+import { AtSign, Facebook, Ghost, Instagram, Linkedin, Mail, MessageCircle, Music2, Phone, Radio, Send, Youtube } from "lucide-react";
 import { SRMA_LOGO } from "@/components/BrandBackground";
 import InstallAppButton from "@/components/InstallAppButton";
 import { useLanguage } from "@/lib/i18n";
@@ -15,14 +15,20 @@ const quickLinks = [
   { href: "/faq", ar: "الأسئلة الشائعة", en: "Frequently asked questions" },
 ];
 
+function socialUrl(value: string | undefined, baseUrl: string) {
+  if (!value) return "";
+  return value.startsWith("https://") ? value : `${baseUrl}${value.replace(/^@/, "")}`;
+}
+
 export default function Footer() {
   const { localize, t, language } = useLanguage();
   const { data: settings } = useSiteContentSettings();
   const brand = settings?.brand;
   const siteName = language === "ar" ? brand?.siteNameAr : brand?.siteNameEn;
-  const linkedinUrl = brand?.linkedinUsername?.startsWith("https://")
-    ? brand.linkedinUsername
-    : `https://www.linkedin.com/in/${brand?.linkedinUsername || ""}`;
+  const telegramUrl = socialUrl(brand?.telegramUsername, "https://t.me/");
+  const instagramUrl = socialUrl(brand?.instagramUsername, "https://instagram.com/");
+  const xUrl = socialUrl(brand?.xUsername, "https://x.com/");
+  const linkedinUrl = socialUrl(brand?.linkedinUsername, "https://www.linkedin.com/in/");
 
   return (
     <footer className="bg-[#0C3156] text-white">
@@ -32,26 +38,34 @@ export default function Footer() {
           <div>
             <h3 className="text-lg font-bold mb-5 text-[#E9A020]">{t("footer.contact")}</h3>
             <div className="space-y-3">
-              <a
-                href={`https://wa.me/${settings?.brand.whatsapp || "966562159258"}`}
-                target="_blank"
-                rel="noopener noreferrer"
+              {brand?.phone && <a
+                href={`tel:${brand.phone}`}
                 data-testid="link-footer-phone"
                 className="flex items-center gap-2 text-blue-200 hover:text-white text-sm transition-colors"
               >
                 <Phone size={15} />
-                {settings?.brand.whatsapp ? `+${settings.brand.whatsapp}` : "+966 56 215 9258"}
-              </a>
+                {brand.phone}
+              </a>}
               <a
-                href={`https://t.me/${settings?.brand.telegramUsername || "SRMAAcademy"}`}
+                href={`https://wa.me/${brand?.whatsapp || "966562159258"}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                data-testid="link-footer-whatsapp"
+                className="flex items-center gap-2 text-blue-200 hover:text-white text-sm transition-colors"
+              >
+                <MessageCircle size={15} />
+                {brand?.whatsapp ? `+${brand.whatsapp.replace(/^\+/, "")}` : "+966 56 215 9258"}
+              </a>
+              {telegramUrl && <a
+                href={telegramUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 data-testid="link-footer-telegram-supervisor"
                 className="flex items-center gap-2 text-blue-200 hover:text-white text-sm transition-colors"
               >
                 <Send size={15} />
-                @{settings?.brand.telegramUsername || "SRMAAcademy"} ({t("common.telegram")})
-              </a>
+                {t("common.telegram")}
+              </a>}
               {brand?.whatsappChannelUrl && <a
                 href={brand.whatsappChannelUrl}
                 target="_blank"
@@ -63,9 +77,13 @@ export default function Footer() {
                 {localize("قناة WhatsApp", "WhatsApp Channel")}
               </a>}
               {brand?.email && <a href={`mailto:${brand.email}`} className="flex items-center gap-2 text-sm text-blue-200 transition-colors hover:text-white"><Mail size={15} />{brand.email}</a>}
-              {brand?.instagramUsername && <a href={`https://instagram.com/${brand.instagramUsername}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-200 transition-colors hover:text-white"><Instagram size={15} />@{brand.instagramUsername}</a>}
-              {brand?.xUsername && <a href={`https://x.com/${brand.xUsername}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-200 transition-colors hover:text-white"><AtSign size={15} />@{brand.xUsername}</a>}
-              {brand?.linkedinUsername && <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-200 transition-colors hover:text-white"><Linkedin size={15} />{brand.linkedinUsername}</a>}
+              {instagramUrl && <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-200 transition-colors hover:text-white"><Instagram size={15} />Instagram</a>}
+              {xUrl && <a href={xUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-200 transition-colors hover:text-white"><AtSign size={15} />X</a>}
+              {linkedinUrl && <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-200 transition-colors hover:text-white"><Linkedin size={15} />LinkedIn</a>}
+              {brand?.facebookUrl && <a href={brand.facebookUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-200 transition-colors hover:text-white"><Facebook size={15} />Facebook</a>}
+              {brand?.tiktokUrl && <a href={brand.tiktokUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-200 transition-colors hover:text-white"><Music2 size={15} />TikTok</a>}
+              {brand?.youtubeUrl && <a href={brand.youtubeUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-200 transition-colors hover:text-white"><Youtube size={15} />YouTube</a>}
+              {brand?.snapchatUrl && <a href={brand.snapchatUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-200 transition-colors hover:text-white"><Ghost size={15} />Snapchat</a>}
             </div>
           </div>
 
@@ -103,8 +121,8 @@ export default function Footer() {
             <p className="text-blue-200 text-sm text-right leading-relaxed">
               {localize("المنصة الأكاديمية الأولى في المملكة للبحث العلمي الطبي — نرافقك من الفكرة حتى النشر في أرقى المجلات الدولية", "The Kingdom's leading academic platform for medical research — supporting you from idea to publication in leading international journals.")}
             </p>
-            <a
-              href={`https://t.me/${settings?.brand.telegramUsername || "SRMAAcademy"}`}
+            {telegramUrl && <a
+              href={telegramUrl}
               target="_blank"
               rel="noopener noreferrer"
               data-testid="button-footer-telegram-channel"
@@ -112,7 +130,7 @@ export default function Footer() {
             >
               <Send size={14} />
               {t("footer.telegram")}
-            </a>
+            </a>}
             <InstallAppButton className="flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-black text-[#0C3156] transition hover:bg-blue-50" />
           </div>
         </div>

@@ -17,7 +17,8 @@ export default function FloatingButtons({
   const { localize } = useLanguage();
   const { data: settings } = useSiteContentSettings();
   const siteName = settings?.brand.siteNameAr || settings?.brand.siteNameEn || "SRMA";
-  const resolvedTelegramUrl = telegramUrl || `https://t.me/${settings?.brand.telegramUsername || "SRMAAcademy"}`;
+  const telegramContact = settings?.brand.telegramUsername || "SRMAAcademy";
+  const resolvedTelegramUrl = telegramUrl || (telegramContact.startsWith("https://") ? telegramContact : `https://t.me/${telegramContact}`);
   const resolvedWhatsappUrl = whatsappUrl || `https://wa.me/${settings?.brand.whatsapp || "966562159258"}`;
   if (!showTelegram && !showWhatsapp) return null;
 

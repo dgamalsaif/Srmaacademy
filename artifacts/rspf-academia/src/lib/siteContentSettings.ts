@@ -39,8 +39,9 @@ export interface PublicPageContent { titleAr: string; titleEn: string; descripti
 export interface BrandContactSettings {
   siteNameAr: string; siteNameEn: string; logoUrl: string;
   appNameAr: string; appNameEn: string; appShortName: string; appIconUrl: string; appThemeColor: string;
-  whatsapp: string; whatsappChannelUrl: string; email: string;
+  phone: string; whatsapp: string; whatsappChannelUrl: string; email: string;
   telegramUsername: string; instagramUsername: string; xUsername: string; linkedinUsername: string;
+  facebookUrl: string; tiktokUrl: string; youtubeUrl: string; snapchatUrl: string;
 }
 
 export interface SiteContentSettings {
@@ -136,7 +137,8 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
   brand: {
     siteNameAr: "أكاديمية SRMA للأبحاث", siteNameEn: "SRMA Research Academy", logoUrl: "/srma-logo.jpg",
     appNameAr: "أكاديمية SRMA للأبحاث", appNameEn: "SRMA Research Academy", appShortName: "SRMA", appIconUrl: "/srma-logo.jpg", appThemeColor: "#0d765c",
-    whatsapp: "966562159258", whatsappChannelUrl: "", email: "", telegramUsername: "SRMAAcademy", instagramUsername: "", xUsername: "", linkedinUsername: "",
+    phone: "", whatsapp: "966562159258", whatsappChannelUrl: "", email: "", telegramUsername: "SRMAAcademy", instagramUsername: "", xUsername: "", linkedinUsername: "",
+    facebookUrl: "", tiktokUrl: "", youtubeUrl: "", snapchatUrl: "",
   },
   pages: {
     home: { titleAr: "أكاديمية SRMA للأبحاث", titleEn: "SRMA Research Academy", descriptionAr: "نحو مجتمع بحثي أكثر تأثيراً", descriptionEn: "Building a more impactful research community", contentAr: "", contentEn: "" },

@@ -273,8 +273,6 @@ export default function CoordinatorPortal() {
       </main>
       <Footer />
       <FloatingButtons
-        telegramUrl={settings.telegramUrl}
-        whatsappUrl={settings.whatsappUrl}
         showTelegram={settings.showTelegram}
         showWhatsapp={settings.showWhatsapp}
       />

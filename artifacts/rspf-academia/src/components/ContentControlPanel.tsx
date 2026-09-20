@@ -101,13 +101,18 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                 {settings.brand.appIconUrl && <img src={settings.brand.appIconUrl} alt="معاينة أيقونة التطبيق" className="mt-3 h-14 w-14 rounded-2xl border border-slate-200 object-cover" />}
               </div>
               <ColorField label="لون التطبيق عند التشغيل" value={settings.brand.appThemeColor} onChange={(v) => updateBrand("appThemeColor", v)} />
-              <TextField label="رقم الواتساب" value={settings.brand.whatsapp} onChange={(v) => updateBrand("whatsapp", v)} />
+              <TextField label="رقم الهاتف للاتصال" value={settings.brand.phone} onChange={(v) => updateBrand("phone", v)} />
+              <TextField label="رقم واتساب مع رمز الدولة" value={settings.brand.whatsapp} onChange={(v) => updateBrand("whatsapp", v)} />
               <TextField label="رابط قناة واتساب" value={settings.brand.whatsappChannelUrl} onChange={(v) => updateBrand("whatsappChannelUrl", v)} />
               <TextField label="البريد الإلكتروني" value={settings.brand.email} onChange={(v) => updateBrand("email", v)} />
-              <TextField label="معرف تيليجرام" value={settings.brand.telegramUsername} onChange={(v) => updateBrand("telegramUsername", v)} />
-              <TextField label="معرف إنستجرام" value={settings.brand.instagramUsername} onChange={(v) => updateBrand("instagramUsername", v)} />
-              <TextField label="معرف منصة X" value={settings.brand.xUsername} onChange={(v) => updateBrand("xUsername", v)} />
-              <TextField label="معرف لينكد إن" value={settings.brand.linkedinUsername} onChange={(v) => updateBrand("linkedinUsername", v)} />
+              <TextField label="رابط أو معرف تيليجرام" value={settings.brand.telegramUsername} onChange={(v) => updateBrand("telegramUsername", v)} />
+              <TextField label="رابط أو معرف إنستجرام" value={settings.brand.instagramUsername} onChange={(v) => updateBrand("instagramUsername", v)} />
+              <TextField label="رابط أو معرف منصة X" value={settings.brand.xUsername} onChange={(v) => updateBrand("xUsername", v)} />
+              <TextField label="رابط أو معرف لينكد إن" value={settings.brand.linkedinUsername} onChange={(v) => updateBrand("linkedinUsername", v)} />
+              <TextField label="رابط فيسبوك الكامل" value={settings.brand.facebookUrl} onChange={(v) => updateBrand("facebookUrl", v)} />
+              <TextField label="رابط تيك توك الكامل" value={settings.brand.tiktokUrl} onChange={(v) => updateBrand("tiktokUrl", v)} />
+              <TextField label="رابط يوتيوب الكامل" value={settings.brand.youtubeUrl} onChange={(v) => updateBrand("youtubeUrl", v)} />
+              <TextField label="رابط سناب شات الكامل" value={settings.brand.snapchatUrl} onChange={(v) => updateBrand("snapchatUrl", v)} />
             </div>
           </Panel>
 

@@ -199,14 +199,13 @@ export default function CoordinatorPortalSettingsPanel({
         <div className="xl:col-span-4 space-y-6">
           {/* روابط التواصل */}
           <SectionCard icon={MessageCircle} title="روابط التواصل">
+            <p className="mb-4 text-sm leading-6 text-slate-500">تُعدّل الأرقام والروابط من قسم «المحتوى والحقول والمظهر». هنا يمكنك فقط تحديد الأزرار الظاهرة في بوابة المنسق.</p>
             <div className="space-y-4">
               <div className="space-y-3 p-5 rounded-2xl border border-slate-100 bg-slate-50/50">
                 <ToggleField label="تفعيل واتساب" value={settings.showWhatsapp} onChange={v => updateField("showWhatsapp", v)} testId="toggle-show-whatsapp" />
-                <InputField label="رابط واتساب" value={settings.whatsappUrl} onChange={v => updateField("whatsappUrl", v)} dir="ltr" disabled={!settings.showWhatsapp} testId="input-url-whatsapp" />
               </div>
               <div className="space-y-3 p-5 rounded-2xl border border-slate-100 bg-slate-50/50">
                 <ToggleField label="تفعيل تيليجرام" value={settings.showTelegram} onChange={v => updateField("showTelegram", v)} testId="toggle-show-telegram" />
-                <InputField label="رابط تيليجرام" value={settings.telegramUrl} onChange={v => updateField("telegramUrl", v)} dir="ltr" disabled={!settings.showTelegram} testId="input-url-telegram" />
               </div>
             </div>
           </SectionCard>

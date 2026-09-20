@@ -42,6 +42,7 @@ export interface BrandContactSettings {
   appShortName: string;
   appIconUrl: string;
   appThemeColor: string;
+  phone: string;
   whatsapp: string;
   whatsappChannelUrl: string;
   email: string;
@@ -49,6 +50,10 @@ export interface BrandContactSettings {
   instagramUsername: string;
   xUsername: string;
   linkedinUsername: string;
+  facebookUrl: string;
+  tiktokUrl: string;
+  youtubeUrl: string;
+  snapchatUrl: string;
 }
 
 export interface SiteContentSettings {
@@ -124,6 +129,7 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
     appShortName: "SRMA",
     appIconUrl: "/srma-logo.jpg",
     appThemeColor: "#0d765c",
+    phone: "",
     whatsapp: "966562159258",
     whatsappChannelUrl: "",
     email: "",
@@ -131,6 +137,10 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
     instagramUsername: "",
     xUsername: "",
     linkedinUsername: "",
+    facebookUrl: "",
+    tiktokUrl: "",
+    youtubeUrl: "",
+    snapchatUrl: "",
   },
   pages: {
     home: { titleAr: "أكاديمية SRMA للأبحاث", titleEn: "SRMA Research Academy", descriptionAr: "نحو مجتمع بحثي أكثر تأثيراً", descriptionEn: "Building a more impactful research community", contentAr: "", contentEn: "" },
@@ -293,6 +303,7 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
       appShortName: brandText("appShortName", 30),
       appIconUrl: safeAppIcon(brandText("appIconUrl", 1000)),
       appThemeColor: /^#[0-9a-fA-F]{6}$/.test(brandText("appThemeColor", 7)) ? brandText("appThemeColor", 7) : DEFAULT_SITE_CONTENT_SETTINGS.brand.appThemeColor,
+      phone: brandText("phone", 40).replace(/[^\d+]/g, ""),
       whatsapp: brandText("whatsapp", 40).replace(/[^\d+]/g, ""),
       whatsappChannelUrl: safeUrl(brandText("whatsappChannelUrl", 1000), ""),
       email: brandText("email", 254),
@@ -300,6 +311,10 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
       instagramUsername: brandText("instagramUsername", 100).replace(/^@/, ""),
       xUsername: brandText("xUsername", 100).replace(/^@/, ""),
       linkedinUsername: brandText("linkedinUsername", 200).replace(/^@/, ""),
+      facebookUrl: safeUrl(brandText("facebookUrl", 1000), ""),
+      tiktokUrl: safeUrl(brandText("tiktokUrl", 1000), ""),
+      youtubeUrl: safeUrl(brandText("youtubeUrl", 1000), ""),
+      snapchatUrl: safeUrl(brandText("snapchatUrl", 1000), ""),
     },
     pages,
   };
