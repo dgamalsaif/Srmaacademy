@@ -163,6 +163,7 @@ router.get("/sitemap.xml", async (_req, res) => {
 });
 
 router.get("/programs", async (req, res) => {
+  res.setHeader("Cache-Control", "no-store, max-age=0");
   const rows = await listPrograms();
   const isOwner = Boolean(await getManagedOwner(req));
   const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session)) || isOwner;

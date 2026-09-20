@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useClerk } from "@clerk/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { Plus, Pencil, Trash2, Eye, X, ChevronRight, LogOut, Search, Users, BookOpen, TrendingUp, AlertCircle, UserPlus, GraduationCap, Award, Landmark, LayoutDashboard, CreditCard, Settings, ClipboardList, CheckCircle, FlaskConical, Stethoscope, User, Clock, Copy, Check, Edit, FileSpreadsheet, Database } from "lucide-react";
 import { ResearchOpportunity, SPECIALTY_COLORS } from "@/lib/researchData";
@@ -632,6 +633,7 @@ function ProgramCard({ research, onRegister, onEdit, onDelete, canManage }: any)
 }
 
 export default function AdminDashboard() {
+  const queryClient = useQueryClient();
   const [location, setLocation] = useLocation();
   const { signOut } = useClerk();
   const [authorized, setAuthorized] = useState<boolean | null>(null);
@@ -878,6 +880,7 @@ export default function AdminDashboard() {
         return;
       }
       setContentSettings(result as SiteContentSettings);
+      await queryClient.invalidateQueries({ queryKey: ["site-content-settings"] });
       setContentSettingsMessage("تم الحفظ بنجاح. ستظهر التغييرات في صفحات المنصة عند إعادة فتحها.");
     } catch {
       setContentSettingsMessage("تعذر الاتصال بالخادم. حاول مرة أخرى.");

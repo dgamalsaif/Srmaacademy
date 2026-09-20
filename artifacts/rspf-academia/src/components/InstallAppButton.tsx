@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { Download, Smartphone, X } from "lucide-react";
-import { SRMA_LOGO } from "@/components/BrandBackground";
 import { useLanguage } from "@/lib/i18n";
+import { DEFAULT_SITE_CONTENT_SETTINGS } from "@/lib/siteContentSettings";
+import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -16,6 +17,9 @@ declare global {
 
 export default function InstallAppButton({ className = "" }: { className?: string }) {
   const { direction, language, localize } = useLanguage();
+  const { data: settings = DEFAULT_SITE_CONTENT_SETTINGS } = useSiteContentSettings();
+  const appName = settings.brand.appNameAr || settings.brand.appNameEn || settings.brand.siteNameAr || "SRMA";
+  const appIcon = settings.brand.appIconUrl || settings.brand.logoUrl;
   const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [installing, setInstalling] = useState(false);
@@ -62,15 +66,15 @@ export default function InstallAppButton({ className = "" }: { className?: strin
         {localize("تحميل التطبيق", "Install app")}
       </button>
       {isOpen && (
-        <div className="fixed inset-0 z-[130] flex items-center justify-center p-4" onClick={() => setIsOpen(false)} role="dialog" aria-modal="true" aria-label={localize("تثبيت تطبيق SRMA Research Academy", "Install SRMA Research Academy app")}>
+        <div className="fixed inset-0 z-[130] flex items-center justify-center p-4" onClick={() => setIsOpen(false)} role="dialog" aria-modal="true" aria-label={localize(`تثبيت تطبيق ${appName}`, `Install ${appName} app`)}>
           <div className="absolute inset-0 bg-slate-950/55 backdrop-blur-sm" />
           <section className="relative w-full max-w-sm rounded-3xl border border-emerald-100 bg-white p-6 text-start shadow-2xl" dir={direction} onClick={(event) => event.stopPropagation()}>
             <button type="button" onClick={() => setIsOpen(false)} className="absolute left-4 top-4 rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label={localize("إغلاق نافذة التثبيت", "Close install dialog")}><X size={18} /></button>
             <div className="flex items-center gap-3 pl-8">
-              <img src={SRMA_LOGO} alt={localize("شعار SRMA Research Academy", "SRMA Research Academy logo")} className="h-14 w-14 rounded-2xl border border-emerald-100 object-cover shadow-sm" />
+              <img src={appIcon} alt={localize(`أيقونة ${appName}`, `${appName} icon`)} className="h-14 w-14 rounded-2xl border border-emerald-100 object-cover shadow-sm" />
               <div>
-                <p className="text-xs font-black text-[#117b59]">{localize("تطبيق SRMA", "SRMA app")}</p>
-                <h2 className="mt-1 text-lg font-black text-slate-800">SRMA Research Academy</h2>
+                <p className="text-xs font-black text-[#117b59]">{localize("تطبيق المنصة", "Platform app")}</p>
+                <h2 className="mt-1 text-lg font-black text-slate-800">{appName}</h2>
               </div>
             </div>
             {installEvent ? (

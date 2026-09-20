@@ -1,5 +1,5 @@
-const CACHE_NAME = "srma-academy-v4";
-const APP_SHELL = ["./", "./manifest.webmanifest", "./favicon.svg", "./srma-logo.jpg"];
+const CACHE_NAME = "srma-academy-v5";
+const APP_SHELL = ["./", "./favicon.svg", "./srma-logo.jpg"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

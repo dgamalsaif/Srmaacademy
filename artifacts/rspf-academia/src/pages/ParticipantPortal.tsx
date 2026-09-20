@@ -29,7 +29,7 @@ export default function ParticipantPortal() {
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
 
   const refreshOpportunities = () => {
-    fetch("/api/programs")
+    fetch("/api/programs", { cache: "no-store" })
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("programs unavailable")))
       .then((data: ResearchOpportunity[]) => {
         const available = data.filter((item) => item.status === "open" && (item.category || "active") === "active");
@@ -40,10 +40,19 @@ export default function ParticipantPortal() {
 
   useEffect(() => {
     refreshOpportunities();
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") refreshOpportunities();
+    };
+    window.addEventListener("focus", refreshOpportunities);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
     fetch("/api/site-content-settings")
       .then((response) => response.ok ? response.json() : Promise.reject())
       .then((settings: SiteContentSettings) => setContentSettings(settings))
       .catch(() => setContentSettings(DEFAULT_SITE_CONTENT_SETTINGS));
+    return () => {
+      window.removeEventListener("focus", refreshOpportunities);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
   }, []);
 
   const toggleExpand = (id: number) => {

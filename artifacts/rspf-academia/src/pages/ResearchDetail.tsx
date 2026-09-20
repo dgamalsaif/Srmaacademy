@@ -21,7 +21,7 @@ export default function ResearchDetail() {
   const { data: contentSettings = DEFAULT_SITE_CONTENT_SETTINGS } = useSiteContentSettings();
 
   const loadResearch = () => {
-    fetch("/api/programs")
+    fetch("/api/programs", { cache: "no-store" })
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("programs unavailable")))
       .then((data: ResearchOpportunity[]) => {
         setAllResearch(data);
@@ -32,7 +32,15 @@ export default function ResearchDetail() {
 
   useEffect(() => {
     loadResearch();
-
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === "visible") loadResearch();
+    };
+    window.addEventListener("focus", loadResearch);
+    document.addEventListener("visibilitychange", refreshWhenVisible);
+    return () => {
+      window.removeEventListener("focus", loadResearch);
+      document.removeEventListener("visibilitychange", refreshWhenVisible);
+    };
   }, [params.id]);
 
   if (!research) {

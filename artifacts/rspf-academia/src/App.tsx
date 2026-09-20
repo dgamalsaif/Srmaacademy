@@ -26,6 +26,7 @@ import OwnerSignUp from "@/pages/OwnerSignUp";
 import NotFound from "@/pages/not-found";
 import { LanguageProvider, useLanguage } from "@/lib/i18n";
 import { PageSeo } from "@/lib/seo";
+import SiteIdentitySync from "@/components/SiteIdentitySync";
 
 const queryClient = new QueryClient();
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -100,6 +101,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <LanguageProvider>
+            <SiteIdentitySync />
             <WouterRouter base={basePath}>
               <Router />
             </WouterRouter>

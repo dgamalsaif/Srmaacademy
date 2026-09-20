@@ -37,7 +37,9 @@ export interface RegistrationFieldSetting {
 export type PublicPageId = "home" | "participant" | "knowledge" | "about" | "faq" | "specialRequests" | "researchDetail";
 export interface PublicPageContent { titleAr: string; titleEn: string; descriptionAr: string; descriptionEn: string; contentAr: string; contentEn: string; }
 export interface BrandContactSettings {
-  siteNameAr: string; siteNameEn: string; logoUrl: string; whatsapp: string; email: string;
+  siteNameAr: string; siteNameEn: string; logoUrl: string;
+  appNameAr: string; appNameEn: string; appShortName: string; appIconUrl: string; appThemeColor: string;
+  whatsapp: string; email: string;
   telegramUsername: string; instagramUsername: string; xUsername: string; linkedinUsername: string;
 }
 
@@ -133,6 +135,7 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
   ],
   brand: {
     siteNameAr: "أكاديمية SRMA للأبحاث", siteNameEn: "SRMA Research Academy", logoUrl: "/srma-logo.jpg",
+    appNameAr: "أكاديمية SRMA للأبحاث", appNameEn: "SRMA Research Academy", appShortName: "SRMA", appIconUrl: "/srma-logo.jpg", appThemeColor: "#0d765c",
     whatsapp: "966562159258", email: "", telegramUsername: "SRMAAcademy", instagramUsername: "", xUsername: "", linkedinUsername: "",
   },
   pages: {

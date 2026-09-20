@@ -12,6 +12,8 @@ export function useSiteContentSettings() {
       return response.json();
     },
     initialData: DEFAULT_SITE_CONTENT_SETTINGS,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }

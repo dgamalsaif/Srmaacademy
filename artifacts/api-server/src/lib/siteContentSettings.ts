@@ -37,6 +37,11 @@ export interface BrandContactSettings {
   siteNameAr: string;
   siteNameEn: string;
   logoUrl: string;
+  appNameAr: string;
+  appNameEn: string;
+  appShortName: string;
+  appIconUrl: string;
+  appThemeColor: string;
   whatsapp: string;
   email: string;
   telegramUsername: string;
@@ -113,6 +118,11 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
     siteNameAr: "أكاديمية SRMA للأبحاث",
     siteNameEn: "SRMA Research Academy",
     logoUrl: "/srma-logo.jpg",
+    appNameAr: "أكاديمية SRMA للأبحاث",
+    appNameEn: "SRMA Research Academy",
+    appShortName: "SRMA",
+    appIconUrl: "/srma-logo.jpg",
+    appThemeColor: "#0d765c",
     whatsapp: "966562159258",
     email: "",
     telegramUsername: "SRMAAcademy",
@@ -206,7 +216,28 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
   const brandText = (key: keyof BrandContactSettings, max = 200) => typeof brandInput[key] === "string"
     ? (brandInput[key] as string).trim().slice(0, max)
     : DEFAULT_SITE_CONTENT_SETTINGS.brand[key];
-  const safeUrl = (candidate: string, fallback = "") => candidate === "" || candidate.startsWith("/") || /^https:\/\//i.test(candidate) ? candidate : fallback;
+  const safeUrl = (candidate: string, fallback = "") => {
+    if (candidate === "") return "";
+    if (candidate.startsWith("/") && !candidate.startsWith("//") && !candidate.split("/").includes("..") && !/[\u0000-\u001f]/.test(candidate)) return candidate;
+    try {
+      const parsed = new URL(candidate);
+      return parsed.protocol === "https:" && !parsed.username && !parsed.password ? parsed.toString() : fallback;
+    } catch {
+      return fallback;
+    }
+  };
+  const safeAppIcon = (candidate: string) => {
+    const normalized = safeUrl(candidate, DEFAULT_SITE_CONTENT_SETTINGS.brand.appIconUrl);
+    if (normalized.startsWith("/")) return normalized;
+    try {
+      const host = new URL(normalized).hostname.toLowerCase();
+      return host === "srmaacademy.com" || host === "www.srmaacademy.com"
+        ? normalized
+        : DEFAULT_SITE_CONTENT_SETTINGS.brand.appIconUrl;
+    } catch {
+      return DEFAULT_SITE_CONTENT_SETTINGS.brand.appIconUrl;
+    }
+  };
   const pagesInput = object("pages");
   const pageIds = Object.keys(DEFAULT_SITE_CONTENT_SETTINGS.pages) as PublicPageId[];
   const pages = Object.fromEntries(pageIds.map((id) => {
@@ -255,6 +286,11 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
       siteNameAr: brandText("siteNameAr", 160),
       siteNameEn: brandText("siteNameEn", 160),
       logoUrl: safeUrl(brandText("logoUrl", 1000), DEFAULT_SITE_CONTENT_SETTINGS.brand.logoUrl),
+      appNameAr: brandText("appNameAr", 160),
+      appNameEn: brandText("appNameEn", 160),
+      appShortName: brandText("appShortName", 30),
+      appIconUrl: safeAppIcon(brandText("appIconUrl", 1000)),
+      appThemeColor: /^#[0-9a-fA-F]{6}$/.test(brandText("appThemeColor", 7)) ? brandText("appThemeColor", 7) : DEFAULT_SITE_CONTENT_SETTINGS.brand.appThemeColor,
       whatsapp: brandText("whatsapp", 40).replace(/[^\d+]/g, ""),
       email: brandText("email", 254),
       telegramUsername: brandText("telegramUsername", 100).replace(/^@/, ""),
