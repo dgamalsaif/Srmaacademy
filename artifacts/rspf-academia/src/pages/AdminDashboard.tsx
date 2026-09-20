@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useClerk } from "@clerk/react";
 import { Link, useLocation } from "wouter";
-import { Plus, Pencil, Trash2, Eye, X, ChevronRight, LogOut, Search, Users, BookOpen, TrendingUp, AlertCircle, UserPlus, GraduationCap, Award, Landmark, LayoutDashboard, CreditCard, Settings, ClipboardList, CheckCircle, FlaskConical, Stethoscope, User, Clock, Copy, Check, Edit, FileSpreadsheet } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, X, ChevronRight, LogOut, Search, Users, BookOpen, TrendingUp, AlertCircle, UserPlus, GraduationCap, Award, Landmark, LayoutDashboard, CreditCard, Settings, ClipboardList, CheckCircle, FlaskConical, Stethoscope, User, Clock, Copy, Check, Edit, FileSpreadsheet, Database } from "lucide-react";
 import { ResearchOpportunity, SPECIALTY_COLORS } from "@/lib/researchData";
 import RegistrationModal from "@/components/RegistrationModal";
 import CoordinatorPortalSettingsPanel from "@/components/CoordinatorPortalSettingsPanel";
@@ -14,8 +14,9 @@ import ResearchImagePicker from "@/components/ResearchImagePicker";
 import OpportunityMedia from "@/components/OpportunityMedia";
 import SpecialtyFilter, { buildSpecialtyOptions, specialtyMatches } from "@/components/SpecialtyFilter";
 import OwnerSecurityPanel from "@/components/OwnerSecurityPanel";
+import OwnerDataManagementPanel from "@/components/OwnerDataManagementPanel";
 import OpportunityImportModal from "@/components/OpportunityImportModal";
-import { apiFetch } from "@/lib/api";
+
 const EMPTY_FORM: Omit<ResearchOpportunity, "id" | "createdAt"> = {
   category: "active",
   specialty: "",
@@ -398,7 +399,7 @@ function SettingsPanel({ role, accountName, onNameUpdated }: { role: "owner" | "
   const changeName = async (event: React.FormEvent) => {
     event.preventDefault();
     setNameMessage("");
-    const response = await apiFetch("/api/coordinator/change-name", {
+    const response = await fetch("/api/coordinator/change-name", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fullName }),
@@ -420,7 +421,7 @@ function SettingsPanel({ role, accountName, onNameUpdated }: { role: "owner" | "
       setCodeMessage("تأكيد رمز الوصول لا يطابق الرمز الجديد.");
       return;
     }
-    const response = await apiFetch("/api/coordinator/change-access-code", {
+    const response = await fetch("/api/coordinator/change-access-code", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ currentCode, newCode }),
@@ -635,7 +636,7 @@ export default function AdminDashboard() {
   const [categoryFilter, setCategoryFilter] = useState<NonNullable<ResearchOpportunity["category"]>>("active");
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
   const [loadingPrograms, setLoadingPrograms] = useState(true);
-  const [view, setView] = useState<"programs" | "payments" | "settings" | "portal-settings" | "content-settings">("programs");
+  const [view, setView] = useState<"programs" | "payments" | "settings" | "portal-settings" | "content-settings" | "data-management">("programs");
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
   const [paymentFormOpen, setPaymentFormOpen] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
@@ -654,7 +655,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const workspace = ownerWorkspace ? "owner" : "coordinator";
-    apiFetch(`/api/coordinator/session?workspace=${workspace}`, { cache: "no-store" })
+    fetch(`/api/coordinator/session?workspace=${workspace}`, { cache: "no-store", credentials: "same-origin" })
       .then((response) => {
         if (!response.ok) throw new Error("Unable to verify staff session");
         return response.json() as Promise<{ authenticated?: boolean; role?: "owner" | "coordinator"; coordinatorName?: string | null }>;
@@ -679,7 +680,7 @@ export default function AdminDashboard() {
     const loadPrograms = async () => {
       setLoadingPrograms(true);
       try {
-        let response = await apiFetch("/api/programs");
+        let response = await fetch("/api/programs");
         let data = await response.json() as ResearchOpportunity[];
         setResearch(Array.isArray(data) ? data : []);
       } catch {
@@ -695,7 +696,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!role) return;
-    apiFetch("/api/site-content-settings")
+    fetch("/api/site-content-settings")
       .then((response) => response.ok ? response.json() : Promise.reject())
       .then((settings: SiteContentSettings) => setContentSettings(settings))
       .catch(() => role === "owner" && setContentSettingsMessage("تعذر تحميل إعدادات المحتوى حالياً."));
@@ -703,15 +704,18 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (role !== "owner") return;
-    apiFetch("/api/coordinator-portal-settings")
+    fetch("/api/coordinator-portal-settings")
       .then((response) => response.ok ? response.json() : Promise.reject())
       .then((settings: CoordinatorPortalSettings) => setPortalSettings(settings))
       .catch(() => setPortalSettingsMessage("تعذر تحميل إعدادات البوابة حالياً."));
   }, [role]);
 
   useEffect(() => {
-    if (!role) return;
-    apiFetch("/api/payments")
+    if (role !== "owner") {
+      setPayments([]);
+      return;
+    }
+    fetch("/api/payments")
       .then((response) => response.ok ? response.json() : [])
       .then((data) => setPayments(Array.isArray(data) ? data : []))
       .catch(() => setPayments([]));
@@ -743,7 +747,7 @@ export default function AdminDashboard() {
   });
 
   const handleAdd = async (form: FormData, imageToken: string | null) => {
-    const response = await apiFetch("/api/programs", {
+    const response = await fetch("/api/programs", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(toPayload(form, imageToken)),
@@ -756,7 +760,7 @@ export default function AdminDashboard() {
 
   const handleEdit = async (form: FormData, imageToken: string | null) => {
     if (!editItem) return;
-    const response = await apiFetch(`/api/programs/${editItem.id}`, {
+    const response = await fetch(`/api/programs/${editItem.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(toPayload(form, imageToken)),
@@ -768,7 +772,7 @@ export default function AdminDashboard() {
 
   const handleDelete = async () => {
     if (!deleteItem) return;
-    const response = await apiFetch(`/api/programs/${deleteItem.id}`, { method: "DELETE" });
+    const response = await fetch(`/api/programs/${deleteItem.id}`, { method: "DELETE" });
     if (response.ok) {
       setResearch((items) => items.filter((item) => item.id !== deleteItem.id));
       setDeleteItem(null);
@@ -781,7 +785,7 @@ export default function AdminDashboard() {
   };
 
   const handlePaymentAdd = async (payment: Omit<PaymentRecord, "id">) => {
-    const response = await apiFetch("/api/payments", {
+    const response = await fetch("/api/payments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payment),
@@ -794,7 +798,7 @@ export default function AdminDashboard() {
   };
 
   const markPaymentPaid = async (payment: PaymentRecord) => {
-    const response = await apiFetch(`/api/payments/${payment.id}`, {
+    const response = await fetch(`/api/payments/${payment.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "paid" }),
@@ -803,12 +807,28 @@ export default function AdminDashboard() {
     if (response.ok) setPayments((records) => records.map((record) => record.id === saved.id ? saved : record));
   };
 
+  const handleDeletePayment = async (id: number) => {
+    if (!window.confirm("هل أنت متأكد من حذف هذه الدفعة؟")) return;
+    try {
+      const response = await fetch(`/api/admin/payments/${id}`, {
+        method: "DELETE"
+      });
+      if (response.ok) {
+        setPayments(prev => prev.filter(p => p.id !== id));
+      } else {
+        alert("فشل حذف الدفعة");
+      }
+    } catch (e) {
+      alert("فشل حذف الدفعة");
+    }
+  };
+
   const handleLogout = async () => {
     if (role === "owner") {
       await signOut({ redirectUrl: `${import.meta.env.BASE_URL.replace(/\/$/, "") || "/"}/sign-in` });
       return;
     }
-    await apiFetch("/api/coordinator/logout", { method: "POST" });
+    await fetch("/api/coordinator/logout", { method: "POST" });
     setLocation("/coordinator");
   };
 
@@ -816,7 +836,7 @@ export default function AdminDashboard() {
     setPortalSettingsSaving(true);
     setPortalSettingsMessage("");
     try {
-      const response = await apiFetch("/api/coordinator-portal-settings", {
+      const response = await fetch("/api/coordinator-portal-settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(portalSettings),
@@ -839,7 +859,7 @@ export default function AdminDashboard() {
     setContentSettingsSaving(true);
     setContentSettingsMessage("");
     try {
-      const response = await apiFetch("/api/site-content-settings", {
+      const response = await fetch("/api/site-content-settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(contentSettings),
@@ -983,10 +1003,12 @@ export default function AdminDashboard() {
              <Users size={18} className="text-slate-400" />
               {canManage ? "الطلاب المسجلون" : "طلابي المسجلون"}
             </Link>
-          <button onClick={() => setView('payments')} className={`flex items-center gap-2 px-6 py-3 border rounded-2xl text-sm font-bold transition-all shadow-sm ${view === 'payments' ? 'bg-[#117b59] text-white border-[#117b59]' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'}`}>
-            <CreditCard size={18} className={view === 'payments' ? 'text-emerald-100' : 'text-slate-400'} />
-            المستحقات
-          </button>
+          {canManage && (
+            <button onClick={() => setView('payments')} className={`flex items-center gap-2 px-6 py-3 border rounded-2xl text-sm font-bold transition-all shadow-sm ${view === 'payments' ? 'bg-[#117b59] text-white border-[#117b59]' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'}`}>
+              <CreditCard size={18} className={view === 'payments' ? 'text-emerald-100' : 'text-slate-400'} />
+              المستحقات
+            </button>
+          )}
           <button onClick={() => setView('settings')} className={`flex items-center gap-2 px-6 py-3 border rounded-2xl text-sm font-bold transition-all shadow-sm ${view === 'settings' ? 'bg-[#117b59] text-white border-[#117b59]' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'}`}>
             <Settings size={18} className={view === 'settings' ? 'text-emerald-100' : 'text-slate-400'} />
             الإعدادات
@@ -1001,6 +1023,12 @@ export default function AdminDashboard() {
             <button onClick={() => setView('content-settings')} data-testid="button-content-settings" className={`flex items-center gap-2 px-6 py-3 border rounded-2xl text-sm font-bold transition-all shadow-sm ${view === 'content-settings' ? 'bg-[#117b59] text-white border-[#117b59]' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'}`}>
               <Edit size={18} className={view === 'content-settings' ? 'text-emerald-100' : 'text-slate-400'} />
               المحتوى والمظهر
+            </button>
+          )}
+          {ownerWorkspace && (
+            <button onClick={() => setView('data-management')} data-testid="button-data-management" className={`flex items-center gap-2 px-6 py-3 border rounded-2xl text-sm font-bold transition-all shadow-sm ${view === 'data-management' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'}`}>
+              <Database size={18} className={view === 'data-management' ? 'text-slate-200' : 'text-slate-400'} />
+              إدارة البيانات
             </button>
           )}
         </div>
@@ -1127,7 +1155,7 @@ export default function AdminDashboard() {
           )}
 
           {/* PAYMENTS VIEW */}
-          {view === "payments" && (
+          {view === "payments" && canManage && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-black text-slate-800">المستحقات والتسديدات</h2>
@@ -1171,11 +1199,18 @@ export default function AdminDashboard() {
                             </td>
                             <td className="px-6 py-4 text-xs text-slate-500">{p.notes || "—"}</td>
                             <td className="px-6 py-4">
-                              {canManage && p.status !== "paid" && (
-                                <button onClick={() => markPaymentPaid(p)} className="text-[#117b59] hover:bg-[#e6f5ef] px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">
-                                  تحديد كمسدد
-                                </button>
-                              )}
+                              <div className="flex items-center gap-2">
+                                {canManage && p.status !== "paid" && (
+                                  <button onClick={() => markPaymentPaid(p)} className="text-[#117b59] hover:bg-[#e6f5ef] px-3 py-1.5 rounded-lg text-xs font-bold transition-colors">
+                                    تحديد كمسدد
+                                  </button>
+                                )}
+                                {role === "owner" && (
+                                  <button onClick={() => handleDeletePayment(p.id)} data-testid={`btn-delete-payment-${p.id}`} className="text-red-500 hover:bg-red-50 p-1.5 rounded-lg transition-colors border border-transparent hover:border-red-200" title="حذف الدفعة">
+                                    <Trash2 size={16} />
+                                  </button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         ))}
@@ -1207,6 +1242,12 @@ export default function AdminDashboard() {
           {view === "content-settings" && canManage && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <ContentControlPanel settings={contentSettings} onChange={setContentSettings} onSave={() => void saveContentSettings()} saving={contentSettingsSaving} message={contentSettingsMessage} />
+            </div>
+          )}
+
+          {view === "data-management" && ownerWorkspace && (
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <OwnerDataManagementPanel />
             </div>
           )}
 
@@ -1267,5 +1308,5 @@ export default function AdminDashboard() {
       )}
       <Footer />
     </div>
-      );
-  }
+  );
+}

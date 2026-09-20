@@ -234,6 +234,117 @@ function CoordinatorApproval({ requestId, fullName, phone, status, onUpdate }: {
   );
 }
 
+
+function ServiceRequestEditModal({ service, onClose, onSaved }: { service: ServiceRequest; onClose: () => void; onSaved: (service: ServiceRequest) => void }) {
+  const [form, setForm] = useState({
+    fullName: service.fullName,
+    phone: service.phone,
+    email: service.email,
+    serviceType: service.serviceType,
+    details: service.details,
+    fileLink: service.fileLink,
+    status: service.status,
+  });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  const save = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      const response = await fetch(`/api/admin/service-requests/${service.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!response.ok) throw new Error("تعذر حفظ التعديلات.");
+      const saved = await response.json();
+      onSaved({ ...service, ...saved });
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : "حدث خطأ غير متوقع.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm" />
+      <form onSubmit={save} onClick={(event) => event.stopPropagation()} className="relative max-h-[92vh] w-full max-w-2xl overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl" dir="rtl">
+        <div className="mb-6 flex items-start justify-between border-b border-slate-100 pb-4">
+          <button type="button" onClick={onClose} className="rounded-xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label="إغلاق"><X size={20} /></button>
+          <div className="text-right">
+            <p className="text-xs font-black text-[#117b59]">تعديل طلب الخدمة</p>
+            <h2 className="mt-1 text-xl font-black text-slate-800">{service.fullName}</h2>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <label className="block text-right text-sm font-bold text-slate-700">
+             <span className="mb-1.5 block">الاسم</span>
+             <input required type="text" value={form.fullName} onChange={e => setForm({...form, fullName: e.target.value})} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#117b59] focus:ring-2 focus:ring-[#117b59]/20" />
+          </label>
+          <label className="block text-right text-sm font-bold text-slate-700">
+             <span className="mb-1.5 block">البريد الإلكتروني</span>
+             <input required type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} dir="ltr" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#117b59] focus:ring-2 focus:ring-[#117b59]/20" />
+          </label>
+          <label className="block text-right text-sm font-bold text-slate-700">
+             <span className="mb-1.5 block">الهاتف</span>
+             <input required type="tel" value={form.phone} onChange={e => setForm({...form, phone: e.target.value})} dir="ltr" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#117b59] focus:ring-2 focus:ring-[#117b59]/20" />
+          </label>
+          <label className="block text-right text-sm font-bold text-slate-700">
+             <span className="mb-1.5 block">نوع الخدمة</span>
+             <input required type="text" value={form.serviceType} onChange={e => setForm({...form, serviceType: e.target.value})} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#117b59] focus:ring-2 focus:ring-[#117b59]/20" />
+          </label>
+          <label className="block text-right text-sm font-bold text-slate-700 sm:col-span-2">
+             <span className="mb-1.5 block">رابط الملف</span>
+             <input type="url" value={form.fileLink} onChange={e => setForm({...form, fileLink: e.target.value})} dir="ltr" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#117b59] focus:ring-2 focus:ring-[#117b59]/20" />
+          </label>
+          <label className="block text-right text-sm font-bold text-slate-700 sm:col-span-2">
+             <span className="mb-1.5 block">التفاصيل</span>
+             <textarea value={form.details} onChange={e => setForm({...form, details: e.target.value})} rows={3} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#117b59] focus:ring-2 focus:ring-[#117b59]/20 resize-none" />
+          </label>
+          <label className="block text-right text-sm font-bold text-slate-700 sm:col-span-2">
+             <span className="mb-1.5 block">الحالة</span>
+             <select value={form.status} onChange={e => setForm({...form, status: e.target.value})} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-[#117b59] focus:ring-2 focus:ring-[#117b59]/20 appearance-none text-right">
+                <option value="pending">قيد المراجعة</option>
+                <option value="contacted">تم التواصل</option>
+                <option value="approved">مقبول</option>
+                <option value="rejected">مرفوض</option>
+             </select>
+          </label>
+        </div>
+        {error && <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-bold text-red-700">{error}</p>}
+        <div className="mt-6 flex flex-wrap justify-end gap-3">
+          <button type="button" onClick={onClose} className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-600 transition hover:bg-slate-50">إلغاء</button>
+          <button type="submit" disabled={saving} className="flex items-center gap-2 rounded-xl bg-[#117b59] px-5 py-3 text-sm font-black text-white transition hover:bg-[#0c6549] disabled:opacity-60">
+            {saving ? <><Loader2 size={17} className="animate-spin" /> جارٍ الحفظ...</> : <><Save size={17} /> حفظ التعديلات</>}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+
+function ServiceRequestDeleteModal({ service, onConfirm, onClose }: { service: ServiceRequest; onConfirm: () => void; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-sm" onClick={onClose}>
+       <div className="bg-white rounded-3xl p-6 w-full max-w-sm border border-slate-100 shadow-2xl text-center" onClick={e => e.stopPropagation()}>
+         <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100">
+            <Trash2 size={24} className="text-red-500" />
+         </div>
+         <h3 className="text-lg font-black text-slate-800 mb-2">تأكيد الحذف</h3>
+         <p className="text-sm text-slate-500 mb-6">هل أنت متأكد من حذف طلب الخدمة الخاص بـ {service.fullName}؟</p>
+         <div className="flex gap-3">
+           <button onClick={onClose} className="flex-1 bg-slate-100 text-slate-700 font-bold py-3 rounded-xl text-sm hover:bg-slate-200 transition-colors">إلغاء</button>
+           <button onClick={onConfirm} className="flex-1 bg-red-500 text-white font-bold py-3 rounded-xl text-sm hover:bg-red-600 transition-colors">نعم، حذف</button>
+         </div>
+       </div>
+    </div>
+  );
+}
+
 export default function AdminSubmissions() {
   const [tab, setTab] = useState<"registrations" | "services">("registrations");
   const [registrations, setRegistrations] = useState<Registration[]>([]);
@@ -248,6 +359,8 @@ export default function AdminSubmissions() {
   const [role, setRole] = useState<"owner" | "coordinator" | null>(null);
   const [editingRegistration, setEditingRegistration] = useState<Registration | null>(null);
   const [deletingRegistration, setDeletingRegistration] = useState<Registration | null>(null);
+  const [editingService, setEditingService] = useState<ServiceRequest | null>(null);
+  const [deletingService, setDeletingService] = useState<ServiceRequest | null>(null);
   const [mutationError, setMutationError] = useState("");
 
   useEffect(() => {
@@ -416,6 +529,27 @@ export default function AdminSubmissions() {
       setDeletingRegistration(null);
     } catch (deleteError) {
       setMutationError(deleteError instanceof Error ? deleteError.message : "تعذر حذف الطالب.");
+    }
+  };
+
+  const saveEditedService = (saved: ServiceRequest) => {
+    setServices((items) => items.map((item) => item.id === saved.id ? { ...item, ...saved } : item));
+    setEditingService(null);
+  };
+
+  const deleteService = async () => {
+    if (!deletingService) return;
+    setMutationError("");
+    try {
+      const response = await fetch(`${API_BASE}/admin/service-requests/${deletingService.id}`, { method: "DELETE" });
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({})) as { error?: string };
+        throw new Error(result.error || "تعذر حذف طلب الخدمة.");
+      }
+      setServices((items) => items.filter((item) => item.id !== deletingService.id));
+      setDeletingService(null);
+    } catch (deleteError) {
+      setMutationError(deleteError instanceof Error ? deleteError.message : "تعذر حذف طلب الخدمة.");
     }
   };
 
@@ -663,7 +797,7 @@ export default function AdminSubmissions() {
                           {svc.fileLink && (
                             <a href={svc.fileLink} target="_blank" rel="noopener noreferrer"
                               className="text-xs font-bold text-blue-600 hover:text-blue-700 mt-2 inline-flex items-center gap-1 bg-blue-50 px-2 py-1 rounded">
-                              🔗 ملف مرفق
+                              <FileText size={14} /> ملف مرفق
                             </a>
                           )}
                         </td>
@@ -674,7 +808,19 @@ export default function AdminSubmissions() {
                           <p className="text-xs font-bold text-slate-500 whitespace-nowrap">{formatDate(svc.createdAt)}</p>
                         </td>
                         <td className="px-6 py-5 min-w-[180px]">
-                          <StatusActions id={svc.id} current={svc.status} onUpdate={fetchData} endpoint="service-requests" />
+                          <div className="flex items-center gap-2 mb-2">
+                            <StatusActions id={svc.id} current={svc.status} onUpdate={fetchData} endpoint="service-requests" />
+                            {role === "owner" && (
+                               <div className="flex items-center gap-1 border-r border-slate-200 pr-2">
+                                 <button onClick={() => setEditingService(svc)} data-testid={`btn-edit-service-${svc.id}`} className="p-1.5 text-slate-400 hover:text-[#117b59] hover:bg-emerald-50 rounded-lg transition-colors border border-transparent hover:border-emerald-200" title="تعديل">
+                                   <Pencil size={14} />
+                                 </button>
+                                 <button onClick={() => setDeletingService(svc)} data-testid={`btn-delete-service-${svc.id}`} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors border border-transparent hover:border-red-200" title="حذف">
+                                   <Trash2 size={14} />
+                                 </button>
+                               </div>
+                            )}
+                          </div>
                           {svc.serviceType.includes("منسق") && (
                             <CoordinatorApproval requestId={svc.id} fullName={svc.fullName} phone={svc.phone} status={svc.status} onUpdate={fetchData} />
                           )}
@@ -695,6 +841,8 @@ export default function AdminSubmissions() {
       </div>
       <Footer />
       {editingRegistration && <StudentEditModal registration={editingRegistration} onClose={() => setEditingRegistration(null)} onSaved={saveEditedRegistration} />}
+      {editingService && <ServiceRequestEditModal service={editingService} onClose={() => setEditingService(null)} onSaved={saveEditedService} />}
+      {deletingService && <ServiceRequestDeleteModal service={deletingService} onClose={() => setDeletingService(null)} onConfirm={deleteService} />}
       {deletingRegistration && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" onClick={() => setDeletingRegistration(null)}>
           <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm" />

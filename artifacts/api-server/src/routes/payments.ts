@@ -1,11 +1,11 @@
 import { Router } from "express";
 import { db, insertPaymentRecordSchema, paymentRecordsTable } from "@workspace/db";
 import { desc, eq } from "drizzle-orm";
-import { requireCoordinator, requireOwner } from "../middlewares/coordinatorAuth";
+import { requireOwner } from "../middlewares/coordinatorAuth";
 
 const router = Router();
 
-router.get("/payments", requireCoordinator, async (_req, res) => {
+router.get("/payments", requireOwner, async (_req, res) => {
   const rows = await db.select().from(paymentRecordsTable).orderBy(desc(paymentRecordsTable.createdAt));
   res.json(rows);
 });
