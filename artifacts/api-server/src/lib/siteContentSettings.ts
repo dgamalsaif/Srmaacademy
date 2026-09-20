@@ -5,7 +5,7 @@ export type Audience = "participant" | "coordinator";
 type TitleLanguage = "arabic" | "english" | "both";
 type OpportunityDisplayMode = "grid" | "scroll";
 type FieldId = "fullName" | "specialization" | "email" | "affiliation" | "whatsapp" | "city" | "orcid" | "country";
-export type OpportunityFieldId = "titleAr" | "titleEn" | "specialtyAr" | "specialtyEn" | "status" | "totalSeats" | "seatsLeft" | "descriptionAr" | "descriptionEn" | "journalTarget" | "journalIssn" | "journalPubmed" | "journalScopus" | "journalWos" | "duration" | "supervisor" | "indexedIn" | "benefits";
+export type OpportunityFieldId = "titleAr" | "titleEn" | "specialtyAr" | "specialtyEn" | "status" | "totalSeats" | "seatsLeft" | "descriptionAr" | "descriptionEn" | "journalTarget" | "journalIssn" | "people" | "requirements" | "duration" | "supervisor" | "benefits" | "specialRequest" | "reviewer" | "alertDate" | "applicationDeadline" | "selected";
 export interface SpecialtyOption { id: string; nameAr: string; nameEn: string; }
 export interface JournalOption { id: string; nameAr: string; nameEn: string; issn: string; pubmed: string; scopus: string; wos: string; }
 type FieldType = "text" | "email" | "tel";
@@ -98,7 +98,7 @@ export interface SiteContentSettings {
 export const SITE_CONTENT_KEY = "site-content";
 const IDS: FieldId[] = ["fullName", "specialization", "email", "affiliation", "whatsapp", "city", "orcid", "country"];
 const PARTS = ["description", "specialty", "seats", "duration", "supervisor", "journal", "benefits"];
-const OPPORTUNITY_FIELD_IDS: OpportunityFieldId[] = ["titleAr", "titleEn", "specialtyAr", "specialtyEn", "status", "totalSeats", "seatsLeft", "descriptionAr", "descriptionEn", "journalTarget", "journalIssn", "journalPubmed", "journalScopus", "journalWos", "duration", "supervisor", "indexedIn", "benefits"];
+const OPPORTUNITY_FIELD_IDS: OpportunityFieldId[] = ["titleAr", "titleEn", "specialtyAr", "specialtyEn", "status", "totalSeats", "seatsLeft", "descriptionAr", "descriptionEn", "journalTarget", "journalIssn", "people", "requirements", "duration", "supervisor", "benefits", "specialRequest", "reviewer", "alertDate", "applicationDeadline", "selected"];
 
 export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
   participantTitle: "بوابة المشارك",
@@ -123,14 +123,14 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
   specialtyOptions: [],
   journalOptions: [],
   registrationFields: [
-    { id: "fullName", label: "الاسم الكامل", labelEn: "Full name", placeholder: "د. أحمد محمد", placeholderEn: "Dr. Ahmed Mohammed", type: "text", requiredParticipant: true, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#117b59" },
-    { id: "specialization", label: "التخصص الدقيق", labelEn: "Specialization", placeholder: "مثال: طب القلب", placeholderEn: "e.g., Cardiology", type: "text", requiredParticipant: true, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#117b59" },
-    { id: "email", label: "البريد الإلكتروني", labelEn: "Email address", placeholder: "doctor@example.com", placeholderEn: "doctor@example.com", type: "email", requiredParticipant: true, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#117b59" },
-    { id: "affiliation", label: "جهة الانتساب", labelEn: "Affiliation", placeholder: "الجامعة أو المستشفى", placeholderEn: "University or hospital", type: "text", requiredParticipant: true, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#117b59" },
-    { id: "whatsapp", label: "رقم واتساب", labelEn: "WhatsApp number", placeholder: "5X XXX XXXX", placeholderEn: "5X XXX XXXX", type: "tel", requiredParticipant: true, requiredCoordinator: false, showParticipant: true, showCoordinator: false, color: "#25D366" },
-    { id: "city", label: "المدينة", labelEn: "City", placeholder: "الرياض", placeholderEn: "Riyadh", type: "text", requiredParticipant: true, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#117b59" },
-    { id: "orcid", label: "ORCID", labelEn: "ORCID", placeholder: "0000-0000-0000-0000", placeholderEn: "0000-0000-0000-0000", type: "text", requiredParticipant: false, requiredCoordinator: false, showParticipant: true, showCoordinator: true, color: "#64748b" },
-    { id: "country", label: "الدولة", labelEn: "Country", placeholder: "", placeholderEn: "", type: "text", requiredParticipant: true, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#117b59" },
+    { id: "fullName", label: "الاسم الكامل", labelEn: "Full name", placeholder: "د. أحمد محمد", placeholderEn: "Dr. Ahmed Mohammed", type: "text", requiredParticipant: true, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#0C3156" },
+    { id: "specialization", label: "التخصص الدقيق", labelEn: "Specialization", placeholder: "مثال: طب القلب", placeholderEn: "e.g., Cardiology", type: "text", requiredParticipant: true, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#0C3156" },
+    { id: "email", label: "البريد الإلكتروني", labelEn: "Email address", placeholder: "doctor@example.com", placeholderEn: "doctor@example.com", type: "email", requiredParticipant: true, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#0C3156" },
+    { id: "affiliation", label: "جهة الانتساب", labelEn: "Affiliation", placeholder: "الجامعة أو المستشفى", placeholderEn: "University or hospital", type: "text", requiredParticipant: false, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#0C3156" },
+    { id: "whatsapp", label: "رقم واتساب", labelEn: "WhatsApp number", placeholder: "5X XXX XXXX", placeholderEn: "5X XXX XXXX", type: "tel", requiredParticipant: true, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#0C3156" },
+    { id: "city", label: "المدينة", labelEn: "City", placeholder: "الرياض", placeholderEn: "Riyadh", type: "text", requiredParticipant: true, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#0C3156" },
+    { id: "orcid", label: "ORCID", labelEn: "ORCID", placeholder: "0000-0000-0000-0000", placeholderEn: "0000-0000-0000-0000", type: "text", requiredParticipant: false, requiredCoordinator: false, showParticipant: true, showCoordinator: true, color: "#0C3156" },
+    { id: "country", label: "الدولة", labelEn: "Country", placeholder: "", placeholderEn: "", type: "text", requiredParticipant: true, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#0C3156" },
   ],
   brand: {
     siteNameAr: "أكاديمية SRMA للأبحاث",
@@ -164,9 +164,9 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
   },
   pages: {
     home: { titleAr: "أكاديمية SRMA للأبحاث", titleEn: "SRMA Research Academy", descriptionAr: "نحو مجتمع بحثي أكثر تأثيراً", descriptionEn: "Building a more impactful research community", contentAr: "", contentEn: "" },
-    participant: { titleAr: "بوابة المشارك", titleEn: "Participant Portal", descriptionAr: "اكتشف الفرص البحثية المتاحة وسجل في البرنامج المناسب", descriptionEn: "Explore available research opportunities and register for the right program", contentAr: "", contentEn: "" },
-    knowledge: { titleAr: "مركز المعرفة", titleEn: "Knowledge Center", descriptionAr: "محتوى وأدلة تساعدك في رحلتك البحثية", descriptionEn: "Resources and guides for your research journey", contentAr: "", contentEn: "" },
-    about: { titleAr: "عن الأكاديمية", titleEn: "About the Academy", descriptionAr: "تعرف على رسالة وأهداف أكاديمية SRMA", descriptionEn: "Learn about SRMA Academy's mission and goals", contentAr: "", contentEn: "" },
+    participant: { titleAr: "بوابة المشارك", titleEn: "Participant Portal", descriptionAr: "اكتشف الفرص البحثية المتاحة وسجل في البرنامج المناسب لتخصصك وأهدافك المهنية", descriptionEn: "Explore available research opportunities and register for the program that aligns with your specialty and professional goals.", contentAr: "", contentEn: "" },
+    knowledge: { titleAr: "مركز المعرفة", titleEn: "Knowledge Center", descriptionAr: "محتوى وأدلة تساعدك في رحلتك البحثية", descriptionEn: "Resources and guides to support your research journey", contentAr: "", contentEn: "" },
+    about: { titleAr: "عن الأكاديمية", titleEn: "About the Academy", descriptionAr: "تعرف على رسالة وأهداف أكاديمية SRMA", descriptionEn: "Learn about SRMA Academy's mission and objectives", contentAr: "", contentEn: "" },
     faq: { titleAr: "الأسئلة الشائعة", titleEn: "Frequently Asked Questions", descriptionAr: "إجابات عن أكثر الأسئلة تكراراً", descriptionEn: "Answers to the most common questions", contentAr: "", contentEn: "" },
     specialRequests: { titleAr: "الطلبات الخاصة", titleEn: "Special Requests", descriptionAr: "خدمات بحثية متخصصة ومتكاملة", descriptionEn: "Specialized and integrated research services", contentAr: "", contentEn: "" },
     researchDetail: { titleAr: "تفاصيل الفرصة البحثية", titleEn: "Research Opportunity Details", descriptionAr: "راجع تفاصيل الفرصة ثم أكمل التسجيل", descriptionEn: "Review the opportunity details and complete your registration", contentAr: "", contentEn: "" },
@@ -245,17 +245,23 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
     ? input[key] as Record<string, unknown>
     : {};
   const brandInput = object("brand");
-  type BrandTextKey = { [K in keyof BrandContactSettings]: BrandContactSettings[K] extends string ? K : never }[keyof BrandContactSettings];
-  const brandText = (key: BrandTextKey, max = 200): string => typeof brandInput[key] === "string"
+
+  type BrandStringKey = {
+    [K in keyof BrandContactSettings]: BrandContactSettings[K] extends string ? K : never;
+  }[keyof BrandContactSettings];
+  type BrandIconKey = "publicSocialIcons" | "participantSocialIcons" | "coordinatorSocialIcons";
+  type BrandPositionKey = "publicIconPosition" | "participantIconPosition" | "coordinatorIconPosition";
+
+  const brandText = (key: BrandStringKey, max = 200): string => typeof brandInput[key] === "string"
     ? (brandInput[key] as string).trim().slice(0, max)
-    : DEFAULT_SITE_CONTENT_SETTINGS.brand[key] as string;
-  const brandIcons = (key: "publicSocialIcons" | "participantSocialIcons" | "coordinatorSocialIcons") => {
+    : String(DEFAULT_SITE_CONTENT_SETTINGS.brand[key]);
+  const brandIcons = (key: BrandIconKey) => {
     const candidate = brandInput[key];
     return Array.isArray(candidate)
       ? [...new Set(candidate.filter((id): id is SocialIconId => typeof id === "string" && SOCIAL_ICON_IDS.includes(id as SocialIconId)))]
       : DEFAULT_SITE_CONTENT_SETTINGS.brand[key];
   };
-  const brandPosition = (key: "publicIconPosition" | "participantIconPosition" | "coordinatorIconPosition") => {
+  const brandPosition = (key: BrandPositionKey) => {
     const candidate = brandInput[key];
     return typeof candidate === "string" && ICON_POSITIONS.includes(candidate as FloatingIconPosition)
       ? candidate as FloatingIconPosition
