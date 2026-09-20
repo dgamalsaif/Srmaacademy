@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { X, CheckCircle2, Loader2, UserRound, Building2, MapPin, AtSign } from "lucide-react";
+import { X, CheckCircle2, Loader2, UserRound, Building2, MapPin, AtSign, ExternalLink } from "lucide-react";
 import CountrySelector from "./CountrySelector";
 import { DEFAULT_SITE_CONTENT_SETTINGS, RegistrationFieldId, SiteContentSettings } from "@/lib/siteContentSettings";
 import { useLanguage } from "@/lib/i18n";
@@ -25,6 +25,7 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
+  const [researchGroupUrl, setResearchGroupUrl] = useState("");
   const [contentSettings, setContentSettings] = useState<SiteContentSettings>(DEFAULT_SITE_CONTENT_SETTINGS);
   const audience = coordinatorEntry ? "coordinator" : "participant";
   const fieldSetting = (id: RegistrationFieldId) => contentSettings.registrationFields.find((field) => field.id === id) || DEFAULT_SITE_CONTENT_SETTINGS.registrationFields.find((field) => field.id === id)!;
@@ -67,7 +68,7 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
     setAuthorRole(coAuthorSeatsLeft === 0 && (firstAuthorSeatsLeft || 0) > 0 ? "first_author" : "co_author");
   }, [isOpen, firstAuthorSeatsLeft, coAuthorSeatsLeft]);
 
-  const reset = () => { setForm(initialForm); setAuthorRole("co_author"); setDone(false); setError(""); setLoading(false); };
+  const reset = () => { setForm(initialForm); setAuthorRole("co_author"); setDone(false); setError(""); setResearchGroupUrl(""); setLoading(false); };
   const handleClose = () => { reset(); onClose(); };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -85,8 +86,11 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
       const response = await fetch(coordinatorEntry ? `${API_BASE}/coordinator/registrations` : `${API_BASE}/registrations`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
       });
-      const result = await response.json().catch(() => ({})) as { error?: string };
+      const result = await response.json().catch(() => ({})) as { error?: string; researchGroupUrl?: string | null };
       if (!response.ok) throw new Error(submitError(result.error));
+      if (!coordinatorEntry && typeof result.researchGroupUrl === "string" && result.researchGroupUrl.startsWith("https://")) {
+        setResearchGroupUrl(result.researchGroupUrl);
+      }
       setDone(true);
       onRegistered?.();
       if (!coordinatorEntry && visible("whatsapp")) {
@@ -126,6 +130,11 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#e7f3ef]"><CheckCircle2 size={34} style={{ color: contentSettings.accentColor }} /></div>
             <h3 className="text-xl font-black text-[#172238]">{localize("تم حفظ التسجيل بنجاح", "Registration saved successfully")}</h3>
             <p className="mx-auto mt-3 max-w-sm text-sm leading-7 text-slate-500">{coordinatorEntry ? localize("تمت إضافة بيانات الطالب إلى لوحة التسجيلات بنجاح.", "The student's details have been added to the registrations dashboard.") : localize("تم حفظ بياناتك وسيتم التواصل معك من فريق SRMA قريباً.", "Your details have been saved and the SRMA team will contact you soon.")}</p>
+            {!coordinatorEntry && researchGroupUrl && (
+              <a href={researchGroupUrl} target="_blank" rel="noopener noreferrer" className="mx-auto mt-6 flex w-full max-w-sm items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 py-3.5 text-sm font-black text-white transition hover:bg-[#1eb856]">
+                <ExternalLink size={17} />{localize("الانضمام إلى قروب الباحثين", "Join the researchers group")}
+              </a>
+            )}
             <button onClick={handleClose} className="mt-7 rounded-xl px-8 py-3 text-sm font-bold text-white transition" style={{ backgroundColor: contentSettings.primaryColor }}>{localize("إغلاق", "Close")}</button>
           </div>
         ) : (

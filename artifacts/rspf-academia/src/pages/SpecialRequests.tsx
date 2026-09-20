@@ -2,6 +2,7 @@ import { useState } from "react";
 import { FlaskConical, GraduationCap, FileText, Shield, Globe, Search, BarChart2, Wrench } from "lucide-react";
 import ServiceModal from "@/components/ServiceModal";
 import { useLanguage } from "@/lib/i18n";
+import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
 
 const services = [
   { bg: "#0C3156", icon: <FlaskConical size={26} />, title: { ar: "إعداد الدراسة البحثية", en: "Research study preparation" }, desc: { ar: "تصميم وإعداد الدراسات البحثية الفردية وفق أعلى المعايير الأكاديمية الدولية", en: "Design and preparation of individual research studies to the highest international academic standards." } },
@@ -17,7 +18,8 @@ const services = [
 export default function SpecialRequests() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState("");
-  const { localize, t } = useLanguage();
+  const { localize, t, language } = useLanguage();
+  const { data: settings } = useSiteContentSettings();
 
   return (
     <div className="min-h-screen bg-white">
@@ -26,10 +28,18 @@ export default function SpecialRequests() {
           <div className="inline-flex items-center gap-2 bg-[#0C3156]/8 border border-[#0C3156]/15 text-[#0C3156] px-4 py-1.5 rounded-full text-sm font-semibold mb-4">
             {t("nav.requests")}
           </div>
-          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 mb-3">{localize("بوابة الطلبات الخاصة", "Special Requests Portal")}</h1>
-          <p className="text-slate-600 max-w-xl mx-auto">{localize("خدمات بحثية متخصصة ومتكاملة للباحثين وطلاب الدراسات العليا. اختر الخدمة المطلوبة للتواصل مع فريق الخبراء", "Specialized, integrated research services for researchers and postgraduate students. Select the service you need to contact our expert team.")}</p>
+          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 mb-3">{language === "ar" ? settings?.pages.specialRequests.titleAr : settings?.pages.specialRequests.titleEn}</h1>
+          <p className="text-slate-600 max-w-xl mx-auto">{language === "ar" ? settings?.pages.specialRequests.descriptionAr : settings?.pages.specialRequests.descriptionEn}</p>
         </div>
       </section>
+
+{((language === "ar" ? settings?.pages.specialRequests.contentAr : settings?.pages.specialRequests.contentEn) || "").trim() && (
+        <section className="py-10 px-4 bg-white border-b border-slate-100">
+          <div className="max-w-4xl mx-auto whitespace-pre-wrap text-slate-700 leading-relaxed">
+            {language === "ar" ? settings?.pages.specialRequests.contentAr : settings?.pages.specialRequests.contentEn}
+          </div>
+        </section>
+      )}
 
       <section className="py-10 px-4">
         <div className="max-w-5xl mx-auto">

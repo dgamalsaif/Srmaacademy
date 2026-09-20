@@ -15,8 +15,7 @@ class RegistrationCapacityError extends Error {
   }
 }
 
-async function createRegistration(req: Request, res: Response, coordinatorId: number | null) {
-  const audience = coordinatorId ? "coordinator" : "participant";
+async function createRegistration(req: Request, res: Response, coordinatorId: number | null, audience: "participant" | "coordinator") {
   const settings = await getSiteContentSettings();
   const source = req.body && typeof req.body === "object" ? req.body as Record<string, unknown> : {};
   const valueOf = (fieldId: string) => typeof source[fieldId] === "string" ? source[fieldId].trim() : "";
@@ -59,7 +58,7 @@ async function createRegistration(req: Request, res: Response, coordinatorId: nu
   }
 
   try {
-    const row = await db.transaction(async (tx) => {
+    const result = await db.transaction(async (tx) => {
       await ensureProgramCapacityModel(tx);
       await tx.execute(sql`SELECT pg_advisory_xact_lock(${PROGRAM_CAPACITY_LOCK_NAMESPACE + parsed.data.researchId})`);
       const [program] = await tx.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, parsed.data.researchId)).limit(1);
@@ -90,9 +89,11 @@ async function createRegistration(req: Request, res: Response, coordinatorId: nu
         status: seatsLeft === 0 ? "seats_full" : program.status,
         updatedAt: new Date(),
       }).where(eq(researchProgramsTable.id, program.id));
-      return registration;
+      return { registration, researchGroupUrl: program.researchGroupUrl };
     });
-    res.status(201).json(row);
+    res.status(201).json(audience === "participant"
+      ? { ...result.registration, researchGroupUrl: result.researchGroupUrl || null }
+      : result.registration);
   } catch (error) {
     if (error instanceof RegistrationCapacityError) {
       res.status(error.status).json({ error: error.message });
@@ -105,14 +106,14 @@ async function createRegistration(req: Request, res: Response, coordinatorId: nu
 
 /* ── POST /api/registrations ── */
 router.post("/registrations", async (req, res) => {
-  await createRegistration(req, res, null);
+  await createRegistration(req, res, null, "participant");
 });
 
 /* ── POST /api/coordinator/registrations ── */
 router.post("/coordinator/registrations", requireCoordinator, async (req, res) => {
   const staff = res.locals.staff as StaffSession;
   const coordinatorId = staff.role === "coordinator" ? staff.coordinatorId : null;
-  await createRegistration(req, res, coordinatorId);
+  await createRegistration(req, res, coordinatorId, "coordinator");
 });
 
 /* ── GET /api/registrations ── */

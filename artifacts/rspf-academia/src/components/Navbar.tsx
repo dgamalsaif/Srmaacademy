@@ -4,11 +4,13 @@ import { Check, ChevronDown, Languages, Menu, X } from "lucide-react";
 import { SRMA_LOGO } from "@/components/BrandBackground";
 import InstallAppButton from "@/components/InstallAppButton";
 import { useLanguage } from "@/lib/i18n";
+import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
 
 export default function Navbar() {
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { t, language, setLanguage } = useLanguage();
+  const { data: settings } = useSiteContentSettings();
   const languageLabel = language === "ar" ? "اللغة" : "Language";
   const languageOptions = [
     { value: "ar" as const, label: "العربية" },
@@ -71,12 +73,12 @@ export default function Navbar() {
 
           {/* Logo */}
           <Link href="/" data-testid="link-logo" className="flex items-center gap-2.5 flex-shrink-0">
-            <img src={SRMA_LOGO} alt="SRMA Research Academy" className="h-11 w-11 rounded-full border border-[#0C3156]/15 object-cover shadow-sm" />
+            <img src={settings?.brand.logoUrl || SRMA_LOGO} alt={language === "ar" ? settings?.brand.siteNameAr : settings?.brand.siteNameEn} className="h-11 w-11 rounded-full border border-[#0C3156]/15 object-cover shadow-sm" />
             <div className="flex flex-col items-end">
               <div className="flex items-center gap-1.5">
-                <span className="text-xl font-black text-[#0C3156] tracking-tight">SRMA</span>
+                <span className="text-xl font-black text-[#0C3156] tracking-tight">{language === "ar" ? settings?.brand.siteNameAr.split(" ")[0] : settings?.brand.siteNameEn.split(" ")[0] || "SRMA"}</span>
               </div>
-              <span className="text-[10px] text-slate-500 font-medium tracking-wide">SRMA Research Academy</span>
+              <span className="text-[10px] text-slate-500 font-medium tracking-wide">{language === "ar" ? settings?.brand.siteNameAr : settings?.brand.siteNameEn}</span>
             </div>
           </Link>
         </div>

@@ -34,6 +34,13 @@ export interface RegistrationFieldSetting {
   color: string;
 }
 
+export type PublicPageId = "home" | "participant" | "knowledge" | "about" | "faq" | "specialRequests" | "researchDetail";
+export interface PublicPageContent { titleAr: string; titleEn: string; descriptionAr: string; descriptionEn: string; contentAr: string; contentEn: string; }
+export interface BrandContactSettings {
+  siteNameAr: string; siteNameEn: string; logoUrl: string; whatsapp: string; email: string;
+  telegramUsername: string; instagramUsername: string; xUsername: string; linkedinUsername: string;
+}
+
 export interface SiteContentSettings {
   participantTitle: string;
   participantTitleEn: string;
@@ -57,6 +64,8 @@ export interface SiteContentSettings {
   specialtyOptions: SpecialtyOption[];
   journalOptions: JournalOption[];
   registrationFields: RegistrationFieldSetting[];
+  brand: BrandContactSettings;
+  pages: Record<PublicPageId, PublicPageContent>;
 }
 
 export const CARD_PARTS = [
@@ -122,4 +131,17 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
     { id: "orcid", label: "ORCID", labelEn: "ORCID", placeholder: "0000-0000-0000-0000", placeholderEn: "0000-0000-0000-0000", type: "text", requiredParticipant: false, requiredCoordinator: false, showParticipant: true, showCoordinator: true, color: "#64748b" },
     { id: "country", label: "الدولة", labelEn: "Country", placeholder: "", placeholderEn: "", type: "text", requiredParticipant: true, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#117b59" },
   ],
+  brand: {
+    siteNameAr: "أكاديمية SRMA للأبحاث", siteNameEn: "SRMA Research Academy", logoUrl: "/srma-logo.jpg",
+    whatsapp: "966562159258", email: "", telegramUsername: "SRMAAcademy", instagramUsername: "", xUsername: "", linkedinUsername: "",
+  },
+  pages: {
+    home: { titleAr: "أكاديمية SRMA للأبحاث", titleEn: "SRMA Research Academy", descriptionAr: "نحو مجتمع بحثي أكثر تأثيراً", descriptionEn: "Building a more impactful research community", contentAr: "", contentEn: "" },
+    participant: { titleAr: "بوابة المشارك", titleEn: "Participant Portal", descriptionAr: "اكتشف الفرص البحثية المتاحة وسجل في البرنامج المناسب", descriptionEn: "Explore available research opportunities and register for the right program", contentAr: "", contentEn: "" },
+    knowledge: { titleAr: "مركز المعرفة", titleEn: "Knowledge Center", descriptionAr: "محتوى وأدلة تساعدك في رحلتك البحثية", descriptionEn: "Resources and guides for your research journey", contentAr: "", contentEn: "" },
+    about: { titleAr: "عن الأكاديمية", titleEn: "About the Academy", descriptionAr: "تعرف على رسالة وأهداف أكاديمية SRMA", descriptionEn: "Learn about SRMA Academy's mission and goals", contentAr: "", contentEn: "" },
+    faq: { titleAr: "الأسئلة الشائعة", titleEn: "Frequently Asked Questions", descriptionAr: "إجابات عن أكثر الأسئلة تكراراً", descriptionEn: "Answers to the most common questions", contentAr: "", contentEn: "" },
+    specialRequests: { titleAr: "الطلبات الخاصة", titleEn: "Special Requests", descriptionAr: "خدمات بحثية متخصصة ومتكاملة", descriptionEn: "Specialized and integrated research services", contentAr: "", contentEn: "" },
+    researchDetail: { titleAr: "تفاصيل الفرصة البحثية", titleEn: "Research Opportunity Details", descriptionAr: "راجع تفاصيل الفرصة ثم أكمل التسجيل", descriptionEn: "Review the opportunity details and complete your registration", contentAr: "", contentEn: "" },
+  },
 };

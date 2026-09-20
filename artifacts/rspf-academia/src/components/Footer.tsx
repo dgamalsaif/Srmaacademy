@@ -3,6 +3,7 @@ import { Phone, Send, Radio } from "lucide-react";
 import { SRMA_LOGO } from "@/components/BrandBackground";
 import InstallAppButton from "@/components/InstallAppButton";
 import { useLanguage } from "@/lib/i18n";
+import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
 
 const quickLinks = [
   { href: "/", ar: "الرئيسية", en: "Home" },
@@ -15,7 +16,8 @@ const quickLinks = [
 ];
 
 export default function Footer() {
-  const { localize, t } = useLanguage();
+  const { localize, t, language } = useLanguage();
+  const { data: settings } = useSiteContentSettings();
 
   return (
     <footer className="bg-[#0C3156] text-white">
@@ -26,24 +28,24 @@ export default function Footer() {
             <h3 className="text-lg font-bold mb-5 text-[#E9A020]">{t("footer.contact")}</h3>
             <div className="space-y-3">
               <a
-                href="https://wa.me/966562159258"
+                href={`https://wa.me/${settings?.brand.whatsapp || "966562159258"}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 data-testid="link-footer-phone"
                 className="flex items-center gap-2 text-blue-200 hover:text-white text-sm transition-colors"
               >
                 <Phone size={15} />
-                +966 56 215 9258
+                {settings?.brand.whatsapp ? `+${settings.brand.whatsapp}` : "+966 56 215 9258"}
               </a>
               <a
-                href="https://t.me/SRMAAcademy"
+                href={`https://t.me/${settings?.brand.telegramUsername || "SRMAAcademy"}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 data-testid="link-footer-telegram-supervisor"
                 className="flex items-center gap-2 text-blue-200 hover:text-white text-sm transition-colors"
               >
                 <Send size={15} />
-                @SRMAAcademy ({t("common.telegram")})
+                @{settings?.brand.telegramUsername || "SRMAAcademy"} ({t("common.telegram")})
               </a>
               <a
                 href="https://whatsapp.com/channel/0029Vb7QxGE1iUxikfgEFJ0I"
@@ -81,10 +83,10 @@ export default function Footer() {
             <div className="flex items-center gap-2">
               <div className="flex flex-col items-end">
                 <div className="flex items-center gap-3">
-                  <img src={SRMA_LOGO} alt="SRMA Research Academy" className="h-14 w-14 rounded-full border border-white/20 object-cover shadow-lg" />
+                  <img src={settings?.brand.logoUrl || SRMA_LOGO} alt={language === "ar" ? settings?.brand.siteNameAr : settings?.brand.siteNameEn} className="h-14 w-14 rounded-full border border-white/20 object-cover shadow-lg bg-white" />
                   <div>
-                    <span className="block text-2xl font-black text-white tracking-tight">SRMA</span>
-                    <span className="mt-0.5 block text-[10px] font-medium tracking-widest text-blue-200">RESEARCH ACADEMY</span>
+                    <span className="block text-2xl font-black text-white tracking-tight">{language === "ar" ? settings?.brand.siteNameAr.split(" ")[0] : settings?.brand.siteNameEn.split(" ")[0] || "SRMA"}</span>
+                    <span className="mt-0.5 block text-[10px] font-medium tracking-widest text-blue-200">{language === "ar" ? settings?.brand.siteNameAr : settings?.brand.siteNameEn}</span>
                   </div>
                 </div>
               </div>
@@ -93,7 +95,7 @@ export default function Footer() {
               {localize("المنصة الأكاديمية الأولى في المملكة للبحث العلمي الطبي — نرافقك من الفكرة حتى النشر في أرقى المجلات الدولية", "The Kingdom's leading academic platform for medical research — supporting you from idea to publication in leading international journals.")}
             </p>
             <a
-              href="https://t.me/SRMAAcademy"
+              href={`https://t.me/${settings?.brand.telegramUsername || "SRMAAcademy"}`}
               target="_blank"
               rel="noopener noreferrer"
               data-testid="button-footer-telegram-channel"

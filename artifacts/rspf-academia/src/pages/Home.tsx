@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { FlaskConical, Users, BookOpen, BarChart2, Heart, Award, CheckCircle2, ChevronLeft, ArrowUpRight } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
+import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
 
 const services = [
   { bg: "#0C3156", icon: <FlaskConical size={26} />, title: "فرص بحثية للمشاركة والنشر", desc: "شارك في أبحاث طبية محكمة ومفهرسة دولياً مع إشراف كامل حتى النشر", badge: "الأكثر طلباً ⭐", href: "/participant-portal" },
@@ -30,7 +31,8 @@ const goals = [
 const partnerFeatures = ["فريق متخصص من الأطباء والباحثين","إشراف كامل من الفكرة حتى النشر","مجلات مفهرسة في PubMed وScopus","دعم إحصائي احترافي","ردود سريعة خلال 24 ساعة","أسعار مناسبة للباحثين","شهادات معتمدة من SCFHS","شبكة واسعة من المجلات الدولية"];
 
 export default function Home() {
-  const { direction, localize } = useLanguage();
+  const { direction, localize, language } = useLanguage();
+  const { data: settings } = useSiteContentSettings();
   const staticEnglish: Record<string, string> = {
     "فرص بحثية للمشاركة والنشر": "Research opportunities for participation and publication",
     "شارك في أبحاث طبية محكمة ومفهرسة دولياً مع إشراف كامل حتى النشر": "Participate in peer-reviewed, internationally indexed medical research with full supervision through publication.",
@@ -70,15 +72,11 @@ export default function Home() {
             <span className="w-2 h-2 rounded-full bg-[#E9A020] animate-pulse" />
             {localize("أكاديمية SRMA البحثية · إصدار 2026", "SRMA Research Academy · Edition 2026")}
           </div>
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black leading-tight mb-6 tracking-tight">
-            <span className="text-slate-900">{localize("المنصة ", "The leading ")}</span>
-            <span className="text-[#E9A020]">{localize("الرائدة ", "platform ")}</span>
-            <span className="text-slate-900">{localize("للبحث العلمي الطبي في ", "for medical research in ")}</span>
-            <br className="hidden sm:block"/>
-            <span className="text-[#0C3156]">{localize("المملكة العربية السعودية", "Saudi Arabia")}</span>
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-black leading-tight mb-6 tracking-tight text-slate-900">
+            {language === "ar" ? settings?.pages.home.titleAr : settings?.pages.home.titleEn}
           </h1>
           <p className="text-slate-600 text-lg max-w-2xl mx-auto mb-10 leading-relaxed">
-            {localize("نقدم لك منصة بحثية متكاملة تجمع بين الخبرة الأكاديمية والدعم الشامل لمساعدتك في نشر أبحاثك في أرقى المجلات العلمية العالمية", "We provide an integrated research platform that combines academic expertise and comprehensive support to help publish your research in leading international scientific journals.")}
+            {language === "ar" ? settings?.pages.home.descriptionAr : settings?.pages.home.descriptionEn}
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-14">
             <Link href="/participant-portal" data-testid="button-hero-explore"
@@ -105,6 +103,14 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+{((language === "ar" ? settings?.pages.home.contentAr : settings?.pages.home.contentEn) || "").trim() && (
+        <section className="py-12 px-4 bg-white border-b border-slate-100">
+          <div className="max-w-4xl mx-auto whitespace-pre-wrap text-slate-700 leading-relaxed">
+            {language === "ar" ? settings?.pages.home.contentAr : settings?.pages.home.contentEn}
+          </div>
+        </section>
+      )}
 
       {/* SERVICES */}
       <section className="py-16 px-4 bg-slate-50/50">

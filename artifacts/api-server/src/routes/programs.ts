@@ -91,7 +91,7 @@ async function listPrograms() {
   });
 }
 
-function toClient(row: typeof researchProgramsTable.$inferSelect) {
+function toClient(row: typeof researchProgramsTable.$inferSelect, includeOwnerFields = false) {
   return {
     id: row.id,
     category: row.category,
@@ -126,6 +126,7 @@ function toClient(row: typeof researchProgramsTable.$inferSelect) {
     specialtyColor: "bg-emerald-100 text-emerald-700",
     createdAt: row.createdAt.toISOString().slice(0, 10),
     imageUrl: row.imagePath ? `/api/programs/${row.id}/image` : `/api/programs/${row.id}/poster.svg`,
+    ...(includeOwnerFields ? { researchGroupUrl: row.researchGroupUrl } : {}),
   };
 }
 
@@ -163,8 +164,9 @@ router.get("/sitemap.xml", async (_req, res) => {
 
 router.get("/programs", async (req, res) => {
   const rows = await listPrograms();
-  const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session)) || Boolean(await getManagedOwner(req));
-  res.json((isStaff ? rows : rows.filter(isPublicProgram)).map(toClient));
+  const isOwner = Boolean(await getManagedOwner(req));
+  const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session)) || isOwner;
+  res.json((isStaff ? rows : rows.filter(isPublicProgram)).map((row) => toClient(row, isOwner)));
 });
 
 router.post("/program-images/upload", requireOwner, raw({
@@ -283,8 +285,14 @@ router.get("/programs/:id/share", async (req, res) => {
 });
 
 router.post("/programs", requireOwner, async (req, res) => {
+  const researchGroupUrl = normalizeResearchGroupUrl(req.body?.researchGroupUrl);
+  if (researchGroupUrl === null) {
+    res.status(400).json({ error: "رابط القروب يجب أن يبدأ بـ https:// أو يترك فارغاً." });
+    return;
+  }
   const body = await normalizeProgramPayload({
     ...req.body,
+    researchGroupUrl,
     indexedIn: Array.isArray(req.body?.indexedIn) ? req.body.indexedIn.join("|") : req.body?.indexedIn || "",
     benefits: Array.isArray(req.body?.benefits) ? req.body.benefits.join("|") : req.body?.benefits || "",
   }, "create");
@@ -310,7 +318,7 @@ router.post("/programs", requireOwner, async (req, res) => {
     return;
   }
   const [row] = await db.insert(researchProgramsTable).values({ ...parsed.data, status: programStatus, priceOriginalSar, priceDiscountedSar }).returning();
-  res.status(201).json(toClient(row));
+  res.status(201).json(toClient(row, true));
 });
 
 router.post("/programs/import", requireOwner, async (req, res) => {
@@ -329,13 +337,19 @@ router.post("/programs/import", requireOwner, async (req, res) => {
   }
   const result = await importResearchOpportunities(rows);
   const specialtyOptions = await addImportedSpecialties(result.insertedSpecialties);
-  res.status(201).json({ ...result, inserted: result.inserted.map(toClient), specialtyOptions, received: req.body.rows.length });
+  res.status(201).json({ ...result, inserted: result.inserted.map((row) => toClient(row, true)), specialtyOptions, received: req.body.rows.length });
 });
 
 router.patch("/programs/:id", requireOwner, async (req, res) => {
   const id = Number(req.params["id"]);
+  const researchGroupUrl = normalizeResearchGroupUrl(req.body?.researchGroupUrl);
+  if (researchGroupUrl === null) {
+    res.status(400).json({ error: "رابط القروب يجب أن يبدأ بـ https:// أو يترك فارغاً." });
+    return;
+  }
   const body = await normalizeProgramPayload({
     ...req.body,
+    ...(researchGroupUrl === undefined ? {} : { researchGroupUrl }),
     indexedIn: Array.isArray(req.body?.indexedIn) ? req.body.indexedIn.join("|") : req.body?.indexedIn || "",
     benefits: Array.isArray(req.body?.benefits) ? req.body.benefits.join("|") : req.body?.benefits || "",
     updatedAt: new Date(),
@@ -371,7 +385,7 @@ router.patch("/programs/:id", requireOwner, async (req, res) => {
         .where(eq(researchProgramsTable.id, id)).returning();
       return row;
     });
-    res.json(toClient(row));
+    res.json(toClient(row, true));
   } catch (error) {
     if (error instanceof ProgramUpdateError) {
       res.status(error.status).json({ error: error.message, ...(error.fields?.length ? { fields: error.fields } : {}) });
@@ -440,6 +454,19 @@ async function normalizeProgramPayload(source: Record<string, unknown>, mode: "c
 function numberOrDefault(value: unknown, fallback: number) {
   const number = typeof value === "number" ? value : Number(value);
   return Number.isInteger(number) && number >= 0 ? number : fallback;
+}
+
+function normalizeResearchGroupUrl(value: unknown): string | null | undefined {
+  if (value === undefined) return undefined;
+  if (typeof value !== "string") return null;
+  const normalized = value.trim();
+  if (!normalized) return "";
+  if (normalized.length > 2048 || !/^https:\/\//i.test(normalized)) return null;
+  try {
+    return new URL(normalized).toString();
+  } catch {
+    return null;
+  }
 }
 
 class ProgramUpdateError extends Error {

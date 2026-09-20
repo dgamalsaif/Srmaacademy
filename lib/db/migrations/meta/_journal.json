@@ -57,6 +57,13 @@
       "when": 1787580000000,
       "tag": "0007_owner_accounts",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790000000000,
+      "tag": "0008_research_group_url",
+      "breakpoints": true
     }
   ]
 }

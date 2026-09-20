@@ -8,6 +8,7 @@ import OpportunityMedia from "@/components/OpportunityMedia";
 import OpportunityPrice from "@/components/OpportunityPrice";
 import { OpportunityCurrency, RESEARCH_STATUS_LABELS } from "@/lib/opportunityPricing";
 import { useLanguage } from "@/lib/i18n";
+import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
 import { PageSeo } from "@/lib/seo";
 
 export default function ResearchDetail() {
@@ -17,7 +18,7 @@ export default function ResearchDetail() {
   const [allResearch, setAllResearch] = useState<ResearchOpportunity[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [currency, setCurrency] = useState<OpportunityCurrency>("SAR");
-  const [contentSettings, setContentSettings] = useState<SiteContentSettings>(DEFAULT_SITE_CONTENT_SETTINGS);
+  const { data: contentSettings = DEFAULT_SITE_CONTENT_SETTINGS } = useSiteContentSettings();
 
   const loadResearch = () => {
     fetch("/api/programs")
@@ -31,10 +32,7 @@ export default function ResearchDetail() {
 
   useEffect(() => {
     loadResearch();
-    fetch("/api/site-content-settings")
-      .then((response) => response.ok ? response.json() : Promise.reject())
-      .then((settings: SiteContentSettings) => setContentSettings(settings))
-      .catch(() => setContentSettings(DEFAULT_SITE_CONTENT_SETTINGS));
+
   }, [params.id]);
 
   if (!research) {
@@ -68,6 +66,18 @@ export default function ResearchDetail() {
       <div className="min-h-screen bg-white" dir={direction}>
       {/* BREADCRUMB */}
       <div className="bg-slate-50 border-b border-slate-200 px-4 py-3">
+
+        <div className={`mx-auto max-w-5xl mb-4 ${contentFlow}`}>
+          <h1 className="text-2xl font-black text-slate-900 mb-1">{language === "ar" ? contentSettings.pages.researchDetail.titleAr : contentSettings.pages.researchDetail.titleEn}</h1>
+          <p className="text-slate-600 text-sm">{language === "ar" ? contentSettings.pages.researchDetail.descriptionAr : contentSettings.pages.researchDetail.descriptionEn}</p>
+        </div>
+{((language === "ar" ? contentSettings?.pages.researchDetail.contentAr : contentSettings?.pages.researchDetail.contentEn) || "").trim() && (
+        <section className="mx-auto max-w-5xl mb-4 bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+          <div className="max-w-4xl mx-auto whitespace-pre-wrap text-slate-700 leading-relaxed">
+            {language === "ar" ? contentSettings?.pages.researchDetail.contentAr : contentSettings?.pages.researchDetail.contentEn}
+          </div>
+        </section>
+      )}
         <div className={`mx-auto flex max-w-5xl items-center gap-2 text-sm text-slate-500 ${contentFlow}`}>
           <span className="text-slate-400">›</span>
           <Link href="/participant-portal" className="hover:text-[#0C3156] transition-colors">{localize("بوابة المشارك", "Participant Portal")}</Link>

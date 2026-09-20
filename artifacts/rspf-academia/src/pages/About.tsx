@@ -1,5 +1,6 @@
 import { CheckCircle2 } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
+import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
 
 type LocalizedText = { ar: string; en: string };
 
@@ -29,17 +30,26 @@ const services: LocalizedText[] = [
 ];
 
 export default function About() {
-  const { localize } = useLanguage();
+  const { localize, language } = useLanguage();
+  const { data: settings } = useSiteContentSettings();
 
   return (
     <div className="min-h-screen bg-white">
       <section className="bg-gradient-to-br from-slate-50 via-blue-50/30 to-white py-14 px-4 text-center">
         <div className="max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 bg-[#0C3156]/8 border border-[#0C3156]/15 text-[#0C3156] px-4 py-1.5 rounded-full text-sm font-semibold mb-4">{localize("عن المنصة", "About the platform")}</div>
-          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4">{localize("رسالتنا نحو بحث علمي طبي متميز", "Our mission for exceptional medical research")}</h1>
+          <div className="inline-flex items-center gap-2 bg-[#0C3156]/8 border border-[#0C3156]/15 text-[#0C3156] px-4 py-1.5 rounded-full text-sm font-semibold mb-4">{language === "ar" ? settings?.pages.about.titleAr : settings?.pages.about.titleEn}</div>
+          <h1 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4">{language === "ar" ? settings?.pages.about.descriptionAr : settings?.pages.about.descriptionEn}</h1>
           <p className="text-slate-600 text-lg leading-relaxed">{localize("SRMA Research Academy هي أكاديمية متخصصة تُعنى بدعم الأطباء والباحثين الصحيين في رحلتهم البحثية من الفكرة حتى النشر الدولي", "SRMA Research Academy is a specialized academy supporting physicians and health researchers throughout their research journey, from idea to international publication.")}</p>
         </div>
       </section>
+{((language === "ar" ? settings?.pages.about.contentAr : settings?.pages.about.contentEn) || "").trim() && (
+        <section className="py-10 px-4 bg-slate-50 border-b border-slate-100">
+          <div className="max-w-4xl mx-auto whitespace-pre-wrap text-slate-700 leading-relaxed">
+            {language === "ar" ? settings?.pages.about.contentAr : settings?.pages.about.contentEn}
+          </div>
+        </section>
+      )}
+
       <section className="py-10 px-4 bg-white border-b border-slate-100"><div className="max-w-5xl mx-auto"><div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
         {stats.map((stat) => <div key={stat.ar} className="text-center p-5 bg-gradient-to-br from-[#0C3156] to-[#1A5FAE] rounded-2xl shadow-md text-white"><div className="text-2xl mb-2">{stat.icon}</div><div className="text-3xl font-black">{stat.value}</div><div className="text-blue-200 text-sm mt-2 font-medium">{localize(stat.ar, stat.en)}</div></div>)}
       </div></div></section>

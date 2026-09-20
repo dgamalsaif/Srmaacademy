@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
+import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
 
 const faqs = [
   { ar: { q: "ما هي SRMA Research Academy ومن المستهدف من الخدمة؟", a: "SRMA Research Academy هي أكاديمية متخصصة في دعم الأطباء والباحثين الصحيين في رحلتهم البحثية. نستهدف أطباء البورد، المقيمين، الاستشاريين، وطلاب الدراسات العليا في المملكة العربية السعودية ودول الخليج." }, en: { q: "What is SRMA Research Academy, and who are its services for?", a: "SRMA Research Academy specializes in supporting physicians and health researchers throughout their research journey. We serve board-certified physicians, residents, consultants, and postgraduate students in Saudi Arabia and the Gulf countries." } },
@@ -18,11 +19,20 @@ const faqs = [
 export default function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const { language, localize } = useLanguage();
+  const { data: settings } = useSiteContentSettings();
   return <div className="min-h-screen bg-white">
     <section className="bg-gradient-to-br from-slate-50 via-blue-50/30 to-white py-14 px-4 text-center"><div className="max-w-2xl mx-auto">
-      <div className="inline-flex items-center gap-2 bg-[#0C3156]/8 border border-[#0C3156]/15 text-[#0C3156] px-4 py-1.5 rounded-full text-sm font-semibold mb-4">{localize("الأسئلة الشائعة", "Frequently asked questions")}</div>
-      <h1 className="text-3xl sm:text-4xl font-black text-slate-900 mb-3">{localize("الأسئلة الشائعة", "Frequently asked questions")}</h1><p className="text-slate-600">{localize("إجابات على أكثر الأسئلة شيوعاً حول SRMA Research Academy وخدماتها", "Answers to the most common questions about SRMA Research Academy and its services")}</p>
+      <div className="inline-flex items-center gap-2 bg-[#0C3156]/8 border border-[#0C3156]/15 text-[#0C3156] px-4 py-1.5 rounded-full text-sm font-semibold mb-4">{language === "ar" ? settings?.pages.faq.titleAr : settings?.pages.faq.titleEn}</div>
+      <p className="text-slate-600">{language === "ar" ? settings?.pages.faq.descriptionAr : settings?.pages.faq.descriptionEn}</p>
     </div></section>
+{((language === "ar" ? settings?.pages.faq.contentAr : settings?.pages.faq.contentEn) || "").trim() && (
+        <section className="py-10 px-4 bg-white border-b border-slate-100">
+          <div className="max-w-4xl mx-auto whitespace-pre-wrap text-slate-700 leading-relaxed">
+            {language === "ar" ? settings?.pages.faq.contentAr : settings?.pages.faq.contentEn}
+          </div>
+        </section>
+      )}
+
     <section className="py-12 px-4"><div className="max-w-3xl mx-auto space-y-3">{faqs.map((faq, index) => {
       const item = faq[language];
       return <div key={index} className="border border-slate-200 rounded-2xl overflow-hidden hover:border-[#0C3156]/25 transition-colors" data-testid={`accordion-faq-${index}`}>

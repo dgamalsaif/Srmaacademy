@@ -24,6 +24,27 @@ export interface RegistrationFieldSetting {
   color: string;
 }
 
+export type PublicPageId = "home" | "participant" | "knowledge" | "about" | "faq" | "specialRequests" | "researchDetail";
+export interface PublicPageContent {
+  titleAr: string;
+  titleEn: string;
+  descriptionAr: string;
+  descriptionEn: string;
+  contentAr: string;
+  contentEn: string;
+}
+export interface BrandContactSettings {
+  siteNameAr: string;
+  siteNameEn: string;
+  logoUrl: string;
+  whatsapp: string;
+  email: string;
+  telegramUsername: string;
+  instagramUsername: string;
+  xUsername: string;
+  linkedinUsername: string;
+}
+
 export interface SiteContentSettings {
   participantTitle: string;
   participantTitleEn: string;
@@ -47,6 +68,8 @@ export interface SiteContentSettings {
   specialtyOptions: SpecialtyOption[];
   journalOptions: JournalOption[];
   registrationFields: RegistrationFieldSetting[];
+  brand: BrandContactSettings;
+  pages: Record<PublicPageId, PublicPageContent>;
 }
 
 export const SITE_CONTENT_KEY = "site-content";
@@ -86,6 +109,26 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
     { id: "orcid", label: "ORCID", labelEn: "ORCID", placeholder: "0000-0000-0000-0000", placeholderEn: "0000-0000-0000-0000", type: "text", requiredParticipant: false, requiredCoordinator: false, showParticipant: true, showCoordinator: true, color: "#64748b" },
     { id: "country", label: "الدولة", labelEn: "Country", placeholder: "", placeholderEn: "", type: "text", requiredParticipant: true, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#117b59" },
   ],
+  brand: {
+    siteNameAr: "أكاديمية SRMA للأبحاث",
+    siteNameEn: "SRMA Research Academy",
+    logoUrl: "/srma-logo.jpg",
+    whatsapp: "966562159258",
+    email: "",
+    telegramUsername: "SRMAAcademy",
+    instagramUsername: "",
+    xUsername: "",
+    linkedinUsername: "",
+  },
+  pages: {
+    home: { titleAr: "أكاديمية SRMA للأبحاث", titleEn: "SRMA Research Academy", descriptionAr: "نحو مجتمع بحثي أكثر تأثيراً", descriptionEn: "Building a more impactful research community", contentAr: "", contentEn: "" },
+    participant: { titleAr: "بوابة المشارك", titleEn: "Participant Portal", descriptionAr: "اكتشف الفرص البحثية المتاحة وسجل في البرنامج المناسب", descriptionEn: "Explore available research opportunities and register for the right program", contentAr: "", contentEn: "" },
+    knowledge: { titleAr: "مركز المعرفة", titleEn: "Knowledge Center", descriptionAr: "محتوى وأدلة تساعدك في رحلتك البحثية", descriptionEn: "Resources and guides for your research journey", contentAr: "", contentEn: "" },
+    about: { titleAr: "عن الأكاديمية", titleEn: "About the Academy", descriptionAr: "تعرف على رسالة وأهداف أكاديمية SRMA", descriptionEn: "Learn about SRMA Academy's mission and goals", contentAr: "", contentEn: "" },
+    faq: { titleAr: "الأسئلة الشائعة", titleEn: "Frequently Asked Questions", descriptionAr: "إجابات عن أكثر الأسئلة تكراراً", descriptionEn: "Answers to the most common questions", contentAr: "", contentEn: "" },
+    specialRequests: { titleAr: "الطلبات الخاصة", titleEn: "Special Requests", descriptionAr: "خدمات بحثية متخصصة ومتكاملة", descriptionEn: "Specialized and integrated research services", contentAr: "", contentEn: "" },
+    researchDetail: { titleAr: "تفاصيل الفرصة البحثية", titleEn: "Research Opportunity Details", descriptionAr: "راجع تفاصيل الفرصة ثم أكمل التسجيل", descriptionEn: "Review the opportunity details and complete your registration", contentAr: "", contentEn: "" },
+  },
 };
 
 export async function getSiteContentSettings(): Promise<SiteContentSettings> {
@@ -156,6 +199,33 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
     const type = supplied?.type === "email" || supplied?.type === "tel" || supplied?.type === "text" ? supplied.type : base.type;
     return { id, label: fieldText("label", 80), labelEn: fieldText("labelEn", 80), placeholder: fieldText("placeholder", 120), placeholderEn: fieldText("placeholderEn", 120), type, requiredParticipant: fieldFlag("requiredParticipant"), requiredCoordinator: fieldFlag("requiredCoordinator"), showParticipant: fieldFlag("showParticipant"), showCoordinator: fieldFlag("showCoordinator"), color: suppliedColor };
   });
+  const object = (key: "brand" | "pages") => input[key] && typeof input[key] === "object" && !Array.isArray(input[key])
+    ? input[key] as Record<string, unknown>
+    : {};
+  const brandInput = object("brand");
+  const brandText = (key: keyof BrandContactSettings, max = 200) => typeof brandInput[key] === "string"
+    ? (brandInput[key] as string).trim().slice(0, max)
+    : DEFAULT_SITE_CONTENT_SETTINGS.brand[key];
+  const safeUrl = (candidate: string, fallback = "") => candidate === "" || candidate.startsWith("/") || /^https:\/\//i.test(candidate) ? candidate : fallback;
+  const pagesInput = object("pages");
+  const pageIds = Object.keys(DEFAULT_SITE_CONTENT_SETTINGS.pages) as PublicPageId[];
+  const pages = Object.fromEntries(pageIds.map((id) => {
+    const candidate = pagesInput[id] && typeof pagesInput[id] === "object" && !Array.isArray(pagesInput[id])
+      ? pagesInput[id] as Record<string, unknown>
+      : {};
+    const base = DEFAULT_SITE_CONTENT_SETTINGS.pages[id];
+    const pageText = (key: keyof PublicPageContent, max: number) => typeof candidate[key] === "string"
+      ? (candidate[key] as string).trim().slice(0, max)
+      : base[key];
+    return [id, {
+      titleAr: pageText("titleAr", 160),
+      titleEn: pageText("titleEn", 160),
+      descriptionAr: pageText("descriptionAr", 1200),
+      descriptionEn: pageText("descriptionEn", 1200),
+      contentAr: pageText("contentAr", 12000),
+      contentEn: pageText("contentEn", 12000),
+    }];
+  })) as Record<PublicPageId, PublicPageContent>;
   return {
     participantTitle: text("participantTitle", 120),
     participantTitleEn: translatedText("participantTitleEn", "participantTitle", 120),
@@ -181,6 +251,18 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
     specialtyOptions,
     journalOptions,
     registrationFields: fields,
+    brand: {
+      siteNameAr: brandText("siteNameAr", 160),
+      siteNameEn: brandText("siteNameEn", 160),
+      logoUrl: safeUrl(brandText("logoUrl", 1000), DEFAULT_SITE_CONTENT_SETTINGS.brand.logoUrl),
+      whatsapp: brandText("whatsapp", 40).replace(/[^\d+]/g, ""),
+      email: brandText("email", 254),
+      telegramUsername: brandText("telegramUsername", 100).replace(/^@/, ""),
+      instagramUsername: brandText("instagramUsername", 100).replace(/^@/, ""),
+      xUsername: brandText("xUsername", 100).replace(/^@/, ""),
+      linkedinUsername: brandText("linkedinUsername", 200).replace(/^@/, ""),
+    },
+    pages,
   };
 }
 

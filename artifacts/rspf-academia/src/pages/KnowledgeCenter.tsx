@@ -2,9 +2,11 @@ import { BookOpen, Clock, Calendar, ChevronLeft } from "lucide-react";
 import { Link } from "wouter";
 import { knowledgeArticles } from "@/lib/knowledgeArticles";
 import { useLanguage } from "@/lib/i18n";
+import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
 
 export default function KnowledgeCenter() {
   const { language, direction, t } = useLanguage();
+  const { data: settings } = useSiteContentSettings();
   const featured = knowledgeArticles.find((article) => article.featured);
   const rest = knowledgeArticles.filter((article) => !article.featured);
   const arrowClass = language === "ar" ? "" : "rotate-180";
@@ -14,10 +16,10 @@ export default function KnowledgeCenter() {
       <section className="bg-gradient-to-br from-slate-50 via-blue-50/30 to-white px-4 py-14 text-center">
         <div className="mx-auto max-w-3xl">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#0C3156]/15 bg-[#0C3156]/8 px-4 py-1.5 text-sm font-semibold text-[#0C3156]">
-            {language === "ar" ? "مركز المعرفة" : "Knowledge Center"}
+            {language === "ar" ? settings?.pages.knowledge.titleAr : settings?.pages.knowledge.titleEn}
           </div>
           <h1 className="mb-3 text-3xl font-black text-slate-900 sm:text-4xl">
-            {language === "ar" ? "مقالات وأدلة لكل باحث طبي" : "Articles and guides for every medical researcher"}
+            {language === "ar" ? settings?.pages.knowledge.descriptionAr : settings?.pages.knowledge.descriptionEn}
           </h1>
           <p className="mx-auto max-w-xl text-slate-600">
             {language === "ar"

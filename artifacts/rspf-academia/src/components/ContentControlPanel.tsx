@@ -1,6 +1,6 @@
-import { ChevronDown, ChevronUp, Eye, EyeOff, Palette, Save, SlidersHorizontal } from "lucide-react";
+import { ChevronDown, ChevronUp, Eye, EyeOff, Palette, Save, SlidersHorizontal, Image, Phone, Mail, Link as LinkIcon, FileText } from "lucide-react";
 import { useState } from "react";
-import { CARD_PARTS, OPPORTUNITY_FIELDS, OpportunityDisplayMode, OpportunityFieldId, RegistrationFieldSetting, SiteContentSettings, SpecialtyOption, JournalOption } from "@/lib/siteContentSettings";
+import { CARD_PARTS, OPPORTUNITY_FIELDS, OpportunityDisplayMode, OpportunityFieldId, RegistrationFieldSetting, SiteContentSettings, SpecialtyOption, JournalOption, PublicPageId, BrandContactSettings, PublicPageContent } from "@/lib/siteContentSettings";
 
 interface Props {
   settings: SiteContentSettings;
@@ -13,6 +13,7 @@ interface Props {
 export default function ContentControlPanel({ settings, onChange, onSave, saving, message }: Props) {
   const [specialtyDraft, setSpecialtyDraft] = useState({ nameAr: "", nameEn: "" });
   const [journalDraft, setJournalDraft] = useState({ nameAr: "", nameEn: "", issn: "", pubmed: "", scopus: "", wos: "" });
+  const [activePageTab, setActivePageTab] = useState<PublicPageId>("home");
   const update = <K extends keyof SiteContentSettings>(key: K, value: SiteContentSettings[K]) => onChange({ ...settings, [key]: value });
   const updateField = (index: number, changes: Partial<RegistrationFieldSetting>) => {
     const fields = [...settings.registrationFields];
@@ -42,6 +43,12 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
   const toggleOpportunityFieldRequired = (fieldId: OpportunityFieldId) => {
     const fields = settings.requiredOpportunityFields;
     update("requiredOpportunityFields", fields.includes(fieldId) ? fields.filter((id) => id !== fieldId) : [...fields, fieldId]);
+  };
+  const updateBrand = (key: keyof BrandContactSettings, value: string) => {
+    update("brand", { ...settings.brand, [key]: value });
+  };
+  const updatePage = (pageId: PublicPageId, key: keyof PublicPageContent, value: string) => {
+    update("pages", { ...settings.pages, [pageId]: { ...settings.pages[pageId], [key]: value } });
   };
   const addSpecialty = () => {
     if (!specialtyDraft.nameAr.trim() && !specialtyDraft.nameEn.trim()) return;
@@ -74,7 +81,58 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
 
       <div className="grid gap-6 xl:grid-cols-12">
         <div className="space-y-6 xl:col-span-8">
-          <Panel title="نصوص الصفحات" icon={SlidersHorizontal}>
+          <Panel title="إعدادات الهوية والتواصل" icon={Palette}>
+            <div className="grid gap-4 md:grid-cols-2">
+              <TextField label="اسم المنصة (عربي)" value={settings.brand.siteNameAr} onChange={(v) => updateBrand("siteNameAr", v)} />
+              <TextField label="اسم المنصة (إنجليزي)" value={settings.brand.siteNameEn} onChange={(v) => updateBrand("siteNameEn", v)} />
+              <div className="md:col-span-2">
+                <TextField label="رابط الشعار (Logo URL)" value={settings.brand.logoUrl} onChange={(v) => updateBrand("logoUrl", v)} />
+                {settings.brand.logoUrl && (
+                  <div className="mt-3 inline-block rounded-xl border border-slate-200 p-2 bg-slate-50">
+                    <img src={settings.brand.logoUrl} alt="Logo Preview" className="h-10 object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                  </div>
+                )}
+              </div>
+              <TextField label="رقم الواتساب" value={settings.brand.whatsapp} onChange={(v) => updateBrand("whatsapp", v)} />
+              <TextField label="البريد الإلكتروني" value={settings.brand.email} onChange={(v) => updateBrand("email", v)} />
+              <TextField label="معرف تيليجرام" value={settings.brand.telegramUsername} onChange={(v) => updateBrand("telegramUsername", v)} />
+              <TextField label="معرف إنستجرام" value={settings.brand.instagramUsername} onChange={(v) => updateBrand("instagramUsername", v)} />
+              <TextField label="معرف منصة X" value={settings.brand.xUsername} onChange={(v) => updateBrand("xUsername", v)} />
+              <TextField label="معرف لينكد إن" value={settings.brand.linkedinUsername} onChange={(v) => updateBrand("linkedinUsername", v)} />
+            </div>
+          </Panel>
+
+          <Panel title="نصوص الصفحات العامة" icon={FileText}>
+            <div className="mb-6 flex flex-wrap gap-2 border-b border-slate-100 pb-4">
+              {(Object.keys(settings.pages) as PublicPageId[]).map((pageId) => {
+                const label = pageId === "home" ? "الرئيسية" : pageId === "participant" ? "بوابة المشارك" : pageId === "knowledge" ? "مركز المعرفة" : pageId === "about" ? "عن الأكاديمية" : pageId === "faq" ? "الأسئلة الشائعة" : pageId === "specialRequests" ? "الطلبات الخاصة" : "تفاصيل الفرصة";
+                return (
+                  <button
+                    key={pageId}
+                    type="button"
+                    onClick={() => setActivePageTab(pageId)}
+                    className={`rounded-xl px-4 py-2 text-sm font-bold transition ${activePageTab === pageId ? "bg-[#117b59] text-white" : "bg-slate-50 text-slate-600 hover:bg-slate-100"}`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <TextField label="العنوان الرئيسي (عربي)" value={settings.pages[activePageTab].titleAr} onChange={(v) => updatePage(activePageTab, "titleAr", v)} />
+              <TextField label="Main Title (English)" value={settings.pages[activePageTab].titleEn} onChange={(v) => updatePage(activePageTab, "titleEn", v)} />
+              <TextArea label="الوصف التقديمي (عربي)" value={settings.pages[activePageTab].descriptionAr} onChange={(v) => updatePage(activePageTab, "descriptionAr", v)} />
+              <TextArea label="Intro Description (English)" value={settings.pages[activePageTab].descriptionEn} onChange={(v) => updatePage(activePageTab, "descriptionEn", v)} />
+              <div className="md:col-span-2">
+                <TextArea label="المحتوى التفصيلي (عربي)" value={settings.pages[activePageTab].contentAr || ""} onChange={(v) => updatePage(activePageTab, "contentAr", v)} />
+              </div>
+              <div className="md:col-span-2">
+                <TextArea label="Detailed Content (English)" value={settings.pages[activePageTab].contentEn || ""} onChange={(v) => updatePage(activePageTab, "contentEn", v)} />
+              </div>
+            </div>
+          </Panel>
+
+          <Panel title="نصوص النماذج والبوابات" icon={SlidersHorizontal}>
             <div className="grid gap-4 md:grid-cols-2">
               <TextField label="عنوان بوابة المشارك (عربي)" value={settings.participantTitle} onChange={(value) => update("participantTitle", value)} />
               <TextField label="Participant portal title (English)" value={settings.participantTitleEn} onChange={(value) => update("participantTitleEn", value)} />

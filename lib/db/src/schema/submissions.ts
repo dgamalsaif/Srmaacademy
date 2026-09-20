@@ -96,6 +96,7 @@ export const researchProgramsTable = pgTable("research_programs", {
   benefits: text("benefits").notNull().default(""),
   duration: text("duration").notNull().default(""),
   supervisor: text("supervisor").notNull().default(""),
+  researchGroupUrl: text("research_group_url").notNull().default(""),
   imagePath: text("image_path").notNull().default(""),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

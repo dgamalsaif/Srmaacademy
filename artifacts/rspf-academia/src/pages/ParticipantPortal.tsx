@@ -52,8 +52,9 @@ export default function ParticipantPortal() {
 
   const openModal = (research: ResearchOpportunity) => { setSelectedResearch(research); setModalOpen(true); };
   const displayTitle = (research: ResearchOpportunity) => research.titleEn || research.title;
-  const participantTitle = language === "en" ? contentSettings.participantTitleEn : contentSettings.participantTitle;
-  const participantDescription = language === "en" ? contentSettings.participantDescriptionEn : contentSettings.participantDescription;
+  const participantTitle = language === "en" ? contentSettings.pages.participant.titleEn : contentSettings.pages.participant.titleAr;
+  const participantDescription = language === "en" ? contentSettings.pages.participant.descriptionEn : contentSettings.pages.participant.descriptionAr;
+
   const specialtyOptions = buildSpecialtyOptions(contentSettings.specialtyOptions, opportunities);
   const displaySpecialty = (opportunity: ResearchOpportunity) => {
     const canonical = canonicalSpecialty(opportunity.specialtyAr || opportunity.specialty, opportunity.specialtyEn || opportunity.specialty);

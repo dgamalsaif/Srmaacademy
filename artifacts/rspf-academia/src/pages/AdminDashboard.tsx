@@ -47,6 +47,7 @@ const EMPTY_FORM: Omit<ResearchOpportunity, "id" | "createdAt"> = {
   benefits: ["", "", ""],
   duration: "",
   supervisor: "",
+  researchGroupUrl: "",
 };
 
 type FormData = Omit<ResearchOpportunity, "id" | "createdAt">;
@@ -267,6 +268,12 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, s
           <div>
             <label className="block text-sm font-bold text-slate-700 mb-2 text-right">المشرف{isRequired("supervisor") && " *"}</label>
             <input required={isRequired("supervisor")} type="text" value={form.supervisor} onChange={(e) => setForm({ ...form, supervisor: e.target.value })} placeholder="د. الاسم — التخصص" className="w-full border border-slate-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 focus:border-[#117b59] text-right bg-slate-50" />
+          </div>
+
+          <div className="rounded-2xl border border-sky-100 bg-sky-50/60 p-4">
+            <label className="block text-sm font-black text-slate-800 mb-2 text-right">رابط قروب الباحثين الخاص بهذه الفرصة</label>
+            <input type="url" value={form.researchGroupUrl || ""} onChange={(e) => setForm({ ...form, researchGroupUrl: e.target.value })} placeholder="https://chat.whatsapp.com/..." className="w-full border border-sky-200 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sky-200 bg-white" dir="ltr" />
+            <p className="mt-2 text-xs leading-5 text-slate-500 text-right">لن يظهر هذا الرابط في صفحة الفرصة. يظهر للمشارك فقط بعد اكتمال تسجيله بنجاح.</p>
           </div>
 
           <div>
@@ -741,6 +748,7 @@ export default function AdminDashboard() {
     benefits: form.benefits,
     duration: form.duration,
     supervisor: form.supervisor,
+    researchGroupUrl: form.researchGroupUrl || "",
     priceOriginalSar: form.priceOriginalSar ?? 1500,
     priceDiscountedSar: form.priceDiscountedSar ?? 1000,
     ...(typeof imageToken === "string" ? { imageToken } : {}),
