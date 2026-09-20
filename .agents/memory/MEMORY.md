@@ -1,2 +1,7 @@
 - [Registration email delivery](registration-email-delivery.md) — distinguish a saved registration from a successfully delivered email whenever SMTP may be unavailable.
 - [Database migration baseline](database-migration-baseline.md) — verify Drizzle migration snapshots before generating a new migration; a missing baseline can produce full table creation SQL.
+- [Owner and coordinator authentication](owner-coordinator-auth.md) — keep Clerk owner access separate from coordinator access-code sessions; public participant routes stay open.
+- [External hosting architecture](external-hosting-architecture.md) — Pages serves the frontend, an API-only Worker proxies to Render, and images remain unmigrated by choice.
+- [Research group link privacy](research-group-link-privacy.md) — group links are owner-managed per opportunity and disclosed only by successful public participant registration.
+- [Installable PWA identity](installable-pwa-identity.md) — Admin controls site/app identity; installed apps always fetch live opportunities and check for shell updates on return.
+- [GitHub tree publishing](github-tree-publishing.md) — connector-based tree updates must normalize Git output and omit deletes for paths already absent remotely.
