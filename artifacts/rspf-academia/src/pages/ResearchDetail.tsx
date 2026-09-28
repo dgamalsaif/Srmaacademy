@@ -3,7 +3,7 @@ import { useParams, Link } from "wouter";
 import { ChevronLeft, Users, Clock, BookOpen, CheckCircle2, ArrowLeft, ExternalLink } from "lucide-react";
 import { ResearchOpportunity } from "@/lib/researchData";
 import RegistrationModal from "@/components/RegistrationModal";
-import { DEFAULT_SITE_CONTENT_SETTINGS, SiteContentSettings } from "@/lib/siteContentSettings";
+import { DEFAULT_SITE_CONTENT_SETTINGS, SiteContentSettings, getContactUsHref } from "@/lib/siteContentSettings";
 import OpportunityMedia from "@/components/OpportunityMedia";
 import OpportunityPrice from "@/components/OpportunityPrice";
 import { OpportunityCurrency, RESEARCH_STATUS_LABELS } from "@/lib/opportunityPricing";
@@ -68,6 +68,8 @@ export default function ResearchDetail() {
   const description = localize(research.descriptionAr, research.descriptionEn, research.description);
   const contentFlow = direction === "rtl" ? "flex-row-reverse" : "flex-row";
   const siteName = language === "ar" ? contentSettings.brand.siteNameAr : contentSettings.brand.siteNameEn;
+
+  const contact = getContactUsHref(contentSettings.brand);
 
   return (
     <>
@@ -141,7 +143,7 @@ export default function ResearchDetail() {
 
             {/* Benefits */}
             <div className="rounded-2xl border border-[#0C3156]/12 bg-[#EFF6FF] p-6 text-start shadow-sm">
-              <h2 className="text-lg font-black text-slate-900 mb-4">{isCompletedResearch ? localize("تفاصيل ومخرجات الدراسة", "Study details and outcomes") : localize("مزايا وقيمة المشاركة 💡", "Benefits and participation value 💡")}</h2>
+              <h2 className="text-lg font-black text-slate-900 mb-4">{isCompletedResearch ? localize("تفاصيل ومخرجات الدراسة", "Study details and outcomes") : localize("مزا[...]","Study benefits")}</h2>
               <ul className="space-y-3">
                 {research.benefits.map((b) => (
                   <li key={b} className={`flex items-center gap-3 ${contentFlow}`}>
@@ -181,103 +183,4 @@ export default function ResearchDetail() {
                   </span>
                 </div>
                 <div className="rounded-xl bg-slate-50 px-3 py-2.5 text-xs">
-                  <div className="flex justify-between gap-2 font-bold text-amber-700"><span>{localize("الكاتب الأول", "First author")}</span><span>{localize(`${research.firstAuthorSeatsLeft ?? 1} متاح من ${research.firstAuthorSeats ?? 1}`, `${research.firstAuthorSeatsLeft ?? 1} available of ${research.firstAuthorSeats ?? 1}`)}</span></div>
-                  <div className="mt-1.5 flex justify-between gap-2 font-bold text-emerald-700"><span>{localize("المؤلفون المشاركون", "Co-authors")}</span><span>{localize(`${research.coAuthorSeatsLeft ?? 14} متاح من ${research.coAuthorSeats ?? 14}`, `${research.coAuthorSeatsLeft ?? 14} available of ${research.coAuthorSeats ?? 14}`)}</span></div>
-                </div>
-                <div className={`flex items-center justify-between border-b border-slate-100 py-2 ${contentFlow}`}>
-                  <span className="text-sm text-slate-500 flex items-center gap-1.5">
-                    <Clock size={14} />
-                    {localize("مدة الدراسة", "Study duration")}
-                  </span>
-                  <span className="font-bold text-slate-900">{research.duration}</span>
-                </div>
-                <div className="border-b border-slate-100 py-2 text-start">
-                  <span className="text-sm text-slate-500 block mb-1">{isCompletedResearch ? localize("المجلة أو جهة النشر", "Journal or publishing venue") : localize("المجلة المستهدفة", "Target journal")}</span>
-                  <span className="font-semibold text-slate-800 text-sm">{research.journalTarget || "—"}</span>
-                  {research.journalIssn && <span className="mt-1 block text-xs font-medium text-slate-500" dir="ltr">ISSN: {research.journalIssn}</span>}
-                </div>
-                {(research.journalPubmed || research.journalScopus || research.journalWos) && <div className="border-b border-slate-100 py-2 text-start">
-                  <span className="text-sm text-slate-500 block mb-2">{localize("الفهرسة والتصنيف", "Indexing and ranking")}</span>
-                  <div className="flex flex-wrap justify-start gap-2">
-                    {research.journalPubmed && <span className="rounded-lg bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">PubMed: {research.journalPubmed}</span>}
-                    {research.journalScopus && <span className="rounded-lg bg-orange-50 px-2 py-1 text-xs font-bold text-orange-700">Scopus: {research.journalScopus}</span>}
-                    {research.journalWos && <span className="rounded-lg bg-violet-50 px-2 py-1 text-xs font-bold text-violet-700">WOS: {research.journalWos}</span>}
-                  </div>
-                </div>}
-                <div className="py-2 text-start">
-                  <span className="text-sm text-slate-500 block mb-1">{localize("المشرف", "Supervisor")}</span>
-                  <span className="font-semibold text-[#0C3156] text-sm">{research.supervisor || "—"}</span>
-                </div>
-              </div>
-
-              {!isCompletedResearch && <div className="mb-5"><OpportunityPrice originalSar={research.priceOriginalSar} discountedSar={research.priceDiscountedSar} currency={currency} onCurrencyChange={setCurrency} /></div>}
-
-              {/* Progress */}
-              <div className="mb-5">
-                <div className={`mb-2 flex justify-between text-xs text-slate-500 ${contentFlow}`}>
-                  <span>{localize(`تبقى ${research.seatsLeft} من أصل ${research.totalSeats}`, `${research.seatsLeft} of ${research.totalSeats} remain`)}</span>
-                  <span>{localize(`${pct}% ممتلئ`, `${pct}% filled`)}</span>
-                </div>
-                <div className="h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-l from-[#0C3156] to-[#1A5FAE] rounded-full transition-all" style={{ width: `${pct}%` }} />
-                </div>
-              </div>
-
-              {research.status === "open" ? (
-                <button
-                  data-testid="button-detail-register"
-                  onClick={() => setModalOpen(true)}
-                  className="w-full bg-[#0C3156] text-white font-bold py-3.5 rounded-xl hover:bg-[#0a2847] transition-colors text-base shadow-sm mb-3"
-                >
-                  {t("common.registerNow")} 👤
-                </button>
-              ) : (
-                <div className="w-full bg-slate-100 text-slate-500 font-bold py-3.5 rounded-xl text-center text-base mb-3">
-                  🔒 {localize("مغلق التسجيل", "Registration closed")}
-                </div>
-              )}
-
-              <a
-                href={`https://wa.me/${contentSettings.brand.whatsapp || "966562159258"}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="link-detail-whatsapp"
-                className="w-full border border-[#0C3156]/25 text-[#0C3156] font-semibold py-2.5 rounded-xl text-sm text-center hover:bg-[#0C3156]/5 transition-colors flex items-center justify-center gap-2"
-              >
-                <ExternalLink size={14} />
-                {localize("تواصل معنا", "Contact us")}
-              </a>
-            </div>
-          </div>
-        </div>
-
-        {/* RELATED */}
-        {allResearch.filter((r) => r.id !== research.id && r.status === "open").length > 0 && (
-          <div className="mt-12">
-            <h2 className="mb-5 text-start text-xl font-black text-slate-900">{localize("فرص بحثية أخرى", "Other research opportunities")}</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {allResearch.filter((r) => r.id !== research.id && r.status === "open").slice(0, 3).map((r) => (
-                <Link key={r.id} href={`/research/${r.id}`} data-testid={`card-related-${r.id}`}
-                  className="bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-md transition-shadow hover:border-[#0C3156]/25 block">
-                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full inline-block mb-3 ${r.specialtyColor}`}>
-                    {localize(r.specialtyAr, r.specialtyEn, r.specialty)}
-                  </span>
-                  <p className="mb-3 text-left text-sm font-semibold text-slate-800 line-clamp-2" dir="ltr">{r.titleEn || r.title}</p>
-                  <div className={`flex items-center justify-between text-xs text-slate-500 ${contentFlow}`}>
-                    <span>{localize(`${r.seatsLeft} مقعد متبقي`, `${r.seatsLeft} seats remaining`)}</span>
-                    <span className="text-[#0C3156] font-semibold flex items-center gap-1">
-                      {localize("عرض التفاصيل", "View details")} <ChevronLeft size={12} />
-                    </span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      <RegistrationModal isOpen={modalOpen} onClose={() => setModalOpen(false)} researchTitle={title} researchId={research.id} firstAuthorSeatsLeft={research.firstAuthorSeatsLeft} coAuthorSeatsLeft={research.coAuthorSeatsLeft} onRegistered={loadResearch} />
-      </div>
-    </>
-  );
-}
+                  <div className="flex justify-between gap-2 font-bold text-amber-700"><span>{localize("الكاتب الأول", "First author")}</span><span>{localize(`${research.firstAuthorSea[...]
