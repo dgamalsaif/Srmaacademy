@@ -95,7 +95,7 @@ const goals = [
     emoji: "🌍",
     title: "الزمالات الخارجية",
     badge: "ERAS / Oriel",
-    bullets: ["بحث منشور بحسا��ك كمؤلف", "CV يلفت نظر المراكز العالمية", "مساندة للملف التنافسي"],
+    bullets: ["بحث منشور بحسابك كمؤلف", "CV يلفت نظر المراكز العالمية", "مساندة للملف التنافسي"],
   },
   {
     emoji: "📚",
@@ -163,7 +163,7 @@ export default function Home() {
     "الابتعاث الخارجي": "International scholarship",
     "بحوث علمية": "Scientific research",
     "بحوث تدعم ملف الابتعاث": "Research that supports your scholarship file",
-    "الترقية المهنية": "Professional promotion",
+    "الترقي�� المهنية": "Professional promotion",
     "ملف متميز": "Outstanding profile",
     "ملف مهني يتكلم عنك": "A professional profile that speaks for you",
     "فريق متخصص من الأطباء والباحثين": "Specialized team of physicians and researchers",
@@ -362,14 +362,7 @@ export default function Home() {
           </div>
 
           <div className="flex flex-wrap justify-center gap-2">
-            {[
-              "Cochrane Library",
-              "EBSCO",
-              "Google Scholar",
-              "Ovid",
-              "DOAJ",
-              "CINAHL",
-            ].map((db) => (
+            {["Cochrane Library", "EBSCO", "Google Scholar", "Ovid", "DOAJ", "CINAHL"].map((db) => (
               <span
                 key={db}
                 className="bg-white border border-slate-200 text-slate-600 text-xs px-3 py-1.5 rounded-full font-medium shadow-sm"
@@ -586,7 +579,7 @@ export default function Home() {
               {localize("مبادرة حصرية - جديد 🎓", "Exclusive initiative — new 🎓")}
             </div>
             <h2 className="text-2xl sm:text-3xl font-black text-slate-900">
-              {localize("باقة التميز للمجالس الطلابية والأندية ا��أكاديمية", "Excellence package for student councils and academic clubs")}
+              {localize("باقة التميز للمجالس الطلابية والأندية الأكاديمية", "Excellence package for student councils and academic clubs")}
             </h2>
           </div>
           <div className="grid grid-cols-3 gap-4 mb-8">
@@ -605,7 +598,7 @@ export default function Home() {
             <h3 className="font-bold text-slate-900 mb-4 text-right">{localize("الفئات المستهدفة:", "Target groups:")}</h3>
             <ul className="space-y-2">
               {[
-                "المجالس ال��لابية في كليات الطب والتمريض والصيدلة",
+                "المجالس الطلابية في كليات الطب والتمريض والصيدلة",
                 "الأندية الأكاديمية والبحثية في الجامعات السعودية",
                 "مراكز الطلاب والأنشطة العلمية",
               ].map((item) => (
