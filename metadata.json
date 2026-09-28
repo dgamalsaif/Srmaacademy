@@ -1,0 +1,7 @@
+{
+  "name": "SRMA Research Academy",
+  "description": "Medical research opportunities, journal selection, and publication support for physicians.",
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

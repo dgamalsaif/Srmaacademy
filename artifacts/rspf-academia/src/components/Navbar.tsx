@@ -1,16 +1,19 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Check, ChevronDown, Languages, Menu, X } from "lucide-react";
+import { Check, ChevronDown, Languages, Menu, MessageCircle, X } from "lucide-react";
 import { SRMA_LOGO } from "@/components/BrandBackground";
 import InstallAppButton from "@/components/InstallAppButton";
 import { useLanguage } from "@/lib/i18n";
 import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
+import { getContactUsHref } from "@/lib/siteContentSettings";
 
 export default function Navbar() {
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { t, language, setLanguage } = useLanguage();
   const { data: settings } = useSiteContentSettings();
+  const contact = getContactUsHref(settings?.brand);
+  const contactLabel = language === "ar" ? contact.labelAr : contact.labelEn;
   const languageLabel = language === "ar" ? "اللغة" : "Language";
   const languageOptions = [
     { value: "ar" as const, label: "العربية" },
@@ -63,6 +66,16 @@ export default function Navbar() {
           <div className="hidden lg:block">
             <InstallAppButton className="flex items-center gap-1.5 rounded-full border border-[#117b59]/25 bg-[#f3fbf8] px-3 py-2 text-xs font-black text-[#117b59] transition hover:bg-[#e6f5ef]" />
           </div>
+          <a
+            href={contact.href}
+            target={contact.isExternal ? "_blank" : undefined}
+            rel={contact.isExternal ? "noopener noreferrer" : undefined}
+            data-testid="link-nav-contact"
+            className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-[#117b59] px-3.5 py-2 text-xs font-black text-white shadow-sm transition hover:bg-[#0c6549]"
+          >
+            <MessageCircle size={14} />
+            {contactLabel}
+          </a>
           <LanguageMenu
             language={language}
             label={languageLabel}
@@ -99,6 +112,16 @@ export default function Navbar() {
             </Link>
           ))}
           <div className="px-3 pt-3">
+            <a
+              href={contact.href}
+              target={contact.isExternal ? "_blank" : undefined}
+              rel={contact.isExternal ? "noopener noreferrer" : undefined}
+              data-testid="link-nav-contact-mobile"
+              className="mb-2 flex w-full items-center justify-center gap-2 rounded-xl bg-[#117b59] px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-[#0c6549]"
+            >
+              <MessageCircle size={16} />
+              {contactLabel}
+            </a>
             <LanguageMenu
               language={language}
               label={languageLabel}

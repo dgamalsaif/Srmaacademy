@@ -407,6 +407,96 @@ router.delete("/programs/:id", requireOwner, async (req, res) => {
   res.status(204).end();
 });
 
+router.post("/programs/batch-update", requireOwner, async (req, res) => {
+  const { ids, all, category, updates } = req.body || {};
+  if (!updates || typeof updates !== "object") {
+    res.status(400).json({ error: "بيانات التحديث غير صالحة" });
+    return;
+  }
+  const patch: Record<string, unknown> = { updatedAt: new Date() };
+  if (typeof updates.status === "string" && isProgramStatus(updates.status)) {
+    patch.status = updates.status;
+  }
+  if (typeof updates.supervisor === "string") {
+    patch.supervisor = updates.supervisor.trim();
+  }
+  if (typeof updates.duration === "string") {
+    patch.duration = updates.duration.trim();
+  }
+  if (typeof updates.specialtyAr === "string") {
+    patch.specialtyAr = updates.specialtyAr.trim();
+  }
+  if (typeof updates.specialtyEn === "string") {
+    patch.specialtyEn = updates.specialtyEn.trim();
+  }
+  if (typeof updates.category === "string" && ["active", "completed", "training", "cme"].includes(updates.category)) {
+    patch.category = updates.category;
+  }
+  if (typeof updates.researchGroupUrl === "string") {
+    const norm = normalizeResearchGroupUrl(updates.researchGroupUrl);
+    if (norm !== null && norm !== undefined) patch.researchGroupUrl = norm;
+  }
+  if (typeof updates.priceOriginalSar === "number" && updates.priceOriginalSar > 0) {
+    patch.priceOriginalSar = Math.round(updates.priceOriginalSar);
+  }
+  if (typeof updates.priceDiscountedSar === "number" && updates.priceDiscountedSar >= 0) {
+    patch.priceDiscountedSar = Math.round(updates.priceDiscountedSar);
+  }
+  if (typeof updates.journalTarget === "string") {
+    patch.journalTarget = updates.journalTarget.trim();
+  }
+  if (typeof updates.indexedIn === "string") {
+    patch.indexedIn = updates.indexedIn.trim();
+  }
+
+  try {
+    let affected = 0;
+    if (all === true) {
+      if (category && typeof category === "string") {
+        await db.update(researchProgramsTable).set(patch).where(eq(researchProgramsTable.category, category));
+      } else {
+        await db.update(researchProgramsTable).set(patch);
+      }
+      affected = -1; // all affected
+    } else if (Array.isArray(ids) && ids.length > 0) {
+      const numIds = ids.map(Number).filter((n) => Number.isInteger(n) && n > 0);
+      for (const id of numIds) {
+        await db.update(researchProgramsTable).set(patch).where(eq(researchProgramsTable.id, id));
+        affected++;
+      }
+    }
+    res.json({ success: true, affected });
+  } catch (error) {
+    req.log.error({ err: error }, "Failed to batch update programs");
+    res.status(500).json({ error: "تعذر تحديث البرامج المحددة" });
+  }
+});
+
+router.post("/programs/batch-delete", requireOwner, async (req, res) => {
+  const { ids, all, category } = req.body || {};
+  try {
+    let deleted = 0;
+    if (all === true) {
+      if (category && typeof category === "string") {
+        await db.delete(researchProgramsTable).where(eq(researchProgramsTable.category, category));
+      } else {
+        await db.delete(researchProgramsTable);
+      }
+      deleted = -1; // all deleted
+    } else if (Array.isArray(ids) && ids.length > 0) {
+      const numIds = ids.map(Number).filter((n) => Number.isInteger(n) && n > 0);
+      for (const id of numIds) {
+        await db.delete(researchProgramsTable).where(eq(researchProgramsTable.id, id));
+        deleted++;
+      }
+    }
+    res.json({ success: true, deleted });
+  } catch (error) {
+    req.log.error({ err: error }, "Failed to batch delete programs");
+    res.status(500).json({ error: "تعذر حذف البرامج المحددة" });
+  }
+});
+
 export default router;
 
 function isPublicProgram(program: typeof researchProgramsTable.$inferSelect) {

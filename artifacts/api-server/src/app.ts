@@ -39,9 +39,16 @@ app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(clerkMiddleware((req) => ({
-  publishableKey: publishableKeyFromHost(getClerkProxyHost(req) ?? "", process.env.CLERK_PUBLISHABLE_KEY),
-})));
+if (process.env.CLERK_SECRET_KEY) {
+  app.use(clerkMiddleware((req) => ({
+    publishableKey: publishableKeyFromHost(getClerkProxyHost(req) ?? "", process.env.CLERK_PUBLISHABLE_KEY),
+  })));
+} else {
+  app.use((req, _res, next) => {
+    (req as any).auth = { userId: null };
+    next();
+  });
+}
 
 app.use("/api", router);
 

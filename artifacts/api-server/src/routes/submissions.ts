@@ -89,7 +89,21 @@ async function createRegistration(req: Request, res: Response, coordinatorId: nu
         status: seatsLeft === 0 ? "seats_full" : program.status,
         updatedAt: new Date(),
       }).where(eq(researchProgramsTable.id, program.id));
-      return { registration, researchGroupUrl: program.researchGroupUrl };
+      let resolvedGroupUrl = program.researchGroupUrl || "";
+      if (!resolvedGroupUrl) {
+        const specAr = (program.specialtyAr || "").trim().toLowerCase();
+        const specEn = (program.specialtyEn || "").trim().toLowerCase();
+        const matchedSpec = settings.specialtyOptions.find((s) =>
+          (s.nameAr && s.nameAr.trim().toLowerCase() === specAr) ||
+          (s.nameEn && s.nameEn.trim().toLowerCase() === specEn) ||
+          (s.nameAr && s.nameAr.trim().toLowerCase() === specEn) ||
+          (s.nameEn && s.nameEn.trim().toLowerCase() === specAr)
+        );
+        if (matchedSpec?.groupUrl) {
+          resolvedGroupUrl = matchedSpec.groupUrl;
+        }
+      }
+      return { registration, researchGroupUrl: resolvedGroupUrl };
     });
     res.status(201).json(audience === "participant"
       ? { ...result.registration, researchGroupUrl: result.researchGroupUrl || null }

@@ -1,6 +1,6 @@
-import { ChevronDown, ChevronUp, Eye, EyeOff, Palette, Save, SlidersHorizontal, Image, Phone, Mail, Link as LinkIcon, FileText } from "lucide-react";
+import { ChevronDown, ChevronUp, Eye, EyeOff, Palette, Save, SlidersHorizontal, Image, Phone, Mail, Link as LinkIcon, FileText, Send, Share2, ExternalLink, MessageCircle, Check } from "lucide-react";
 import { useState } from "react";
-import { CARD_PARTS, OPPORTUNITY_FIELDS, OpportunityDisplayMode, OpportunityFieldId, RegistrationFieldSetting, SiteContentSettings, SpecialtyOption, JournalOption, PublicPageId, BrandContactSettings, PublicPageContent, SOCIAL_ICON_OPTIONS, SocialIconId, FloatingIconPosition } from "@/lib/siteContentSettings";
+import { CARD_PARTS, OPPORTUNITY_FIELDS, OpportunityDisplayMode, OpportunityFieldId, RegistrationFieldSetting, SiteContentSettings, SpecialtyOption, JournalOption, PublicPageId, BrandContactSettings, PublicPageContent, SOCIAL_ICON_OPTIONS, SocialIconId, FloatingIconPosition, ForwardingType, ContactUsType } from "@/lib/siteContentSettings";
 
 interface Props {
   settings: SiteContentSettings;
@@ -11,9 +11,10 @@ interface Props {
 }
 
 export default function ContentControlPanel({ settings, onChange, onSave, saving, message }: Props) {
-  const [specialtyDraft, setSpecialtyDraft] = useState({ nameAr: "", nameEn: "" });
-  const [journalDraft, setJournalDraft] = useState({ nameAr: "", nameEn: "", issn: "", pubmed: "", scopus: "", wos: "" });
+  const [specialtyDraft, setSpecialtyDraft] = useState({ nameAr: "", nameEn: "", groupUrl: "" });
+  const [journalDraft, setJournalDraft] = useState({ nameAr: "", nameEn: "", issn: "", pubmed: "", scopus: "", wos: "", specialty: "" });
   const [activePageTab, setActivePageTab] = useState<PublicPageId>("home");
+  const [activeForwardTab, setActiveForwardTab] = useState<"participant" | "coordinator">("participant");
   const update = <K extends keyof SiteContentSettings>(key: K, value: SiteContentSettings[K]) => onChange({ ...settings, [key]: value });
   const updateField = (index: number, changes: Partial<RegistrationFieldSetting>) => {
     const fields = [...settings.registrationFields];
@@ -44,7 +45,7 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
     const fields = settings.requiredOpportunityFields;
     update("requiredOpportunityFields", fields.includes(fieldId) ? fields.filter((id) => id !== fieldId) : [...fields, fieldId]);
   };
-  const updateBrand = (key: keyof BrandContactSettings, value: string) => {
+  const updateBrand = <K extends keyof BrandContactSettings>(key: K, value: BrandContactSettings[K]) => {
     update("brand", { ...settings.brand, [key]: value });
   };
   const toggleSocialIcon = (audience: "public" | "participant" | "coordinator", id: SocialIconId) => {
@@ -61,15 +62,37 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
   };
   const addSpecialty = () => {
     if (!specialtyDraft.nameAr.trim() && !specialtyDraft.nameEn.trim()) return;
-    const option: SpecialtyOption = { id: `specialty-${Date.now()}`, nameAr: specialtyDraft.nameAr.trim(), nameEn: specialtyDraft.nameEn.trim() };
+    const option: SpecialtyOption = {
+      id: `specialty-${Date.now()}`,
+      nameAr: specialtyDraft.nameAr.trim(),
+      nameEn: specialtyDraft.nameEn.trim(),
+      groupUrl: specialtyDraft.groupUrl.trim() || undefined,
+    };
     update("specialtyOptions", [...settings.specialtyOptions, option]);
-    setSpecialtyDraft({ nameAr: "", nameEn: "" });
+    setSpecialtyDraft({ nameAr: "", nameEn: "", groupUrl: "" });
+  };
+  const updateSpecialty = (id: string, changes: Partial<SpecialtyOption>) => {
+    const updated = settings.specialtyOptions.map((item) => item.id === id ? { ...item, ...changes } : item);
+    update("specialtyOptions", updated);
   };
   const addJournal = () => {
     if (!journalDraft.nameAr.trim() && !journalDraft.nameEn.trim()) return;
-    const option: JournalOption = { id: `journal-${Date.now()}`, nameAr: journalDraft.nameAr.trim(), nameEn: journalDraft.nameEn.trim(), issn: journalDraft.issn.trim(), pubmed: journalDraft.pubmed.trim(), scopus: journalDraft.scopus.trim(), wos: journalDraft.wos.trim() };
+    const option: JournalOption = {
+      id: `journal-${Date.now()}`,
+      nameAr: journalDraft.nameAr.trim(),
+      nameEn: journalDraft.nameEn.trim(),
+      issn: journalDraft.issn.trim(),
+      pubmed: journalDraft.pubmed.trim(),
+      scopus: journalDraft.scopus.trim(),
+      wos: journalDraft.wos.trim(),
+      specialty: journalDraft.specialty.trim() || undefined,
+    };
     update("journalOptions", [...settings.journalOptions, option]);
-    setJournalDraft({ nameAr: "", nameEn: "", issn: "", pubmed: "", scopus: "", wos: "" });
+    setJournalDraft({ nameAr: "", nameEn: "", issn: "", pubmed: "", scopus: "", wos: "", specialty: "" });
+  };
+  const updateJournal = (id: string, changes: Partial<JournalOption>) => {
+    const updated = settings.journalOptions.map((item) => item.id === id ? { ...item, ...changes } : item);
+    update("journalOptions", updated);
   };
 
   return (
@@ -124,6 +147,52 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
               <TextField label="رابط تيك توك الكامل" value={settings.brand.tiktokUrl} onChange={(v) => updateBrand("tiktokUrl", v)} />
               <TextField label="رابط يوتيوب الكامل" value={settings.brand.youtubeUrl} onChange={(v) => updateBrand("youtubeUrl", v)} />
               <TextField label="رابط سناب شات الكامل" value={settings.brand.snapchatUrl} onChange={(v) => updateBrand("snapchatUrl", v)} />
+
+              <div className="md:col-span-2 rounded-2xl border-2 border-emerald-300 bg-emerald-50/50 p-5 space-y-4">
+                <div className="flex items-center gap-2">
+                  <Phone className="text-[#117b59]" size={20} />
+                  <h3 className="font-black text-slate-900 text-base">التحكم في طريقة التواصل في زر "تواصل معنا"</h3>
+                </div>
+                <p className="text-xs text-slate-600 leading-5">حدد كيف يتواصل الزوار عند الضغط على "تواصل معنا" في الموقع (رقم هاتف، واتساب، اسم مستخدم، بريد، أو رابط مخصص).</p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">نوع وسيلة التواصل</label>
+                    <select
+                      value={settings.brand.contactUsType || "whatsapp"}
+                      onChange={(e) => updateBrand("contactUsType", e.target.value as any)}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-bold text-slate-800 focus:border-[#117b59] focus:outline-none"
+                    >
+                      <option value="whatsapp">واتساب (رقم أو رابط)</option>
+                      <option value="phone">اتصال هاتفي مباشر (رقم هاتف)</option>
+                      <option value="email">بريد إلكتروني (إيميل)</option>
+                      <option value="telegram">تيليجرام (اسم مستخدم أو رابط)</option>
+                      <option value="instagram">إنستجرام (اسم مستخدم أو رابط)</option>
+                      <option value="custom_url">رابط ويب مخصص</option>
+                    </select>
+                  </div>
+                  <TextField
+                    label={
+                      settings.brand.contactUsType === "phone"
+                        ? "رقم الهاتف للاتصال"
+                        : settings.brand.contactUsType === "email"
+                        ? "البريد الإلكتروني"
+                        : settings.brand.contactUsType === "telegram"
+                        ? "اسم المستخدم في تيليجرام أو الرابط"
+                        : settings.brand.contactUsType === "instagram"
+                        ? "اسم المستخدم في إنستجرام أو الرابط"
+                        : settings.brand.contactUsType === "custom_url"
+                        ? "الرابط المخصص بالكامل"
+                        : "رقم الواتساب أو الرابط"
+                    }
+                    value={settings.brand.contactUsValue || ""}
+                    onChange={(v) => updateBrand("contactUsValue", v)}
+                    placeholder="مثال: 966562159258 أو srma@example.com أو @SRMAAcademy"
+                  />
+                  <TextField label="نص الزر بالعربية" value={settings.brand.contactUsLabelAr || "تواصل معنا"} onChange={(v) => updateBrand("contactUsLabelAr", v)} />
+                  <TextField label="نص الزر بالإنجليزية" value={settings.brand.contactUsLabelEn || "Contact Us"} onChange={(v) => updateBrand("contactUsLabelEn", v)} />
+                </div>
+              </div>
+
               {(["public", "participant", "coordinator"] as const).map((audience) => {
                 const title = audience === "public" ? "بقية الموقع" : audience === "participant" ? "بوابة المشاركين" : "بوابة المنسقين";
                 const icons = settings.brand[`${audience}SocialIcons`];
@@ -194,20 +263,215 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
             </div>
           </Panel>
 
-          <Panel title="التخصصات المتاحة" icon={SlidersHorizontal}>
-            <p className="mb-5 text-sm leading-6 text-slate-500">أضف التخصصات التي تريد أن تظهر في نموذج الفرصة. يمكنك إدخال الاسم بالعربية أو الإنجليزية أو كليهما.</p>
-            <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+          <Panel title="تحويل بيانات التسجيل وإعادة التوجيه (المشاركون والمنسقون)" icon={Send}>
+            <p className="mb-4 text-xs leading-6 text-slate-500">
+              تحكم بالكامل في ما يحدث بعد أن يُدخل المشارك أو المنسق بياناته: أين يتم تحويله (رقم واتساب، بريد إلكتروني، تيليجرام، ماسنجر، إنستجرام، أو رابط مخصص)، وما نص الرسالة المُرسلة تلقائياً.
+            </p>
+
+            <div className="mb-6 flex gap-2 border-b border-slate-100 pb-3">
+              <button
+                type="button"
+                onClick={() => setActiveForwardTab("participant")}
+                className={`rounded-xl px-5 py-2.5 text-sm font-black transition ${activeForwardTab === "participant" ? "bg-[#117b59] text-white shadow-sm" : "bg-slate-50 text-slate-600 hover:bg-slate-100"}`}
+              >
+                بوابة المشاركين (الطلاب والأطباء)
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveForwardTab("coordinator")}
+                className={`rounded-xl px-5 py-2.5 text-sm font-black transition ${activeForwardTab === "coordinator" ? "bg-[#117b59] text-white shadow-sm" : "bg-slate-50 text-slate-600 hover:bg-slate-100"}`}
+              >
+                بوابة المنسقين (تسجيل الطلاب)
+              </button>
+            </div>
+
+            {activeForwardTab === "participant" ? (
+              <div className="space-y-4 rounded-2xl border border-emerald-100 bg-emerald-50/30 p-5">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-xs font-bold text-slate-700">طريقة التحويل للمشاركين</label>
+                    <select
+                      value={settings.brand.participantForwardType || "whatsapp"}
+                      onChange={(e) => updateBrand("participantForwardType", e.target.value as ForwardingType)}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-bold text-slate-800 focus:border-[#117b59] focus:outline-none"
+                    >
+                      <option value="whatsapp">واتساب (إرسال رسالة إلى رقم محدد)</option>
+                      <option value="whatsapp_direct_url">رابط واتساب مباشر أو مخصص</option>
+                      <option value="email">بريد إلكتروني (إرسال إيميل تلقائي)</option>
+                      <option value="telegram">تيليجرام (اسم مستخدم أو رابط)</option>
+                      <option value="messenger">فيسبوك ماسنجر (رابط m.me)</option>
+                      <option value="instagram">إنستجرام (حساب إنستجرام)</option>
+                      <option value="custom_url">رابط مخصص (URL)</option>
+                      <option value="none">بدون تحويل (حفظ في قاعدة البيانات فقط)</option>
+                    </select>
+                  </div>
+                  <TextField
+                    label={
+                      settings.brand.participantForwardType === "email"
+                        ? "البريد الإلكتروني لاستلام البيانات"
+                        : settings.brand.participantForwardType === "telegram"
+                        ? "معرف تيليجرام أو الرابط (@username)"
+                        : settings.brand.participantForwardType === "messenger"
+                        ? "معرف ماسنجر فيسبوك (أو الرابط)"
+                        : settings.brand.participantForwardType === "instagram"
+                        ? "حساب إنستجرام أو الرابط"
+                        : settings.brand.participantForwardType === "custom_url"
+                        ? "الرابط المخصص بالكامل"
+                        : "رقم الواتساب المستهدف (مع رمز الدولة بدون +)"
+                    }
+                    value={settings.brand.participantForwardTarget || ""}
+                    onChange={(v) => updateBrand("participantForwardTarget", v)}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3.5">
+                  <div>
+                    <p className="text-sm font-bold text-slate-800">التوجيه التلقائي للمشارك</p>
+                    <p className="text-xs text-slate-500">فتح نافذة التحويل تلقائياً بعد إتمام التسجيل فوراً</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => updateBrand("participantAutoRedirect", !settings.brand.participantAutoRedirect)}
+                    className={`rounded-xl px-4 py-2 text-xs font-black transition ${settings.brand.participantAutoRedirect ? "bg-[#117b59] text-white" : "bg-slate-200 text-slate-600"}`}
+                  >
+                    {settings.brand.participantAutoRedirect ? "مفعّل ✓" : "معطّل"}
+                  </button>
+                </div>
+
+                <div>
+                  <TextArea
+                    label="قالب رسالة التحويل المخصصة للمشارك (اختياري - اتركه فارغاً لاستخدام النص الافتراضي)"
+                    value={settings.brand.participantCustomMessage || ""}
+                    onChange={(v) => updateBrand("participantCustomMessage", v)}
+                  />
+                  <p className="mt-1 text-[11px] leading-5 text-slate-500">
+                    يمكنك استخدام المتغيرات التالية: <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-emerald-700">{"{name}"}</code> اسم المشارك، <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-emerald-700">{"{title}"}</code> عنوان الفرصة، <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-emerald-700">{"{specialty}"}</code> التخصص، <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-emerald-700">{"{email}"}</code> البريد، <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-emerald-700">{"{whatsapp}"}</code> الهاتف، <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-emerald-700">{"{affiliation}"}</code> جهة الانتساب.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4 rounded-2xl border border-emerald-100 bg-emerald-50/30 p-5">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-xs font-bold text-slate-700">طريقة التحويل للمنسقين</label>
+                    <select
+                      value={settings.brand.coordinatorForwardType || "whatsapp"}
+                      onChange={(e) => updateBrand("coordinatorForwardType", e.target.value as ForwardingType)}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm font-bold text-slate-800 focus:border-[#117b59] focus:outline-none"
+                    >
+                      <option value="whatsapp">واتساب (إرسال رسالة إلى رقم محدد)</option>
+                      <option value="whatsapp_direct_url">رابط واتساب مباشر أو مخصص</option>
+                      <option value="email">بريد إلكتروني (إرسال إيميل تلقائي)</option>
+                      <option value="telegram">تيليجرام (اسم مستخدم أو رابط)</option>
+                      <option value="messenger">فيسبوك ماسنجر (رابط m.me)</option>
+                      <option value="instagram">إنستجرام (حساب إنستجرام)</option>
+                      <option value="custom_url">رابط مخصص (URL)</option>
+                      <option value="none">بدون تحويل (حفظ في قاعدة البيانات فقط)</option>
+                    </select>
+                  </div>
+                  <TextField
+                    label={
+                      settings.brand.coordinatorForwardType === "email"
+                        ? "البريد الإلكتروني لاستلام بيانات تسجيل المنسق"
+                        : settings.brand.coordinatorForwardType === "telegram"
+                        ? "معرف تيليجرام أو الرابط (@username)"
+                        : settings.brand.coordinatorForwardType === "messenger"
+                        ? "معرف ماسنجر فيسبوك"
+                        : settings.brand.coordinatorForwardType === "instagram"
+                        ? "حساب إنستجرام أو الرابط"
+                        : settings.brand.coordinatorForwardType === "custom_url"
+                        ? "الرابط المخصص بالكامل"
+                        : "رقم الواتساب المستهدف لتسجيل المنسق"
+                    }
+                    value={settings.brand.coordinatorForwardTarget || ""}
+                    onChange={(v) => updateBrand("coordinatorForwardTarget", v)}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3.5">
+                  <div>
+                    <p className="text-sm font-bold text-slate-800">التوجيه التلقائي للمنسق</p>
+                    <p className="text-xs text-slate-500">فتح نافذة التحويل تلقائياً بعد إضافة المنسق للطالب</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => updateBrand("coordinatorAutoRedirect", !settings.brand.coordinatorAutoRedirect)}
+                    className={`rounded-xl px-4 py-2 text-xs font-black transition ${settings.brand.coordinatorAutoRedirect ? "bg-[#117b59] text-white" : "bg-slate-200 text-slate-600"}`}
+                  >
+                    {settings.brand.coordinatorAutoRedirect ? "مفعّل ✓" : "معطّل"}
+                  </button>
+                </div>
+
+                <div>
+                  <TextArea
+                    label="قالب رسالة التحويل المخصصة لتسجيل المنسق (اختياري)"
+                    value={settings.brand.coordinatorCustomMessage || ""}
+                    onChange={(v) => updateBrand("coordinatorCustomMessage", v)}
+                  />
+                  <p className="mt-1 text-[11px] leading-5 text-slate-500">
+                    يمكنك استخدام المتغيرات: <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-emerald-700">{"{name}"}</code>، <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-emerald-700">{"{title}"}</code>، <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-emerald-700">{"{specialty}"}</code>، <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-emerald-700">{"{email}"}</code>، <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-emerald-700">{"{whatsapp}"}</code>.
+                  </p>
+                </div>
+              </div>
+            )}
+          </Panel>
+
+          <Panel title="التخصصات المتاحة وروابط المجموعات" icon={SlidersHorizontal}>
+            <p className="mb-5 text-sm leading-6 text-slate-500">
+              أضف التخصصات ورابط مجموعة كل تخصص (قروب واتساب أو تيليجرام للتخصص). يُحفظ رابط المجموعة في قاعدة البيانات ويظهر للمشتركين عند التسجيل في بحوث هذا التخصص.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-[1fr_1fr_1.5fr_auto]">
               <TextField label="التخصص بالعربية" value={specialtyDraft.nameAr} onChange={(value) => setSpecialtyDraft({ ...specialtyDraft, nameAr: value })} />
               <TextField label="Specialty in English" value={specialtyDraft.nameEn} onChange={(value) => setSpecialtyDraft({ ...specialtyDraft, nameEn: value })} />
+              <TextField label="رابط قروب التخصص (واتساب أو تيليجرام)" value={specialtyDraft.groupUrl} onChange={(value) => setSpecialtyDraft({ ...specialtyDraft, groupUrl: value })} />
               <button type="button" onClick={addSpecialty} className="mt-6 h-11 rounded-xl bg-[#117b59] px-4 text-sm font-black text-white transition hover:bg-[#0c6549]">إضافة تخصص</button>
             </div>
-            <div className="mt-5 space-y-2">
-              {settings.specialtyOptions.length === 0 ? <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-500">لم تُضف تخصصات بعد.</p> : settings.specialtyOptions.map((option) => (
-                <div key={option.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
-                  <div><p className="font-bold text-slate-800">{option.nameAr || option.nameEn}</p>{option.nameAr && option.nameEn && <p className="mt-1 text-xs text-slate-500" dir="ltr">{option.nameEn}</p>}</div>
-                  <button type="button" onClick={() => update("specialtyOptions", settings.specialtyOptions.filter((item) => item.id !== option.id))} className="rounded-lg px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50">حذف</button>
-                </div>
-              ))}
+            <div className="mt-5 space-y-3">
+              {settings.specialtyOptions.length === 0 ? (
+                <p className="rounded-xl bg-slate-50 px-4 py-3 text-sm text-slate-500">لم تُضف تخصصات بعد.</p>
+              ) : (
+                settings.specialtyOptions.map((option) => (
+                  <div key={option.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-slate-300">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="font-bold text-slate-800">{option.nameAr || option.nameEn}</p>
+                          {option.nameAr && option.nameEn && <span className="text-xs text-slate-500" dir="ltr">({option.nameEn})</span>}
+                        </div>
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
+                          <div className="flex-1 min-w-[200px]">
+                            <input
+                              type="text"
+                              value={option.groupUrl || ""}
+                              placeholder="أدخل أو عدّل رابط قروب التخصص (مثال: https://chat.whatsapp.com/...)"
+                              onChange={(e) => updateSpecialty(option.id, { groupUrl: e.target.value })}
+                              className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 outline-none focus:border-[#117b59]"
+                              dir="ltr"
+                            />
+                          </div>
+                          {option.groupUrl && (
+                            <a
+                              href={option.groupUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 rounded-lg bg-emerald-100 px-2.5 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-200"
+                            >
+                              <ExternalLink size={12} /> تجربة الرابط
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => update("specialtyOptions", settings.specialtyOptions.filter((item) => item.id !== option.id))}
+                        className="self-end rounded-lg px-3 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 sm:self-center"
+                      >
+                        حذف
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </Panel>
 

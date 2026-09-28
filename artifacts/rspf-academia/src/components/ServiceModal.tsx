@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { X, CheckCircle2, Loader2 } from "lucide-react";
+import { X, CheckCircle2, Loader2, MessageCircle, Send, Mail } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
 import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
+import { buildForwardingUrl, DEFAULT_SITE_CONTENT_SETTINGS } from "@/lib/siteContentSettings";
 
 interface ServiceModalProps {
   isOpen: boolean;
@@ -25,7 +26,7 @@ const serviceTypes = [
 export default function ServiceModal({ isOpen, onClose, serviceName }: ServiceModalProps) {
   const { language, localize } = useLanguage();
   const { data: settings } = useSiteContentSettings();
-  const whatsapp = settings?.brand.whatsapp || "966562159258";
+  const brand = settings?.brand || DEFAULT_SITE_CONTENT_SETTINGS.brand;
   const [form, setForm] = useState({
     fullName: "",
     phone: "",
@@ -37,12 +38,14 @@ export default function ServiceModal({ isOpen, onClose, serviceName }: ServiceMo
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
+  const [forwardUrl, setForwardUrl] = useState("");
 
   const reset = () => {
     setForm({ fullName: "", phone: "", email: "", serviceType: serviceName, details: "", fileLink: "" });
     setDone(false);
     setError("");
     setLoading(false);
+    setForwardUrl("");
   };
 
   const handleClose = () => { reset(); onClose(); };
@@ -70,17 +73,34 @@ export default function ServiceModal({ isOpen, onClose, serviceName }: ServiceMo
         throw new Error(requestError((body as { error?: string }).error));
       }
 
+      const generated = buildForwardingUrl({
+        type: brand.participantForwardType || "whatsapp",
+        target: brand.participantForwardTarget || brand.whatsapp || "966562159258",
+        customMessage: brand.participantCustomMessage,
+        studentName: form.fullName,
+        specialization: serviceLabel(form.serviceType),
+        researchTitle: `طلب خدمة: ${serviceLabel(form.serviceType)}`,
+        email: form.email,
+        whatsapp: form.phone,
+        language,
+      });
+
+      setForwardUrl(generated);
       setDone(true);
 
-      // Open WhatsApp with pre-filled message
-      const waMessage = encodeURIComponent(
-        language === "en"
-          ? `Hello, I am ${form.fullName}\nI am requesting: ${serviceLabel(form.serviceType)}\n\n📱 ${form.phone}\n📧 ${form.email}\n\nDetails: ${form.details}`
-          : `مرحباً، أنا ${form.fullName}\nأطلب خدمة: ${form.serviceType}\n\n📱 ${form.phone}\n📧 ${form.email}\n\nالتفاصيل: ${form.details}`
-      );
-      setTimeout(() => {
-        window.open(`https://wa.me/${whatsapp}?text=${waMessage}`, "_blank");
-      }, 1200);
+      if (generated && brand.participantForwardType !== "none" && brand.participantAutoRedirect) {
+        setTimeout(() => {
+          try {
+            const link = document.createElement("a");
+            link.href = generated;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            link.click();
+          } catch {
+            // Screen provides direct button fallback
+          }
+        }, 800);
+      }
 
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : localize("حدث خطأ غير متوقع", "An unexpected error occurred."));
@@ -116,18 +136,20 @@ export default function ServiceModal({ isOpen, onClose, serviceName }: ServiceMo
               <CheckCircle2 size={32} className="text-emerald-600" />
             </div>
             <h3 className="text-xl font-black text-slate-900 mb-2">{localize("تم استلام طلبك!", "Your request has been received!")}</h3>
-            <p className="text-slate-500 text-sm mb-2">{localize("تم حفظ طلبك وسيتواصل معك الفريق خلال 24 ساعة.", "Your request has been saved and the team will contact you within 24 hours.")}</p>
-            <p className="text-slate-500 text-sm mb-6">{localize("سيفتح واتساب تلقائياً...", "WhatsApp will open automatically...")}</p>
-            <div className="flex gap-3 justify-center">
-              <a
-                href={`https://wa.me/${whatsapp}?text=${encodeURIComponent(language === "en" ? `Hello, I am ${form.fullName} — I am requesting: ${serviceLabel(form.serviceType)}` : `مرحباً، أنا ${form.fullName} — أطلب خدمة: ${form.serviceType}`)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-[#25D366] text-white font-bold px-6 py-2.5 rounded-full text-sm hover:bg-[#1eb856] transition-colors"
-              >
-                {localize("فتح واتساب يدوياً", "Open WhatsApp manually")}
-              </a>
-              <button onClick={handleClose} className="border border-slate-200 text-slate-600 font-semibold px-6 py-2.5 rounded-full text-sm hover:bg-slate-50">
+            <p className="text-slate-500 text-sm mb-2">{localize("تم حفظ طلبك وسيتواصل معك الفريق في أقرب وقت.", "Your request has been saved and the team will contact you soon.")}</p>
+            <div className="flex flex-col gap-2.5 justify-center max-w-xs mx-auto mt-5">
+              {forwardUrl && (
+                <a
+                  href={forwardUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-[#117b59] text-white font-bold px-6 py-3 rounded-xl text-sm hover:bg-[#0c6549] transition-colors flex items-center justify-center gap-2 shadow-sm"
+                >
+                  <MessageCircle size={17} />
+                  {localize("متابعة إرسال الطلب", "Proceed with request")}
+                </a>
+              )}
+              <button onClick={handleClose} className="border border-slate-200 text-slate-600 font-semibold px-6 py-2.5 rounded-xl text-sm hover:bg-slate-50">
                 {localize("إغلاق", "Close")}
               </button>
             </div>

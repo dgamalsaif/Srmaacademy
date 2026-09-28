@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { X, CheckCircle2, Loader2, UserRound, Building2, MapPin, AtSign, ExternalLink } from "lucide-react";
+import { X, CheckCircle2, Loader2, UserRound, Building2, MapPin, AtSign, ExternalLink, MessageCircle, Send, Mail, Share2 } from "lucide-react";
 import CountrySelector from "./CountrySelector";
-import { DEFAULT_SITE_CONTENT_SETTINGS, RegistrationFieldId, SiteContentSettings } from "@/lib/siteContentSettings";
+import { DEFAULT_SITE_CONTENT_SETTINGS, RegistrationFieldId, SiteContentSettings, buildForwardingUrl, ForwardingType } from "@/lib/siteContentSettings";
 import { useLanguage } from "@/lib/i18n";
 
 interface RegistrationModalProps {
@@ -26,6 +26,8 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
   const [researchGroupUrl, setResearchGroupUrl] = useState("");
+  const [forwardUrl, setForwardUrl] = useState("");
+  const [forwardType, setForwardType] = useState<ForwardingType>("whatsapp");
   const [contentSettings, setContentSettings] = useState<SiteContentSettings>(DEFAULT_SITE_CONTENT_SETTINGS);
   const audience = coordinatorEntry ? "coordinator" : "participant";
   const fieldSetting = (id: RegistrationFieldId) => contentSettings.registrationFields.find((field) => field.id === id) || DEFAULT_SITE_CONTENT_SETTINGS.registrationFields.find((field) => field.id === id)!;
@@ -88,17 +90,65 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
       });
       const result = await response.json().catch(() => ({})) as { error?: string; researchGroupUrl?: string | null };
       if (!response.ok) throw new Error(submitError(result.error));
-      if (!coordinatorEntry && typeof result.researchGroupUrl === "string" && result.researchGroupUrl.startsWith("https://")) {
-        setResearchGroupUrl(result.researchGroupUrl);
+
+      // Resolve specialty group link or research group link
+      const specialtyMatch = contentSettings.specialtyOptions.find((opt) =>
+        (opt.nameAr && opt.nameAr === form.specialization) ||
+        (opt.nameEn && opt.nameEn.toLowerCase() === form.specialization.toLowerCase()) ||
+        form.specialization.includes(opt.nameAr) ||
+        form.specialization.includes(opt.nameEn)
+      );
+      const effectiveGroupUrl = (typeof result.researchGroupUrl === "string" && result.researchGroupUrl.startsWith("http"))
+        ? result.researchGroupUrl
+        : (specialtyMatch?.groupUrl?.trim() || "");
+      if (effectiveGroupUrl) {
+        setResearchGroupUrl(effectiveGroupUrl);
       }
+
+      // Resolve configured forwarding channel
+      const fType = coordinatorEntry
+        ? (contentSettings.brand.coordinatorForwardType || "whatsapp")
+        : (contentSettings.brand.participantForwardType || "whatsapp");
+      const fTarget = coordinatorEntry
+        ? (contentSettings.brand.coordinatorForwardTarget || contentSettings.brand.coordinatorWhatsapp || contentSettings.brand.whatsapp || "966562159258")
+        : (contentSettings.brand.participantForwardTarget || contentSettings.brand.participantWhatsapp || contentSettings.brand.whatsapp || "966562159258");
+      const fAuto = coordinatorEntry
+        ? contentSettings.brand.coordinatorAutoRedirect
+        : contentSettings.brand.participantAutoRedirect;
+      const fMsg = coordinatorEntry
+        ? contentSettings.brand.coordinatorCustomMessage
+        : contentSettings.brand.participantCustomMessage;
+
+      const generatedUrl = buildForwardingUrl({
+        type: fType,
+        target: fTarget,
+        customMessage: fMsg,
+        studentName: form.fullName,
+        specialization: form.specialization,
+        researchTitle,
+        email: form.email,
+        affiliation: form.affiliation,
+        whatsapp: visible("whatsapp") ? `${form.dialCode} ${form.whatsapp}`.trim() : "",
+        language,
+      });
+
+      setForwardUrl(generatedUrl);
+      setForwardType(fType);
       setDone(true);
       onRegistered?.();
-      if (!coordinatorEntry && visible("whatsapp")) {
-        const message = encodeURIComponent(language === "en"
-          ? `Hello, I am ${form.fullName} — ${form.specialization}\nI would like to register for the research opportunity:\n${researchTitle}\n\n📧 ${form.email}\n🏥 ${form.affiliation}`
-          : `مرحباً، أنا ${form.fullName} — ${form.specialization}\nأودّ التسجيل في الفرصة البحثية:\n${researchTitle}\n\n📧 ${form.email}\n🏥 ${form.affiliation}`);
-        const participantWhatsapp = contentSettings.brand.participantWhatsapp || contentSettings.brand.whatsapp || "966562159258";
-        window.setTimeout(() => window.open(`https://wa.me/${participantWhatsapp.replace(/\D/g, "")}?text=${message}`, "_blank"), 900);
+
+      if (generatedUrl && fAuto && fType !== "none") {
+        window.setTimeout(() => {
+          try {
+            const link = document.createElement("a");
+            link.href = generatedUrl;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            link.click();
+          } catch {
+            // Screen provides direct button fallback
+          }
+        }, 800);
       }
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : localize("حدث خطأ غير متوقع", "An unexpected error occurred."));
@@ -127,15 +177,44 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
         </div>
 
         {done ? (
-          <div className="px-7 py-12 text-center">
+          <div className="px-7 py-10 text-center">
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#e7f3ef]"><CheckCircle2 size={34} style={{ color: contentSettings.accentColor }} /></div>
             <h3 className="text-xl font-black text-[#172238]">{localize("تم حفظ التسجيل بنجاح", "Registration saved successfully")}</h3>
             <p className="mx-auto mt-3 max-w-sm text-sm leading-7 text-slate-500">{coordinatorEntry ? localize("تمت إضافة بيانات الطالب إلى لوحة التسجيلات بنجاح.", "The student's details have been added to the registrations dashboard.") : localize(`تم حفظ بياناتك وسيتم التواصل معك من فريق ${contentSettings.brand.siteNameAr} قريباً.`, `Your details have been saved and the ${contentSettings.brand.siteNameEn} team will contact you soon.`)}</p>
-            {!coordinatorEntry && researchGroupUrl && (
-              <a href={researchGroupUrl} target="_blank" rel="noopener noreferrer" className="mx-auto mt-6 flex w-full max-w-sm items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 py-3.5 text-sm font-black text-white transition hover:bg-[#1eb856]">
-                <ExternalLink size={17} />{localize("الانضمام إلى قروب الباحثين", "Join the researchers group")}
+
+            {forwardUrl && forwardType !== "none" && (
+              <a
+                href={forwardUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mx-auto mt-5 flex w-full max-w-sm items-center justify-center gap-2 rounded-xl bg-[#117b59] px-5 py-3.5 text-sm font-black text-white shadow-md transition hover:bg-[#0c6549]"
+              >
+                {forwardType === "email" ? <Mail size={18} /> : forwardType === "telegram" ? <Send size={18} /> : <MessageCircle size={18} />}
+                {forwardType === "email"
+                  ? localize("إرسال البيانات عبر البريد الإلكتروني", "Send details via Email")
+                  : forwardType === "telegram"
+                  ? localize("إرسال البيانات عبر تيليجرام", "Send details via Telegram")
+                  : forwardType === "messenger"
+                  ? localize("إرسال البيانات عبر فيسبوك ماسنجر", "Send details via Messenger")
+                  : forwardType === "instagram"
+                  ? localize("التواصل عبر إنستجرام", "Send details via Instagram")
+                  : forwardType === "custom_url"
+                  ? localize("متابعة إرسال البيانات", "Proceed to submission")
+                  : localize("إرسال البيانات ومتابعة التسجيل", "Send details & proceed")}
               </a>
             )}
+
+            {researchGroupUrl && (
+              <a
+                href={researchGroupUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mx-auto mt-3 flex w-full max-w-sm items-center justify-center gap-2 rounded-xl bg-[#25D366] px-5 py-3.5 text-sm font-black text-white shadow-md transition hover:bg-[#1eb856]"
+              >
+                <ExternalLink size={17} />{localize("الانضمام إلى قروب التخصص / الباحثين", "Join the researchers & specialty group")}
+              </a>
+            )}
+
             <button onClick={handleClose} className="mt-7 rounded-xl px-8 py-3 text-sm font-bold text-white transition" style={{ backgroundColor: contentSettings.primaryColor }}>{localize("إغلاق", "Close")}</button>
           </div>
         ) : (

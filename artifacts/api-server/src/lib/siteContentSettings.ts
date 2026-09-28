@@ -6,8 +6,8 @@ type TitleLanguage = "arabic" | "english" | "both";
 type OpportunityDisplayMode = "grid" | "scroll";
 type FieldId = "fullName" | "specialization" | "email" | "affiliation" | "whatsapp" | "city" | "orcid" | "country";
 export type OpportunityFieldId = "titleAr" | "titleEn" | "specialtyAr" | "specialtyEn" | "status" | "totalSeats" | "seatsLeft" | "descriptionAr" | "descriptionEn" | "journalTarget" | "journalIssn" | "journalPubmed" | "journalScopus" | "journalWos" | "duration" | "supervisor" | "indexedIn" | "benefits";
-export interface SpecialtyOption { id: string; nameAr: string; nameEn: string; }
-export interface JournalOption { id: string; nameAr: string; nameEn: string; issn: string; pubmed: string; scopus: string; wos: string; }
+export interface SpecialtyOption { id: string; nameAr: string; nameEn: string; groupUrl?: string; }
+export interface JournalOption { id: string; nameAr: string; nameEn: string; issn: string; pubmed: string; scopus: string; wos: string; specialty?: string; }
 type FieldType = "text" | "email" | "tel";
 
 export interface RegistrationFieldSetting {
@@ -33,6 +33,10 @@ export interface PublicPageContent {
   contentAr: string;
   contentEn: string;
 }
+
+export type ContactUsType = "whatsapp" | "phone" | "email" | "telegram" | "instagram" | "custom_url";
+export type ForwardingType = "whatsapp" | "whatsapp_direct_url" | "email" | "telegram" | "messenger" | "instagram" | "custom_url" | "none";
+
 export interface BrandContactSettings {
   siteNameAr: string;
   siteNameEn: string;
@@ -62,6 +66,24 @@ export interface BrandContactSettings {
   publicIconPosition: FloatingIconPosition;
   participantIconPosition: FloatingIconPosition;
   coordinatorIconPosition: FloatingIconPosition;
+
+  // New: Contact Us configuration
+  contactUsType: ContactUsType;
+  contactUsValue: string;
+  contactUsLabelAr: string;
+  contactUsLabelEn: string;
+
+  // New: Post-Registration Forwarding for Participants
+  participantForwardType: ForwardingType;
+  participantForwardTarget: string;
+  participantAutoRedirect: boolean;
+  participantCustomMessage: string;
+
+  // New: Post-Registration Forwarding for Coordinators
+  coordinatorForwardType: ForwardingType;
+  coordinatorForwardTarget: string;
+  coordinatorAutoRedirect: boolean;
+  coordinatorCustomMessage: string;
 }
 type SocialIconId = "whatsapp" | "telegram" | "instagram" | "x" | "linkedin" | "facebook" | "tiktok" | "youtube" | "snapchat" | "email" | "phone";
 type FloatingIconPosition = "bottom-left" | "bottom-right" | "middle-left" | "middle-right";
@@ -100,6 +122,34 @@ const IDS: FieldId[] = ["fullName", "specialization", "email", "affiliation", "w
 const PARTS = ["description", "specialty", "seats", "duration", "supervisor", "journal", "benefits"];
 const OPPORTUNITY_FIELD_IDS: OpportunityFieldId[] = ["titleAr", "titleEn", "specialtyAr", "specialtyEn", "status", "totalSeats", "seatsLeft", "descriptionAr", "descriptionEn", "journalTarget", "journalIssn", "journalPubmed", "journalScopus", "journalWos", "duration", "supervisor", "indexedIn", "benefits"];
 
+export const DEFAULT_SPECIALTY_OPTIONS: SpecialtyOption[] = [
+  { id: "cardiology", nameAr: "أمراض القلب والأوعية الدموية", nameEn: "Cardiology", groupUrl: "" },
+  { id: "surgery", nameAr: "الجراحة العامة وجراحة الأوعية", nameEn: "Surgery", groupUrl: "" },
+  { id: "internal-medicine", nameAr: "الباطنة العامة", nameEn: "Internal Medicine", groupUrl: "" },
+  { id: "pediatrics", nameAr: "طب الأطفال", nameEn: "Pediatrics", groupUrl: "" },
+  { id: "neurology", nameAr: "المخ والأعصاب", nameEn: "Neurology", groupUrl: "" },
+  { id: "oncology", nameAr: "علم الأورام", nameEn: "Oncology", groupUrl: "" },
+  { id: "orthopedics", nameAr: "جراحة العظام", nameEn: "Orthopedics", groupUrl: "" },
+  { id: "obgyn", nameAr: "النساء والولادة", nameEn: "Obstetrics & Gynecology", groupUrl: "" },
+  { id: "radiology", nameAr: "الأشعة والتصوير الطبي", nameEn: "Radiology", groupUrl: "" },
+  { id: "psychiatry", nameAr: "الطب النفسي", nameEn: "Psychiatry", groupUrl: "" },
+];
+
+export const DEFAULT_JOURNAL_OPTIONS: JournalOption[] = [
+  { id: "lancet", nameAr: "ذا لانسيت", nameEn: "The Lancet", issn: "0140-6736", pubmed: "Indexed", scopus: "Q1", wos: "Q1", specialty: "General Medicine / الطب العام" },
+  { id: "nejm", nameAr: "نيو إنغلاند جورنال أوف ميديسين", nameEn: "New England Journal of Medicine (NEJM)", issn: "0028-4793", pubmed: "Indexed", scopus: "Q1", wos: "Q1", specialty: "General Medicine / الطب العام" },
+  { id: "jama", nameAr: "جاما - الجمعية الطبية الأمريكية", nameEn: "JAMA", issn: "0098-7484", pubmed: "Indexed", scopus: "Q1", wos: "Q1", specialty: "General Medicine / الطب العام" },
+  { id: "bmj", nameAr: "المجلة الطبية البريطانية", nameEn: "The BMJ", issn: "1756-1833", pubmed: "Indexed", scopus: "Q1", wos: "Q1", specialty: "General Medicine / الطب العام" },
+  { id: "eur-heart-j", nameAr: "المجلة الأوروبية للقلب", nameEn: "European Heart Journal", issn: "0195-668X", pubmed: "Indexed", scopus: "Q1", wos: "Q1", specialty: "Cardiology / أمراض القلب" },
+  { id: "annals-surgery", nameAr: "سجلات الجراحة", nameEn: "Annals of Surgery", issn: "0003-4932", pubmed: "Indexed", scopus: "Q1", wos: "Q1", specialty: "Surgery / الجراحة العامة" },
+  { id: "lancet-oncology", nameAr: "لانسيت للأورام", nameEn: "The Lancet Oncology", issn: "1470-2045", pubmed: "Indexed", scopus: "Q1", wos: "Q1", specialty: "Oncology / علم الأورام" },
+  { id: "pediatrics-j", nameAr: "طب الأطفال", nameEn: "Pediatrics", issn: "0031-4005", pubmed: "Indexed", scopus: "Q1", wos: "Q1", specialty: "Pediatrics / طب الأطفال" },
+  { id: "neurology-j", nameAr: "مجلة الأعصاب", nameEn: "Neurology", issn: "0028-3878", pubmed: "Indexed", scopus: "Q1", wos: "Q1", specialty: "Neurology / طب المخ والأعصاب" },
+  { id: "cureus", nameAr: "كيوريوس للعلوم الطبية", nameEn: "Cureus Journal of Medical Science", issn: "2168-8184", pubmed: "Indexed", scopus: "Q2", wos: "ESCI", specialty: "General Medicine / الطب العام" },
+  { id: "plos-one", nameAr: "بلوس وان", nameEn: "PLOS ONE", issn: "1932-6203", pubmed: "Indexed", scopus: "Q1", wos: "Q2", specialty: "Multidisciplinary / متعدد التخصصات" },
+  { id: "frontiers-med", nameAr: "فرونتيرز في الطب", nameEn: "Frontiers in Medicine", issn: "2296-858X", pubmed: "Indexed", scopus: "Q2", wos: "Q2", specialty: "General Medicine / الطب العام" },
+];
+
 export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
   participantTitle: "بوابة المشارك",
   participantTitleEn: "Participant Portal",
@@ -120,8 +170,8 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
   visibleParticipantCardParts: [...PARTS],
   visibleCoordinatorCardParts: [...PARTS],
   requiredOpportunityFields: [],
-  specialtyOptions: [],
-  journalOptions: [],
+  specialtyOptions: [...DEFAULT_SPECIALTY_OPTIONS],
+  journalOptions: [...DEFAULT_JOURNAL_OPTIONS],
   registrationFields: [
     { id: "fullName", label: "الاسم الكامل", labelEn: "Full name", placeholder: "د. أحمد محمد", placeholderEn: "Dr. Ahmed Mohammed", type: "text", requiredParticipant: true, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#117b59" },
     { id: "specialization", label: "التخصص الدقيق", labelEn: "Specialization", placeholder: "مثال: طب القلب", placeholderEn: "e.g., Cardiology", type: "text", requiredParticipant: true, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#117b59" },
@@ -161,6 +211,18 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
     publicIconPosition: "bottom-left",
     participantIconPosition: "bottom-left",
     coordinatorIconPosition: "bottom-left",
+    contactUsType: "whatsapp",
+    contactUsValue: "966562159258",
+    contactUsLabelAr: "تواصل معنا",
+    contactUsLabelEn: "Contact Us",
+    participantForwardType: "whatsapp",
+    participantForwardTarget: "966562159258",
+    participantAutoRedirect: true,
+    participantCustomMessage: "",
+    coordinatorForwardType: "whatsapp",
+    coordinatorForwardTarget: "966562159258",
+    coordinatorAutoRedirect: false,
+    coordinatorCustomMessage: "",
   },
   pages: {
     home: { titleAr: "أكاديمية SRMA للأبحاث", titleEn: "SRMA Research Academy", descriptionAr: "نحو مجتمع بحثي أكثر تأثيراً", descriptionEn: "Building a more impactful research community", contentAr: "", contentEn: "" },
@@ -203,17 +265,18 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
   const requiredOpportunityFields = Array.isArray(input.requiredOpportunityFields)
     ? [...new Set(input.requiredOpportunityFields.filter((field): field is OpportunityFieldId => typeof field === "string" && OPPORTUNITY_FIELD_IDS.includes(field as OpportunityFieldId)))]
     : DEFAULT_SITE_CONTENT_SETTINGS.requiredOpportunityFields;
-  const specialtyOptions = Array.isArray(input.specialtyOptions)
+  const specialtyOptions = Array.isArray(input.specialtyOptions) && input.specialtyOptions.length > 0
     ? input.specialtyOptions.flatMap((item) => {
       if (!item || typeof item !== "object") return [];
       const value = item as Record<string, unknown>;
       const nameAr = typeof value.nameAr === "string" ? value.nameAr.trim().slice(0, 120) : "";
       const nameEn = typeof value.nameEn === "string" ? value.nameEn.trim().slice(0, 120) : "";
       const id = typeof value.id === "string" && value.id.trim() ? value.id.trim().slice(0, 80) : `${nameAr}-${nameEn}`;
-      return nameAr || nameEn ? [{ id, nameAr, nameEn }] : [];
+      const groupUrl = typeof value.groupUrl === "string" && (value.groupUrl.trim().startsWith("https://") || value.groupUrl.trim().startsWith("http://")) ? value.groupUrl.trim().slice(0, 500) : "";
+      return nameAr || nameEn ? [{ id, nameAr, nameEn, ...(groupUrl ? { groupUrl } : {}) }] : [];
     }).slice(0, 100)
     : DEFAULT_SITE_CONTENT_SETTINGS.specialtyOptions;
-  const journalOptions = Array.isArray(input.journalOptions)
+  const journalOptions = Array.isArray(input.journalOptions) && input.journalOptions.length > 0
     ? input.journalOptions.flatMap((item) => {
       if (!item || typeof item !== "object") return [];
       const value = item as Record<string, unknown>;
@@ -221,7 +284,8 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
       const nameAr = get("nameAr");
       const nameEn = get("nameEn");
       const id = get("id", 80) || `${nameAr}-${nameEn}`;
-      return nameAr || nameEn ? [{ id, nameAr, nameEn, issn: get("issn", 30), pubmed: get("pubmed", 40), scopus: get("scopus", 40), wos: get("wos", 40) }] : [];
+      const specialty = get("specialty", 120);
+      return nameAr || nameEn ? [{ id, nameAr, nameEn, issn: get("issn", 30), pubmed: get("pubmed", 40), scopus: get("scopus", 40), wos: get("wos", 40), ...(specialty ? { specialty } : {}) }] : [];
     }).slice(0, 100)
     : DEFAULT_SITE_CONTENT_SETTINGS.journalOptions;
   const suppliedIds = rawFields
@@ -361,6 +425,24 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
       publicIconPosition: brandPosition("publicIconPosition"),
       participantIconPosition: brandPosition("participantIconPosition"),
       coordinatorIconPosition: brandPosition("coordinatorIconPosition"),
+      contactUsType: (["whatsapp", "phone", "email", "telegram", "instagram", "custom_url"] as ContactUsType[]).includes(brandInput.contactUsType as ContactUsType)
+        ? (brandInput.contactUsType as ContactUsType)
+        : DEFAULT_SITE_CONTENT_SETTINGS.brand.contactUsType,
+      contactUsValue: brandText("contactUsValue", 500) || globalWhatsapp,
+      contactUsLabelAr: brandText("contactUsLabelAr", 80) || DEFAULT_SITE_CONTENT_SETTINGS.brand.contactUsLabelAr,
+      contactUsLabelEn: brandText("contactUsLabelEn", 80) || DEFAULT_SITE_CONTENT_SETTINGS.brand.contactUsLabelEn,
+      participantForwardType: (["whatsapp", "whatsapp_direct_url", "email", "telegram", "messenger", "instagram", "custom_url", "none"] as ForwardingType[]).includes(brandInput.participantForwardType as ForwardingType)
+        ? (brandInput.participantForwardType as ForwardingType)
+        : DEFAULT_SITE_CONTENT_SETTINGS.brand.participantForwardType,
+      participantForwardTarget: brandText("participantForwardTarget", 500) || audienceWhatsapp("participantWhatsapp"),
+      participantAutoRedirect: typeof brandInput.participantAutoRedirect === "boolean" ? brandInput.participantAutoRedirect : DEFAULT_SITE_CONTENT_SETTINGS.brand.participantAutoRedirect,
+      participantCustomMessage: brandText("participantCustomMessage", 1000),
+      coordinatorForwardType: (["whatsapp", "whatsapp_direct_url", "email", "telegram", "messenger", "instagram", "custom_url", "none"] as ForwardingType[]).includes(brandInput.coordinatorForwardType as ForwardingType)
+        ? (brandInput.coordinatorForwardType as ForwardingType)
+        : DEFAULT_SITE_CONTENT_SETTINGS.brand.coordinatorForwardType,
+      coordinatorForwardTarget: brandText("coordinatorForwardTarget", 500) || audienceWhatsapp("coordinatorWhatsapp"),
+      coordinatorAutoRedirect: typeof brandInput.coordinatorAutoRedirect === "boolean" ? brandInput.coordinatorAutoRedirect : DEFAULT_SITE_CONTENT_SETTINGS.brand.coordinatorAutoRedirect,
+      coordinatorCustomMessage: brandText("coordinatorCustomMessage", 1000),
     },
     pages,
   };

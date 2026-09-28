@@ -212,7 +212,14 @@ function CoordinatorApproval({ requestId, fullName, phone, status, onUpdate }: {
       const text = encodeURIComponent(
         `مرحباً ${fullName}\nتم اعتمادك كمنسق في ${settings?.brand.siteNameAr || "أكاديمية الأبحاث"}.\n\nرمز الدخول الخاص بك: ${result.accessCode}\nبوابة المنسق: ${window.location.origin}/coordinator\n\nاحتفظ بالرمز ولا تشاركه مع الآخرين.`
       );
-      window.open(`https://wa.me/${phone.replace(/\D/g, "")}?text=${text}`, "_blank");
+      const waUrl = `https://wa.me/${phone.replace(/\D/g, "")}?text=${text}`;
+      try {
+        const link = document.createElement("a");
+        link.href = waUrl;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.click();
+      } catch {}
       onUpdate();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "حدث خطأ");

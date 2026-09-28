@@ -8,6 +8,7 @@ export interface SpecialtyOption {
   id: string;
   nameAr: string;
   nameEn: string;
+  groupUrl?: string;
 }
 
 export interface JournalOption {
@@ -18,6 +19,7 @@ export interface JournalOption {
   pubmed: string;
   scopus: string;
   wos: string;
+  specialty?: string;
 }
 
 export interface RegistrationFieldSetting {
@@ -36,6 +38,10 @@ export interface RegistrationFieldSetting {
 
 export type PublicPageId = "home" | "participant" | "knowledge" | "about" | "faq" | "specialRequests" | "researchDetail";
 export interface PublicPageContent { titleAr: string; titleEn: string; descriptionAr: string; descriptionEn: string; contentAr: string; contentEn: string; }
+
+export type ContactUsType = "whatsapp" | "phone" | "email" | "telegram" | "instagram" | "custom_url";
+export type ForwardingType = "whatsapp" | "whatsapp_direct_url" | "email" | "telegram" | "messenger" | "instagram" | "custom_url" | "none";
+
 export interface BrandContactSettings {
   siteNameAr: string; siteNameEn: string; logoUrl: string;
   appNameAr: string; appNameEn: string; appShortName: string; appIconUrl: string; appThemeColor: string;
@@ -44,6 +50,24 @@ export interface BrandContactSettings {
   facebookUrl: string; tiktokUrl: string; youtubeUrl: string; snapchatUrl: string;
   publicSocialIcons: SocialIconId[]; participantSocialIcons: SocialIconId[]; coordinatorSocialIcons: SocialIconId[];
   publicIconPosition: FloatingIconPosition; participantIconPosition: FloatingIconPosition; coordinatorIconPosition: FloatingIconPosition;
+
+  // Contact Us configuration
+  contactUsType: ContactUsType;
+  contactUsValue: string;
+  contactUsLabelAr: string;
+  contactUsLabelEn: string;
+
+  // Post-Registration Forwarding for Participants
+  participantForwardType: ForwardingType;
+  participantForwardTarget: string;
+  participantAutoRedirect: boolean;
+  participantCustomMessage: string;
+
+  // Post-Registration Forwarding for Coordinators
+  coordinatorForwardType: ForwardingType;
+  coordinatorForwardTarget: string;
+  coordinatorAutoRedirect: boolean;
+  coordinatorCustomMessage: string;
 }
 export type SocialIconId = "whatsapp" | "telegram" | "instagram" | "x" | "linkedin" | "facebook" | "tiktok" | "youtube" | "snapchat" | "email" | "phone";
 export type FloatingIconPosition = "bottom-left" | "bottom-right" | "middle-left" | "middle-right";
@@ -113,6 +137,34 @@ export const OPPORTUNITY_FIELDS: { id: OpportunityFieldId; label: string }[] = [
   { id: "benefits", label: "مزايا المشاركة" },
 ];
 
+export const DEFAULT_SPECIALTY_OPTIONS: SpecialtyOption[] = [
+  { id: "cardiology", nameAr: "أمراض القلب والأوعية الدموية", nameEn: "Cardiology", groupUrl: "" },
+  { id: "surgery", nameAr: "الجراحة العامة وجراحة الأوعية", nameEn: "Surgery", groupUrl: "" },
+  { id: "internal-medicine", nameAr: "الباطنة العامة", nameEn: "Internal Medicine", groupUrl: "" },
+  { id: "pediatrics", nameAr: "طب الأطفال", nameEn: "Pediatrics", groupUrl: "" },
+  { id: "neurology", nameAr: "المخ والأعصاب", nameEn: "Neurology", groupUrl: "" },
+  { id: "oncology", nameAr: "علم الأورام", nameEn: "Oncology", groupUrl: "" },
+  { id: "orthopedics", nameAr: "جراحة العظام", nameEn: "Orthopedics", groupUrl: "" },
+  { id: "obgyn", nameAr: "النساء والولادة", nameEn: "Obstetrics & Gynecology", groupUrl: "" },
+  { id: "radiology", nameAr: "الأشعة والتصوير الطبي", nameEn: "Radiology", groupUrl: "" },
+  { id: "psychiatry", nameAr: "الطب النفسي", nameEn: "Psychiatry", groupUrl: "" },
+];
+
+export const DEFAULT_JOURNAL_OPTIONS: JournalOption[] = [
+  { id: "lancet", nameAr: "ذا لانسيت", nameEn: "The Lancet", issn: "0140-6736", pubmed: "Indexed", scopus: "Q1", wos: "Q1", specialty: "General Medicine / الطب العام" },
+  { id: "nejm", nameAr: "نيو إنغلاند جورنال أوف ميديسين", nameEn: "New England Journal of Medicine (NEJM)", issn: "0028-4793", pubmed: "Indexed", scopus: "Q1", wos: "Q1", specialty: "General Medicine / الطب العام" },
+  { id: "jama", nameAr: "جاما - الجمعية الطبية الأمريكية", nameEn: "JAMA", issn: "0098-7484", pubmed: "Indexed", scopus: "Q1", wos: "Q1", specialty: "General Medicine / الطب العام" },
+  { id: "bmj", nameAr: "المجلة الطبية البريطانية", nameEn: "The BMJ", issn: "1756-1833", pubmed: "Indexed", scopus: "Q1", wos: "Q1", specialty: "General Medicine / الطب العام" },
+  { id: "eur-heart-j", nameAr: "المجلة الأوروبية للقلب", nameEn: "European Heart Journal", issn: "0195-668X", pubmed: "Indexed", scopus: "Q1", wos: "Q1", specialty: "Cardiology / أمراض القلب" },
+  { id: "annals-surgery", nameAr: "سجلات الجراحة", nameEn: "Annals of Surgery", issn: "0003-4932", pubmed: "Indexed", scopus: "Q1", wos: "Q1", specialty: "Surgery / الجراحة العامة" },
+  { id: "lancet-oncology", nameAr: "لانسيت للأورام", nameEn: "The Lancet Oncology", issn: "1470-2045", pubmed: "Indexed", scopus: "Q1", wos: "Q1", specialty: "Oncology / علم الأورام" },
+  { id: "pediatrics-j", nameAr: "طب الأطفال", nameEn: "Pediatrics", issn: "0031-4005", pubmed: "Indexed", scopus: "Q1", wos: "Q1", specialty: "Pediatrics / طب الأطفال" },
+  { id: "neurology-j", nameAr: "مجلة الأعصاب", nameEn: "Neurology", issn: "0028-3878", pubmed: "Indexed", scopus: "Q1", wos: "Q1", specialty: "Neurology / طب المخ والأعصاب" },
+  { id: "cureus", nameAr: "كيوريوس للعلوم الطبية", nameEn: "Cureus Journal of Medical Science", issn: "2168-8184", pubmed: "Indexed", scopus: "Q2", wos: "ESCI", specialty: "General Medicine / الطب العام" },
+  { id: "plos-one", nameAr: "بلوس وان", nameEn: "PLOS ONE", issn: "1932-6203", pubmed: "Indexed", scopus: "Q1", wos: "Q2", specialty: "Multidisciplinary / متعدد التخصصات" },
+  { id: "frontiers-med", nameAr: "فرونتيرز في الطب", nameEn: "Frontiers in Medicine", issn: "2296-858X", pubmed: "Indexed", scopus: "Q2", wos: "Q2", specialty: "General Medicine / الطب العام" },
+];
+
 export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
   participantTitle: "بوابة المشارك",
   participantTitleEn: "Participant Portal",
@@ -133,8 +185,8 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
   visibleParticipantCardParts: ["description", "specialty", "seats", "duration", "supervisor", "journal", "benefits"],
   visibleCoordinatorCardParts: ["description", "specialty", "seats", "duration", "supervisor", "journal", "benefits"],
   requiredOpportunityFields: [],
-  specialtyOptions: [],
-  journalOptions: [],
+  specialtyOptions: [...DEFAULT_SPECIALTY_OPTIONS],
+  journalOptions: [...DEFAULT_JOURNAL_OPTIONS],
   registrationFields: [
     { id: "fullName", label: "الاسم الكامل", labelEn: "Full name", placeholder: "د. أحمد محمد", placeholderEn: "Dr. Ahmed Mohammed", type: "text", requiredParticipant: true, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#117b59" },
     { id: "specialization", label: "التخصص الدقيق", labelEn: "Specialization", placeholder: "مثال: طب القلب", placeholderEn: "e.g., Cardiology", type: "text", requiredParticipant: true, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#117b59" },
@@ -152,6 +204,18 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
     facebookUrl: "", tiktokUrl: "", youtubeUrl: "", snapchatUrl: "",
     publicSocialIcons: ["whatsapp", "telegram"], participantSocialIcons: ["whatsapp", "telegram"], coordinatorSocialIcons: ["whatsapp", "telegram"],
     publicIconPosition: "bottom-left", participantIconPosition: "bottom-left", coordinatorIconPosition: "bottom-left",
+    contactUsType: "whatsapp",
+    contactUsValue: "966562159258",
+    contactUsLabelAr: "تواصل معنا",
+    contactUsLabelEn: "Contact Us",
+    participantForwardType: "whatsapp",
+    participantForwardTarget: "966562159258",
+    participantAutoRedirect: true,
+    participantCustomMessage: "",
+    coordinatorForwardType: "whatsapp",
+    coordinatorForwardTarget: "966562159258",
+    coordinatorAutoRedirect: false,
+    coordinatorCustomMessage: "",
   },
   pages: {
     home: { titleAr: "أكاديمية SRMA للأبحاث", titleEn: "SRMA Research Academy", descriptionAr: "نحو مجتمع بحثي أكثر تأثيراً", descriptionEn: "Building a more impactful research community", contentAr: "", contentEn: "" },
@@ -163,3 +227,119 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
     researchDetail: { titleAr: "تفاصيل الفرصة البحثية", titleEn: "Research Opportunity Details", descriptionAr: "راجع تفاصيل الفرصة ثم أكمل التسجيل", descriptionEn: "Review the opportunity details and complete your registration", contentAr: "", contentEn: "" },
   },
 };
+
+export function getContactUsHref(brand?: BrandContactSettings): { href: string; isExternal: boolean; labelAr: string; labelEn: string } {
+  const b = brand || DEFAULT_SITE_CONTENT_SETTINGS.brand;
+  const type = b.contactUsType || "whatsapp";
+  const val = (b.contactUsValue || b.whatsapp || "966562159258").trim();
+  const labelAr = b.contactUsLabelAr || "تواصل معنا";
+  const labelEn = b.contactUsLabelEn || "Contact Us";
+
+  switch (type) {
+    case "phone":
+      return { href: `tel:${val.replace(/[^\d+]/g, "")}`, isExternal: false, labelAr, labelEn };
+    case "email":
+      return { href: `mailto:${val}`, isExternal: false, labelAr, labelEn };
+    case "telegram":
+      return {
+        href: val.startsWith("http") ? val : `https://t.me/${val.replace(/^@/, "")}`,
+        isExternal: true,
+        labelAr,
+        labelEn,
+      };
+    case "instagram":
+      return {
+        href: val.startsWith("http") ? val : `https://instagram.com/${val.replace(/^@/, "")}`,
+        isExternal: true,
+        labelAr,
+        labelEn,
+      };
+    case "custom_url":
+      return { href: val, isExternal: true, labelAr, labelEn };
+    case "whatsapp":
+    default: {
+      const cleanNum = val.replace(/[^\d+]/g, "").replace(/^\+/, "");
+      return {
+        href: val.startsWith("http") ? val : `https://wa.me/${cleanNum || "966562159258"}`,
+        isExternal: true,
+        labelAr,
+        labelEn,
+      };
+    }
+  }
+}
+
+export function buildForwardingUrl({
+  type,
+  target,
+  customMessage,
+  studentName,
+  specialization,
+  researchTitle,
+  email,
+  affiliation,
+  whatsapp,
+  language,
+}: {
+  type: ForwardingType;
+  target: string;
+  customMessage?: string;
+  studentName: string;
+  specialization: string;
+  researchTitle: string;
+  email?: string;
+  affiliation?: string;
+  whatsapp?: string;
+  language: string;
+}): string {
+  if (type === "none" || !target) return "";
+
+  const defaultMsg = language === "en"
+    ? `Hello, I registered for the research opportunity:\n"${researchTitle}"\n\nName: ${studentName}\nSpecialty: ${specialization}${email ? `\nEmail: ${email}` : ""}${affiliation ? `\nAffiliation: ${affiliation}` : ""}${whatsapp ? `\nWhatsApp: ${whatsapp}` : ""}`
+    : `مرحباً، لقد أتممت التسجيل في الفرصة البحثية:\n"${researchTitle}"\n\nالاسم: ${studentName}\nالتخصص: ${specialization}${email ? `\nالبريد: ${email}` : ""}${affiliation ? `\nالجهة: ${affiliation}` : ""}${whatsapp ? `\nواتساب: ${whatsapp}` : ""}`;
+
+  let body = customMessage && customMessage.trim() ? customMessage : defaultMsg;
+  body = body
+    .replace(/{name}/g, studentName)
+    .replace(/{title}/g, researchTitle)
+    .replace(/{specialty}/g, specialization)
+    .replace(/{email}/g, email || "")
+    .replace(/{affiliation}/g, affiliation || "")
+    .replace(/{whatsapp}/g, whatsapp || "");
+
+  const encoded = encodeURIComponent(body);
+
+  switch (type) {
+    case "whatsapp": {
+      const cleanNum = target.replace(/[^\d+]/g, "").replace(/^\+/, "");
+      return `https://wa.me/${cleanNum}?text=${encoded}`;
+    }
+    case "whatsapp_direct_url": {
+      if (target.startsWith("http")) {
+        return target.includes("?") ? `${target}&text=${encoded}` : `${target}?text=${encoded}`;
+      }
+      return `https://wa.me/${target.replace(/[^\d+]/g, "")}?text=${encoded}`;
+    }
+    case "email": {
+      const subject = encodeURIComponent(language === "en" ? `Registration: ${researchTitle}` : `تسجيل جديد: ${researchTitle}`);
+      return `mailto:${target}?subject=${subject}&body=${encoded}`;
+    }
+    case "telegram": {
+      const username = target.replace(/^@/, "").replace(/^https?:\/\/t\.me\//, "");
+      return `https://t.me/${username}`;
+    }
+    case "messenger": {
+      const user = target.replace(/^https?:\/\/m\.me\//, "");
+      return `https://m.me/${user}`;
+    }
+    case "instagram": {
+      const user = target.replace(/^@/, "").replace(/^https?:\/\/instagram\.com\//, "");
+      return `https://instagram.com/${user}`;
+    }
+    case "custom_url": {
+      return target;
+    }
+    default:
+      return "";
+  }
+}

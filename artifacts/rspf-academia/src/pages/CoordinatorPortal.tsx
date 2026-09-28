@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Shield, X, CheckCircle2, Loader2, UserRound, Mail, Phone, Building2, Menu, Home, BookOpen, Info, GraduationCap, UsersRound, FileText, Download, Cookie } from "lucide-react";
+import { Shield, X, CheckCircle2, Loader2, UserRound, Mail, Phone, Building2, Menu, Home, BookOpen, Info, GraduationCap, UsersRound, FileText, Download, Cookie, MessageCircle } from "lucide-react";
 import CountrySelector from "@/components/CountrySelector";
 import FloatingButtons from "@/components/FloatingButtons";
 import { CoordinatorPortalSettings, DEFAULT_COORDINATOR_PORTAL_SETTINGS, PortalNavIcon } from "@/lib/coordinatorPortalSettings";
@@ -337,6 +337,7 @@ function CoordinatorRequestModal({ onClose }: CoordinatorRequestModalProps) {
   });
   const [loading, setLoading] = useState(false);
   const [requestNumber, setRequestNumber] = useState("");
+  const [whatsAppUrl, setWhatsAppUrl] = useState("");
   const [error, setError] = useState("");
 
   const submitRequest = async (event: React.FormEvent) => {
@@ -367,7 +368,17 @@ function CoordinatorRequestModal({ onClose }: CoordinatorRequestModalProps) {
           ? `New research coordinator accreditation request\n\nName: ${form.fullName}\nPhone: ${form.dialCode} ${form.phone}\nEmail: ${form.email}\nAffiliation: ${form.affiliation}\nCountry: ${form.country}\nRequest number: ${number}`
           : `طلب اعتماد منسق بحثي جديد\n\nالاسم: ${form.fullName}\nالهاتف: ${form.dialCode} ${form.phone}\nالبريد: ${form.email}\nجهة الانتساب: ${form.affiliation}\nالدولة: ${form.country}\nرقم الطلب: ${number}`
       );
-      window.open(`https://wa.me/${coordinatorWhatsapp.replace(/\D/g, "")}?text=${message}`, "_blank", "noopener,noreferrer");
+      const waUrl = `https://wa.me/${coordinatorWhatsapp.replace(/\D/g, "")}?text=${message}`;
+      setWhatsAppUrl(waUrl);
+      try {
+        const link = document.createElement("a");
+        link.href = waUrl;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.click();
+      } catch {
+        // Fallback button is shown on screen
+      }
     } catch (submitError) {
       setError(submitError instanceof Error ? submitError.message : (isEnglish ? "An unexpected error occurred" : "حدث خطأ غير متوقع"));
     } finally {
@@ -393,6 +404,17 @@ function CoordinatorRequestModal({ onClose }: CoordinatorRequestModalProps) {
               <p className="text-xs text-[#568477]">{isEnglish ? "Request tracking number" : "رقم طلب المتابعة"}</p>
               <p data-testid="text-coordinator-request-number" className="mt-1 font-black tracking-wider text-[#117b59]" dir="ltr">{requestNumber}</p>
             </div>
+            {whatsAppUrl && (
+              <a
+                href={whatsAppUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mb-4 flex items-center justify-center gap-2 rounded-xl bg-[#25D366] px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-[#20ba5a]"
+              >
+                <MessageCircle size={18} />
+                {isEnglish ? "Open WhatsApp conversation" : "فتح محادثة واتساب"}
+              </a>
+            )}
             <p className="text-xs leading-6 text-slate-400">{isEnglish ? "Once approved, you will receive your access code from the administration by WhatsApp or email." : "بعد اعتمادك سيصلك رمز الدخول من الإدارة عبر واتساب أو البريد الإلكتروني."}</p>
             <button type="button" onClick={onClose} data-testid="button-close-request-success" className="mt-6 w-full rounded-xl bg-[#117b59] py-3 font-bold text-white transition hover:bg-[#0c6549]">{isEnglish ? "Close" : "إغلاق"}</button>
           </div>

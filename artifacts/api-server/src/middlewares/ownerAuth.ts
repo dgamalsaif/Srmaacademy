@@ -44,8 +44,16 @@ async function bootstrapInitialOwner(
  * account from inheriting the owner role.
  */
 export async function getManagedOwner(req: Request): Promise<OwnerContext | null> {
-  const auth = getAuth(req);
-  if (!auth.userId) return null;
+  if (!process.env.CLERK_SECRET_KEY) {
+    return null;
+  }
+  let auth: { userId?: string | null } | null = null;
+  try {
+    auth = getAuth(req);
+  } catch {
+    auth = (req as any).auth || null;
+  }
+  if (!auth?.userId) return null;
 
   const user = await clerkClient.users.getUser(auth.userId);
   const primaryEmail = user.primaryEmailAddress;
