@@ -4,15 +4,12 @@
   "license": "MIT",
   "private": true,
   "type": "module",
-  "workspaces": [
-    "artifacts/*",
-    "lib/*",
-    "scripts"
-  ],
   "scripts": {
     "dev": "tsx server.ts",
     "start": "tsx server.ts",
-    "build": "npm run build --workspaces --if-present",
+    "build": "pnpm --filter @workspace/srma-research-academy run build",
+    "build:frontend": "pnpm --filter @workspace/srma-research-academy run build",
+    "build:all": "pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
     "typecheck": "npm run typecheck:libs",
     "lint": "tsc --build"
