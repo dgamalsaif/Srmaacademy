@@ -1,16 +1,9 @@
 import { Link } from "wouter";
-import { AtSign, Facebook, Ghost, Instagram, Linkedin, Mail, MessageCircle, Music2, Phone, Radio, Send, Youtube } from "lucide-react";
-import { SRMA_LOGO } from "@/components/BrandBackground";
-import InstallAppButton from "@/components/InstallAppButton";
+import { Phone, Mail, MessageCircle, Send, Radio, Instagram } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
 import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
 
-const quickLinks = [
-  { href: "/", ar: "الرئيسية", en: "Home" },
-  { href: "/participant-portal", ar: "بوابة المشارك", en: "Participant Portal" },
-  { href: "/coordinator", ar: "بوابة المنسق", en: "Coordinator Portal" },
-  { href: "/special-requests", ar: "الطلبات الخاصة", en: "Special Requests" },
-  { href: "/knowledge-center", ar: "مركز المعرفة", en: "Knowledge Center" },
+const QUICK_LINKS = [
   { href: "/about", ar: "عن المنصة", en: "About the platform" },
   { href: "/faq", ar: "الأسئلة الشائعة", en: "Frequently asked questions" },
 ];
@@ -30,6 +23,33 @@ export default function Footer() {
   const xUrl = socialUrl(brand?.xUsername, "https://x.com/");
   const linkedinUrl = socialUrl(brand?.linkedinUsername, "https://www.linkedin.com/in/");
 
+  // Configurable primary contact link driven by brand.contactUsType / brand.contactUsValue
+  const contactType = brand?.contactUsType; // 'whatsapp' | 'telegram' | 'email' | 'phone' | 'custom_url'
+  const rawContactValue = brand?.contactUsValue || "";
+  const contactValue = String(rawContactValue || "").trim();
+  const contactLabel = localize(brand?.contactUsLabelAr || "", brand?.contactUsLabelEn || "") ||
+    (contactType === "telegram" ? t("common.telegram") : contactType === "email" ? "Email" : t("common.whatsapp"));
+
+  const contactHref = (() => {
+    if (!contactType || !contactValue) return "";
+    switch (contactType) {
+      case "whatsapp":
+        return `https://wa.me/${contactValue.replace(/^\+/, "")}`;
+      case "telegram":
+        return contactValue.startsWith("https://") ? contactValue : `https://t.me/${contactValue.replace(/^@/, "")}`;
+      case "email":
+        return `mailto:${contactValue}`;
+      case "phone":
+        return `tel:${contactValue}`;
+      case "custom_url":
+        return contactValue;
+      default:
+        return contactValue;
+    }
+  })();
+
+  const ContactIcon = contactType === "telegram" ? Send : contactType === "email" ? Mail : contactType === "phone" ? Phone : MessageCircle;
+
   return (
     <footer className="bg-[#0C3156] text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -38,14 +58,34 @@ export default function Footer() {
           <div>
             <h3 className="text-lg font-bold mb-5 text-[#E9A020]">{t("footer.contact")}</h3>
             <div className="space-y-3">
-              {brand?.phone && <a
-                href={`tel:${brand.phone}`}
-                data-testid="link-footer-phone"
-                className="flex items-center gap-2 text-blue-200 hover:text-white text-sm transition-colors"
-              >
-                <Phone size={15} />
-                {brand.phone}
-              </a>}
+              {/* Configurable primary contact link (WhatsApp / Telegram / Email / Phone / Custom URL) */}
+              {contactHref ? (
+                <a
+                  href={contactHref}
+                  target={contactHref.startsWith("mailto:") || contactHref.startsWith("tel:") ? undefined : "_blank"}
+                  rel={contactHref.startsWith("mailto:") || contactHref.startsWith("tel:") ? undefined : "noopener noreferrer"}
+                  data-testid="link-footer-contact-us"
+                  className="flex items-center gap-2 text-blue-200 hover:text-white text-sm transition-colors"
+                >
+                  <ContactIcon size={15} />
+                  <span>
+                    {contactLabel} {contactType === "whatsapp" && contactValue ? `+${contactValue.replace(/^\+/, "")}` : contactType === "email" || contactType === "phone" ? contactValue : ""}
+                  </span>
+                </a>
+              ) : null}
+
+              {/* Existing contact fallbacks / additional links */}
+              {brand?.phone && (
+                <a
+                  href={`tel:${brand.phone}`}
+                  data-testid="link-footer-phone"
+                  className="flex items-center gap-2 text-blue-200 hover:text-white text-sm transition-colors"
+                >
+                  <Phone size={15} />
+                  {brand.phone}
+                </a>
+              )}
+
               <a
                 href={`https://wa.me/${brand?.whatsapp || "966562159258"}`}
                 target="_blank"
@@ -56,90 +96,66 @@ export default function Footer() {
                 <MessageCircle size={15} />
                 {brand?.whatsapp ? `+${brand.whatsapp.replace(/^\+/, "")}` : "+966 56 215 9258"}
               </a>
-              {telegramUrl && <a
-                href={telegramUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="link-footer-telegram-supervisor"
-                className="flex items-center gap-2 text-blue-200 hover:text-white text-sm transition-colors"
-              >
-                <Send size={15} />
-                {t("common.telegram")}
-              </a>}
-              {brand?.whatsappChannelUrl && <a
-                href={brand.whatsappChannelUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="link-footer-telegram-channel"
-                className="flex items-center gap-2 text-blue-200 hover:text-white text-sm transition-colors"
-              >
-                <Radio size={15} />
-                {localize("قناة WhatsApp", "WhatsApp Channel")}
-              </a>}
-              {brand?.email && <a href={`mailto:${brand.email}`} className="flex items-center gap-2 text-sm text-blue-200 transition-colors hover:text-white"><Mail size={15} />{brand.email}</a>}
-              {instagramUrl && <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-200 transition-colors hover:text-white"><Instagram size={15} />Instagram</a>}
-              {xUrl && <a href={xUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-200 transition-colors hover:text-white"><AtSign size={15} />X</a>}
-              {linkedinUrl && <a href={linkedinUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-200 transition-colors hover:text-white"><Linkedin size={15} />LinkedIn</a>}
-              {brand?.facebookUrl && <a href={brand.facebookUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-200 transition-colors hover:text-white"><Facebook size={15} />Facebook</a>}
-              {brand?.tiktokUrl && <a href={brand.tiktokUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-200 transition-colors hover:text-white"><Music2 size={15} />TikTok</a>}
-              {brand?.youtubeUrl && <a href={brand.youtubeUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-200 transition-colors hover:text-white"><Youtube size={15} />YouTube</a>}
-              {brand?.snapchatUrl && <a href={brand.snapchatUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-200 transition-colors hover:text-white"><Ghost size={15} />Snapchat</a>}
+
+              {telegramUrl && (
+                <a
+                  href={telegramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="link-footer-telegram-supervisor"
+                  className="flex items-center gap-2 text-blue-200 hover:text-white text-sm transition-colors"
+                >
+                  <Send size={15} />
+                  {t("common.telegram")}
+                </a>
+              )}
+
+              {brand?.whatsappChannelUrl && (
+                <a
+                  href={brand.whatsappChannelUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-testid="link-footer-telegram-channel"
+                  className="flex items-center gap-2 text-blue-200 hover:text-white text-sm transition-colors"
+                >
+                  <Radio size={15} />
+                  {localize("قناة WhatsApp", "WhatsApp Channel")}
+                </a>
+              )}
+
+              {brand?.email && (
+                <a
+                  href={`mailto:${brand.email}`}
+                  className="flex items-center gap-2 text-sm text-blue-200 transition-colors hover:text-white"
+                >
+                  <Mail size={15} />
+                  {brand.email}
+                </a>
+              )}
+
+              {instagramUrl && (
+                <a href={instagramUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-blue-200 transition-colors hover:text-white">
+                  <Instagram size={15} />Instagram
+                </a>
+              )}
             </div>
           </div>
 
-          {/* Quick links */}
           <div>
             <h3 className="text-lg font-bold mb-5 text-[#E9A020]">{t("footer.quickLinks")}</h3>
-            <ul className="space-y-2.5">
-              {quickLinks.map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    data-testid={`link-footer-${link.href.replace("/", "") || "home"}`}
-                    className="text-blue-200 hover:text-white text-sm transition-colors"
-                  >
-                    {localize(link.ar, link.en)}
-                  </Link>
-                </li>
+            <div className="flex flex-col gap-2">
+              {QUICK_LINKS.map((l) => (
+                <Link key={l.href} href={l.href} className="text-sm text-blue-200 hover:text-white transition-colors">
+                  {language === "ar" ? l.ar : l.en}
+                </Link>
               ))}
-            </ul>
-          </div>
-
-          {/* Logo & tagline */}
-          <div className="flex flex-col items-end gap-5">
-            <div className="flex items-center gap-2">
-              <div className="flex flex-col items-end">
-                <div className="flex items-center gap-3">
-                  <img src={settings?.brand.logoUrl || SRMA_LOGO} alt={language === "ar" ? settings?.brand.siteNameAr : settings?.brand.siteNameEn} className="h-14 w-14 rounded-full border border-white/20 object-cover shadow-lg bg-white" />
-                  <div>
-                    <span className="block max-w-56 truncate text-2xl font-black tracking-tight text-white">{siteName || "SRMA"}</span>
-                    <span className="mt-0.5 block text-[10px] font-medium tracking-widest text-blue-200">{language === "ar" ? settings?.brand.siteNameAr : settings?.brand.siteNameEn}</span>
-                  </div>
-                </div>
-              </div>
             </div>
-            <p className="text-blue-200 text-sm text-right leading-relaxed">
-              {localize("المنصة الأكاديمية الأولى في المملكة للبحث العلمي الطبي — نرافقك من الفكرة حتى النشر في أرقى المجلات الدولية", "The Kingdom's leading academic platform for medical research — supporting you from idea to publication in leading international journals.")}
-            </p>
-            {telegramUrl && <a
-              href={telegramUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              data-testid="button-footer-telegram-channel"
-              className="flex items-center gap-2 border border-[#E9A020]/60 text-[#E9A020] px-5 py-2.5 rounded-full text-sm font-semibold hover:bg-[#E9A020]/10 transition-colors"
-            >
-              <Send size={14} />
-              {t("footer.telegram")}
-            </a>}
-            <InstallAppButton className="flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-black text-[#0C3156] transition hover:bg-blue-50" />
           </div>
-        </div>
-      </div>
 
-      <div className="border-t border-white/10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between flex-wrap gap-2">
-           <p className="text-blue-300 text-xs">© {siteName || "SRMA"} {new Date().getFullYear()}. {localize("جميع الحقوق محفوظة.", "All rights reserved.")}</p>
-           <p className="text-blue-300 text-xs">{siteName || "SRMA"}</p>
+          <div>
+            <h3 className="text-lg font-bold mb-5 text-[#E9A020]">{siteName}</h3>
+            <p className="text-sm text-blue-200 max-w-xs">{t("footer.tagline")}</p>
+          </div>
         </div>
       </div>
     </footer>
