@@ -1,5 +1,5 @@
 import { ChevronLeft } from "lucide-react";
-import { Link } from "@tanstack/react-router";
+import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { useMemo } from "react";
 import { useTranslation } from "../i18n/useTranslation";
