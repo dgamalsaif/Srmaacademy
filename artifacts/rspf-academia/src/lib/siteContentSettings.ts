@@ -41,7 +41,7 @@ export interface PublicPageContent { titleAr: string; titleEn: string; descripti
 
 export type ContactUsType = "whatsapp" | "phone" | "email" | "telegram" | "instagram" | "custom_url";
 export type ForwardingType = "whatsapp" | "whatsapp_direct_url" | "email" | "telegram" | "messenger" | "instagram" | "custom_url" | "none";
-export type OpportunityInquiryChannel = "whatsapp" | "email" | "telegram";
+export type OpportunityInquiryChannel = "whatsapp" | "email" | "telegram" | "phone" | "custom_url";
 
 export interface BrandContactSettings {
   siteNameAr: string; siteNameEn: string; logoUrl: string;
@@ -413,12 +413,16 @@ export function getOpportunityInquiryLink(
     return null;
   }
 
-  // Determine channel (whatsapp / email / telegram)
+  // Determine channel (whatsapp / email / telegram / phone / custom_url)
   let channel: OpportunityInquiryChannel = "whatsapp";
   if (b.opportunityInquiryChannel === "email" || b.opportunityContactType === "email") {
     channel = "email";
   } else if (b.opportunityInquiryChannel === "telegram" || b.opportunityContactType === "telegram") {
     channel = "telegram";
+  } else if (b.opportunityInquiryChannel === "phone" || b.opportunityContactType === "phone") {
+    channel = "phone";
+  } else if (b.opportunityInquiryChannel === "custom_url" || b.opportunityContactType === "custom_url") {
+    channel = "custom_url";
   } else {
     channel = "whatsapp";
   }
@@ -470,6 +474,31 @@ export function getOpportunityInquiryLink(
       labelAr,
       labelEn,
       displayValue: `@${cleanUsername}`,
+    };
+  }
+
+  if (channel === "phone") {
+    const phoneVal = (b.opportunityInquiryValue || b.opportunityContactPhone || b.phone || "966562159258").trim();
+    const cleanPhone = phoneVal.replace(/[^\d+]/g, "");
+    return {
+      channel: "phone",
+      href: `tel:${cleanPhone}`,
+      isExternal: false,
+      labelAr: b.opportunityInquiryLabelAr || "اتصال للاستفسار 📞",
+      labelEn: b.opportunityInquiryLabelEn || "Call for inquiries 📞",
+      displayValue: phoneVal,
+    };
+  }
+
+  if (channel === "custom_url") {
+    const urlVal = (b.opportunityInquiryValue || b.contactUsValue || "").trim();
+    return {
+      channel: "custom_url",
+      href: urlVal.startsWith("http") ? urlVal : `https://${urlVal}`,
+      isExternal: true,
+      labelAr: b.opportunityInquiryLabelAr || "رابط الاستفسار والتواصل 🔗",
+      labelEn: b.opportunityInquiryLabelEn || "Inquiry & Contact Link 🔗",
+      displayValue: urlVal,
     };
   }
 

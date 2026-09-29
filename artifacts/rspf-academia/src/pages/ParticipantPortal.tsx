@@ -389,12 +389,18 @@ export default function ParticipantPortal() {
                                     ? "border border-emerald-500/35 bg-emerald-50 hover:bg-emerald-100 text-emerald-800"
                                     : inquiry.channel === "telegram"
                                     ? "border border-sky-500/35 bg-sky-50 hover:bg-sky-100 text-sky-800"
-                                    : "border border-amber-500/35 bg-amber-50 hover:bg-amber-100 text-amber-800"
+                                    : inquiry.channel === "email"
+                                    ? "border border-amber-500/35 bg-amber-50 hover:bg-amber-100 text-amber-800"
+                                    : inquiry.channel === "phone"
+                                    ? "border border-blue-500/35 bg-blue-50 hover:bg-blue-100 text-blue-800"
+                                    : "border border-purple-500/35 bg-purple-50 hover:bg-purple-100 text-purple-800"
                                 }`}
                               >
                                 {inquiry.channel === "whatsapp" && <MessageCircle size={15} className="text-emerald-600 shrink-0" />}
                                 {inquiry.channel === "telegram" && <Send size={14} className="text-sky-600 shrink-0" />}
                                 {inquiry.channel === "email" && <Mail size={14} className="text-amber-600 shrink-0" />}
+                                {inquiry.channel === "phone" && <Phone size={14} className="text-blue-600 shrink-0" />}
+                                {inquiry.channel === "custom_url" && <ExternalLink size={14} className="text-purple-600 shrink-0" />}
                                 <span className="truncate">
                                   {language === "ar" ? inquiry.labelAr : inquiry.labelEn}
                                 </span>

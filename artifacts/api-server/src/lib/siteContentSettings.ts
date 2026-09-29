@@ -102,7 +102,7 @@ export interface BrandContactSettings {
 
   // Opportunity Inquiry Button directly under Register Button
   opportunityInquiryEnabled: boolean;
-  opportunityInquiryChannel: "whatsapp" | "email" | "telegram";
+  opportunityInquiryChannel: "whatsapp" | "email" | "telegram" | "phone" | "custom_url";
   opportunityInquiryValue: string;
   opportunityInquiryLabelAr: string;
   opportunityInquiryLabelEn: string;
@@ -501,7 +501,7 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
       opportunityContactTelegram: brandText("opportunityContactTelegram", 100).replace(/^@/, "") || brandText("telegramUsername", 100).replace(/^@/, "") || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactTelegram,
       opportunityContactWhatsapp: (brandText("opportunityContactWhatsapp", 40) || globalWhatsapp || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactWhatsapp).replace(/[^\d+]/g, ""),
       opportunityInquiryEnabled: typeof brandInput.opportunityInquiryEnabled === "boolean" ? brandInput.opportunityInquiryEnabled : (typeof brandInput.opportunityContactEnabled === "boolean" ? brandInput.opportunityContactEnabled : DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryEnabled),
-      opportunityInquiryChannel: (["whatsapp", "email", "telegram"] as const).includes(brandInput.opportunityInquiryChannel as any) ? (brandInput.opportunityInquiryChannel as "whatsapp" | "email" | "telegram") : DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryChannel,
+      opportunityInquiryChannel: (["whatsapp", "email", "telegram", "phone", "custom_url"] as const).includes(brandInput.opportunityInquiryChannel as any) ? (brandInput.opportunityInquiryChannel as any) : DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryChannel,
       opportunityInquiryValue: brandText("opportunityInquiryValue", 200) || brandText("opportunityContactWhatsapp", 200) || globalWhatsapp || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryValue,
       opportunityInquiryLabelAr: brandText("opportunityInquiryLabelAr", 100) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryLabelAr,
       opportunityInquiryLabelEn: brandText("opportunityInquiryLabelEn", 100) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryLabelEn,
