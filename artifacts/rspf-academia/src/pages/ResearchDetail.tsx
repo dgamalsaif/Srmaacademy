@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "wouter";
-import { ChevronLeft, Users, Clock, BookOpen, CheckCircle2, ArrowLeft, ExternalLink, MessageCircle, Send, Mail, Phone } from "lucide-react";
+import { ChevronLeft, Users, Clock, BookOpen, CheckCircle2, ArrowLeft, ExternalLink, MessageCircle, Send, Mail, Phone, Copy } from "lucide-react";
 import { ResearchOpportunity } from "@/lib/researchData";
 import RegistrationModal from "@/components/RegistrationModal";
 import { DEFAULT_SITE_CONTENT_SETTINGS, SiteContentSettings, getContactUsHref, getOpportunityContactLinks } from "@/lib/siteContentSettings";
@@ -302,6 +302,18 @@ export default function ResearchDetail() {
                       <ExternalLink size={12} />
                       {language === "ar" ? contact.labelAr : contact.labelEn}
                     </a>
+                    <button
+                      type="button"
+                      data-testid="button-detail-copy-link"
+                      onClick={() => {
+                        navigator.clipboard.writeText(window.location.href);
+                        alert(localize("تم نسخ رابط الفرصة بنجاح 🔗", "Opportunity link copied successfully 🔗"));
+                      }}
+                      className="w-full text-xs text-slate-500 hover:text-slate-800 hover:bg-slate-50 py-2 rounded-xl transition-colors flex items-center justify-center gap-1.5 font-medium mt-1.5 border border-slate-200"
+                    >
+                      <Copy size={13} className="text-slate-400" />
+                      <span>{localize("نسخ رابط الفرصة 🔗", "Copy opportunity link 🔗")}</span>
+                    </button>
                   </div>
                 );
               })()}

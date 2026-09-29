@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp, Lock, Flame, ChevronLeft } from "lucide-react";
+import { ChevronDown, ChevronUp, Lock, Flame, ChevronLeft, ChevronRight, MessageCircle, ExternalLink, Send, Phone, LayoutGrid, SlidersHorizontal, Copy } from "lucide-react";
 import { Link } from "wouter";
 import { ResearchOpportunity } from "@/lib/researchData";
 import RegistrationModal from "@/components/RegistrationModal";
-import { DEFAULT_SITE_CONTENT_SETTINGS, SiteContentSettings } from "@/lib/siteContentSettings";
+import { DEFAULT_SITE_CONTENT_SETTINGS, SiteContentSettings, getContactUsHref } from "@/lib/siteContentSettings";
 import OpportunityMedia from "@/components/OpportunityMedia";
 import OpportunityPrice from "@/components/OpportunityPrice";
 import { OpportunityCurrency } from "@/lib/opportunityPricing";
@@ -27,6 +27,7 @@ export default function ParticipantPortal() {
   const [currency, setCurrency] = useState<OpportunityCurrency>("SAR");
   const [contentSettings, setContentSettings] = useState<SiteContentSettings>(DEFAULT_SITE_CONTENT_SETTINGS);
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
+  const [displayMode, setDisplayMode] = useState<"grid" | "scroll">("grid");
 
   const refreshOpportunities = () => {
     fetch("/api/programs", { cache: "no-store" })
@@ -47,7 +48,12 @@ export default function ParticipantPortal() {
     document.addEventListener("visibilitychange", refreshWhenVisible);
     fetch("/api/site-content-settings")
       .then((response) => response.ok ? response.json() : Promise.reject())
-      .then((settings: SiteContentSettings) => setContentSettings(settings))
+      .then((settings: SiteContentSettings) => {
+        setContentSettings(settings);
+        if (settings.opportunityDisplayMode) {
+          setDisplayMode(settings.opportunityDisplayMode);
+        }
+      })
       .catch(() => setContentSettings(DEFAULT_SITE_CONTENT_SETTINGS));
     return () => {
       window.removeEventListener("focus", refreshOpportunities);
@@ -65,6 +71,7 @@ export default function ParticipantPortal() {
   const participantDescription = language === "en" ? contentSettings.pages.participant.descriptionEn : contentSettings.pages.participant.descriptionAr;
   const siteName = language === "en" ? contentSettings.brand.siteNameEn : contentSettings.brand.siteNameAr;
   const whatsappUrl = `https://wa.me/${contentSettings.brand.participantWhatsapp || contentSettings.brand.whatsapp || "966562159258"}`;
+  const contactHref = getContactUsHref(contentSettings.brand);
 
   const specialtyOptions = buildSpecialtyOptions(contentSettings.specialtyOptions, opportunities);
   const displaySpecialty = (opportunity: ResearchOpportunity) => {
@@ -100,7 +107,7 @@ export default function ParticipantPortal() {
     const orderB = Math.min(...b.items.map(opportunityOrder));
     return orderA - orderB || a.label.localeCompare(b.label);
   });
-  const isSpecialtyScroll = contentSettings.opportunityDisplayMode === "scroll";
+  const isSpecialtyScroll = displayMode === "scroll";
   const contentFlow = direction === "rtl" ? "flex-row-reverse" : "flex-row";
 
   return (
@@ -158,14 +165,65 @@ export default function ParticipantPortal() {
                 <span key={step} className="rounded-xl border border-white bg-white/80 px-3 py-3 shadow-sm">{step}</span>
               ))}
             </div>
+            <div className="mt-5 pt-4 border-t border-emerald-100/70 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
+                <span>💬 {localize("تحتاج مساعدة أو استفسار بخصوص البرامج البحثية؟", "Need help or have questions about research programs?")}</span>
+              </div>
+              <a
+                href={contactHref.href}
+                target={contactHref.isExternal ? "_blank" : undefined}
+                rel={contactHref.isExternal ? "noopener noreferrer" : undefined}
+                data-testid="button-portal-welcome-contact"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#0C3156] hover:bg-[#0a2847] text-white px-4 py-2 text-xs font-bold transition-colors shadow-xs"
+              >
+                <MessageCircle size={14} />
+                <span>{language === "ar" ? (contentSettings.brand.contactUsLabelAr || "تواصل معنا مباشرة") : (contentSettings.brand.contactUsLabelEn || "Contact Us Directly")}</span>
+              </a>
+            </div>
           </section>
           {activeTab === 0 && (
             <>
-              <div className={`mb-6 flex items-center justify-between ${contentFlow}`}>
-                <h2 className="text-xl font-black text-slate-900">✨ {localize("الفرص البحثية المتاحة للتسجيل", "Research opportunities open for registration")}</h2>
-                <span className="bg-[#0C3156]/8 text-[#0C3156] text-xs font-bold px-3 py-1.5 rounded-full border border-[#0C3156]/12">
-                   {localize(`${visibleOpportunities.length} فرصة متاحة`, `${visibleOpportunities.length} opportunities available`)}
-                </span>
+              <div className={`mb-6 flex flex-wrap items-center justify-between gap-3 ${contentFlow}`}>
+                <div>
+                  <h2 className="text-xl font-black text-slate-900">✨ {localize("الفرص البحثية المتاحة للتسجيل", "Research opportunities open for registration")}</h2>
+                  <p className="text-xs text-slate-500 mt-1">{localize("تصفح البرامج والفرص وسجل مقعدك مباشرة أو استفسر عبر القنوات المباشرة", "Browse programs, reserve your seat directly or inquire via direct channels")}</p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="bg-[#0C3156]/8 text-[#0C3156] text-xs font-bold px-3 py-1.5 rounded-full border border-[#0C3156]/12">
+                     {localize(`${visibleOpportunities.length} فرصة متاحة`, `${visibleOpportunities.length} opportunities available`)}
+                  </span>
+                  {/* View Mode Toggle: Grid or Carousel */}
+                  <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 shadow-2xs">
+                    <button
+                      type="button"
+                      onClick={() => setDisplayMode("grid")}
+                      data-testid="button-view-grid"
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        displayMode === "grid"
+                          ? "bg-white text-[#0C3156] shadow-xs"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                      title={localize("عرض شبكة", "Grid view")}
+                    >
+                      <LayoutGrid size={14} />
+                      <span>{localize("شبكة", "Grid")}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDisplayMode("scroll")}
+                      data-testid="button-view-carousel"
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        displayMode === "scroll"
+                          ? "bg-white text-[#0C3156] shadow-xs"
+                          : "text-slate-600 hover:text-slate-900"
+                      }`}
+                      title={localize("عرض كروسال (تمرير أفقي)", "Carousel view")}
+                    >
+                      <SlidersHorizontal size={14} />
+                      <span>{localize("كروسال", "Carousel")}</span>
+                    </button>
+                  </div>
+                </div>
               </div>
               <SpecialtyFilter
                 options={specialtyOptions}
@@ -183,12 +241,48 @@ export default function ParticipantPortal() {
                 <div className="space-y-10">
                    {groupedOpportunities.map((group) => (
                     <section key={group.id} className="srma-reveal" data-testid={`specialty-section-${group.id}`}>
-                      <div className="mb-4 flex items-center gap-3">
-                        <div className="h-px flex-1 bg-slate-200" />
-                        <h3 className="rounded-full border border-emerald-100 bg-emerald-50 px-4 py-2 text-sm font-black text-[#117b59]">{group.label}</h3>
-                        <div className="h-px flex-1 bg-slate-200" />
+                      <div className="mb-4 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2">
+                          <h3 className="rounded-full border border-emerald-100 bg-emerald-50 px-4 py-2 text-sm font-black text-[#117b59]">
+                            {group.label} ({group.items.length})
+                          </h3>
+                        </div>
+                        <div className="h-px flex-1 bg-slate-200 hidden sm:block" />
+                        {isSpecialtyScroll && group.items.length > 1 && (
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const el = document.getElementById(`carousel-${group.id}`);
+                                if (el) el.scrollBy({ left: direction === "rtl" ? 360 : -360, behavior: "smooth" });
+                              }}
+                              className="h-8 w-8 rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-[#0C3156] flex items-center justify-center transition-colors shadow-2xs"
+                              title={localize("السابق", "Previous")}
+                            >
+                              {direction === "rtl" ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const el = document.getElementById(`carousel-${group.id}`);
+                                if (el) el.scrollBy({ left: direction === "rtl" ? -360 : 360, behavior: "smooth" });
+                              }}
+                              className="h-8 w-8 rounded-full bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 hover:text-[#0C3156] flex items-center justify-center transition-colors shadow-2xs"
+                              title={localize("التالي", "Next")}
+                            >
+                              {direction === "rtl" ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
+                            </button>
+                          </div>
+                        )}
                       </div>
-                      <div className={isSpecialtyScroll ? "flex snap-x snap-mandatory gap-5 overflow-x-auto pb-4" : "grid grid-cols-1 gap-5 lg:grid-cols-2 xl:grid-cols-3"}>
+                      <div
+                        id={`carousel-${group.id}`}
+                        className={
+                          isSpecialtyScroll
+                            ? "flex snap-x snap-mandatory gap-5 overflow-x-auto pb-4 scroll-smooth"
+                            : "grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3"
+                        }
+                      >
                    {group.items.map((opp) => {
                     const isExpanded = expandedCards.includes(opp.id);
                     const seatsUsed = opp.totalSeats - opp.seatsLeft;
@@ -251,21 +345,64 @@ export default function ParticipantPortal() {
                           </ul>
                         )}</>}
 
-                        <div className={`flex gap-3 ${contentFlow}`}>
-                          <button data-testid={`button-register-${opp.id}`} onClick={() => openModal(opp)}
-                            className="flex-1 text-white font-bold py-3 rounded-xl transition-colors text-sm shadow-sm" style={{ backgroundColor: contentSettings.primaryColor }}>
-                            {t("common.registerNow")} 👤
+                        {/* Actions block: Register Now, Contact Us, Copy Link */}
+                        <div className="mt-auto pt-4 border-t border-slate-100 flex flex-col gap-2.5">
+                          {/* 1. Register Now & Details */}
+                          <div className={`flex gap-2 ${contentFlow}`}>
+                            <button
+                              data-testid={`button-register-${opp.id}`}
+                              onClick={() => openModal(opp)}
+                              className="flex-1 text-white font-bold py-3 rounded-xl transition-all text-sm shadow-sm hover:opacity-95 flex items-center justify-center gap-1.5"
+                              style={{ backgroundColor: contentSettings.primaryColor }}
+                            >
+                              <span>{t("common.registerNow")}</span>
+                              <span>👤</span>
+                            </button>
+                            <Link
+                              href={`/research/${opp.id}`}
+                              data-testid={`button-detail-${opp.id}`}
+                              className="flex items-center justify-center gap-1 border font-bold px-4 py-3 rounded-xl transition-colors text-sm bg-white hover:bg-slate-50"
+                              style={{ borderColor: `${contentSettings.primaryColor}35`, color: contentSettings.primaryColor }}
+                            >
+                              <span>{t("common.details")}</span>
+                              <ChevronLeft size={14} />
+                            </Link>
+                          </div>
+
+                          {/* 2. Contact Us (تحت زر سجل الآن مباشرة) */}
+                          <a
+                            href={`https://wa.me/${(contentSettings.brand.opportunityContactWhatsapp || contentSettings.brand.participantWhatsapp || contentSettings.brand.whatsapp || "966562159258").replace(/[^\d+]/g, "").replace(/^\+/, "")}?text=${encodeURIComponent(
+                              language === "en"
+                                ? `Hello, I would like to inquire about the research opportunity: "${displayTitle(opp)}"`
+                                : `مرحباً، أود الاستفسار والتسجيل بخصوص الفرصة البحثية: "${displayTitle(opp)}"`
+                            )}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            data-testid={`button-contact-${opp.id}`}
+                            className="w-full border border-emerald-500/30 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold py-2.5 rounded-xl text-xs text-center transition-colors flex items-center justify-center gap-2 shadow-2xs"
+                          >
+                            <MessageCircle size={15} className="text-emerald-600" />
+                            <span>
+                              {language === "ar"
+                                ? (contentSettings.brand.opportunityContactLabelAr || contentSettings.brand.contactUsLabelAr || "تواصل معنا للاستفسار")
+                                : (contentSettings.brand.opportunityContactLabelEn || contentSettings.brand.contactUsLabelEn || "Contact Us for Inquiries")}
+                            </span>
+                          </a>
+
+                          {/* 3. Copy Opportunity Link (زر نسخ الرابط) */}
+                          <button
+                            type="button"
+                            data-testid={`button-copy-link-${opp.id}`}
+                            className="w-full text-xs text-slate-500 hover:text-slate-800 hover:bg-slate-100/70 py-2 rounded-xl transition-colors flex items-center justify-center gap-1.5 font-medium border border-transparent hover:border-slate-200"
+                            onClick={() => {
+                              navigator.clipboard.writeText(window.location.origin + `/research/${opp.id}`);
+                              alert(localize("تم نسخ رابط الفرصة بنجاح 🔗", "Opportunity link copied successfully 🔗"));
+                            }}
+                          >
+                            <Copy size={13} className="text-slate-400" />
+                            <span>{localize("نسخ رابط الفرصة 🔗", "Copy opportunity link 🔗")}</span>
                           </button>
-                          <Link href={`/research/${opp.id}`} data-testid={`button-detail-${opp.id}`}
-                            className="flex items-center gap-1 border font-semibold px-4 py-3 rounded-xl transition-colors text-sm" style={{ borderColor: `${contentSettings.primaryColor}40`, color: contentSettings.primaryColor }}>
-                            {t("common.details")} <ChevronLeft size={14} />
-                          </Link>
                         </div>
-                        <button data-testid={`button-copy-link-${opp.id}`}
-                          className="w-full text-xs text-slate-400 hover:text-slate-600 py-2 mt-1"
-                          onClick={() => { navigator.clipboard.writeText(window.location.origin + `/api/programs/${opp.id}/share?lang=${language}`); alert(localize("تم نسخ رابط المعاينة", "Preview link copied")); }}>
-                          {localize("نسخ رابط المعاينة 🔗", "Copy preview link 🔗")}
-                        </button>
                       </div>
                     );
                   })}
