@@ -193,6 +193,217 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                 </div>
               </div>
 
+              {/* Dedicated Opportunity Inquiry Button under "Register Now" */}
+              <div className="md:col-span-2 rounded-2xl border-2 border-emerald-400 bg-gradient-to-br from-emerald-50/60 via-white to-sky-50/40 p-5 space-y-4 shadow-xs">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-600 text-white font-bold text-lg shadow-sm">💬</span>
+                    <div>
+                      <h4 className="text-base font-black text-slate-900">زر «تواصل معنا للاستفسار 💬» (تحت زر «سجل الآن» مباشرة)</h4>
+                      <p className="text-xs text-slate-600 mt-0.5">تحكم كامل بالزر الموجود أسفل زر «سجل الآن»؛ خصص وسيلة التواصل (واتساب، بريد إلكتروني، أو تيليجرام)، الرقم أو المعرف، ونصوص الزر والرسالة الفورية.</p>
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer bg-white px-3.5 py-2 rounded-xl border border-emerald-300 text-xs font-bold text-emerald-800 shadow-2xs hover:bg-emerald-50 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={settings.brand.opportunityInquiryEnabled !== false}
+                      onChange={(e) => updateBrand("opportunityInquiryEnabled", e.target.checked)}
+                      className="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4"
+                    />
+                    <span>تفعيل زر الاستفسار تحت «سجل الآن»</span>
+                  </label>
+                </div>
+
+                {settings.brand.opportunityInquiryEnabled !== false && (
+                  <div className="space-y-4 pt-3 border-t border-emerald-100">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-2">طريقة التواصل للزر (اختر واحدة):</label>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => updateBrand("opportunityInquiryChannel", "whatsapp")}
+                          className={`p-3.5 rounded-xl border-2 text-start transition-all relative flex flex-col gap-1 ${
+                            (settings.brand.opportunityInquiryChannel || "whatsapp") === "whatsapp"
+                              ? "border-emerald-500 bg-emerald-50/80 shadow-xs"
+                              : "border-slate-200 bg-white hover:border-slate-300"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-1.5 text-xs font-black text-emerald-800">
+                              <MessageCircle size={16} className="text-emerald-600" /> واتساب (WhatsApp)
+                            </span>
+                            {(settings.brand.opportunityInquiryChannel || "whatsapp") === "whatsapp" && (
+                              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-white text-[10px] font-bold">✓</span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-500">محادثة فورية مع رسالة قصيرة تحمل اسم الفرصة وعنوانها.</p>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => updateBrand("opportunityInquiryChannel", "email")}
+                          className={`p-3.5 rounded-xl border-2 text-start transition-all relative flex flex-col gap-1 ${
+                            settings.brand.opportunityInquiryChannel === "email"
+                              ? "border-amber-500 bg-amber-50/80 shadow-xs"
+                              : "border-slate-200 bg-white hover:border-slate-300"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-1.5 text-xs font-black text-amber-800">
+                              <Mail size={16} className="text-amber-600" /> بريد إلكتروني (Email)
+                            </span>
+                            {settings.brand.opportunityInquiryChannel === "email" && (
+                              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-600 text-white text-[10px] font-bold">✓</span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-500">فتح تطبيق البريد برسالة وموضوع يحمل اسم الفرصة.</p>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => updateBrand("opportunityInquiryChannel", "telegram")}
+                          className={`p-3.5 rounded-xl border-2 text-start transition-all relative flex flex-col gap-1 ${
+                            settings.brand.opportunityInquiryChannel === "telegram"
+                              ? "border-sky-500 bg-sky-50/80 shadow-xs"
+                              : "border-slate-200 bg-white hover:border-slate-300"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-1.5 text-xs font-black text-sky-800">
+                              <Send size={16} className="text-sky-600" /> اسم مستخدم تيليجرام
+                            </span>
+                            {settings.brand.opportunityInquiryChannel === "telegram" && (
+                              <span className="flex h-5 w-5 items-center justify-center rounded-full bg-sky-600 text-white text-[10px] font-bold">✓</span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-500">فتح حساب التيليجرام مباشرة للتواصل والمحادثة الفورية.</p>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-xl p-4 border border-slate-200 space-y-3">
+                      {(settings.brand.opportunityInquiryChannel || "whatsapp") === "whatsapp" && (
+                        <div>
+                          <TextField
+                            label="رقم الواتساب للاستفسارات عن الفرص"
+                            value={settings.brand.opportunityInquiryValue || settings.brand.opportunityContactWhatsapp || settings.brand.whatsapp || ""}
+                            onChange={(v) => {
+                              updateBrand("opportunityInquiryValue", v);
+                              updateBrand("opportunityContactWhatsapp", v);
+                            }}
+                            placeholder="مثال: 966562159258 (أو اتركه فارغاً لاستخدام رقم الواتساب العام)"
+                          />
+                          <p className="text-[11px] text-slate-500 mt-1">يفتح تطبيق الواتساب مباشرة فور النقر، مع رسالة تلقائية تتضمن اسم الفرصة البحثية.</p>
+                        </div>
+                      )}
+
+                      {settings.brand.opportunityInquiryChannel === "email" && (
+                        <div>
+                          <TextField
+                            label="البريد الإلكتروني المخصص للاستفسارات"
+                            value={settings.brand.opportunityInquiryValue || settings.brand.opportunityContactEmail || settings.brand.email || ""}
+                            onChange={(v) => {
+                              updateBrand("opportunityInquiryValue", v);
+                              updateBrand("opportunityContactEmail", v);
+                            }}
+                            placeholder="مثال: srmaacademy@gmail.com"
+                          />
+                          <p className="text-[11px] text-slate-500 mt-1">يفتح عميل البريد الإلكتروني مع إدراج عنوان الفرصة واسمها في الموضوع والمحتوى تلقائياً.</p>
+                        </div>
+                      )}
+
+                      {settings.brand.opportunityInquiryChannel === "telegram" && (
+                        <div>
+                          <TextField
+                            label="اسم مستخدم تيليجرام (Username)"
+                            value={settings.brand.opportunityInquiryValue || settings.brand.opportunityContactTelegram || settings.brand.telegramUsername || ""}
+                            onChange={(v) => {
+                              updateBrand("opportunityInquiryValue", v);
+                              updateBrand("opportunityContactTelegram", v);
+                            }}
+                            placeholder="مثال: SRMAAcademy (بدون @)"
+                          />
+                          <p className="text-[11px] text-slate-500 mt-1">يوجه الزائر مباشرة لمحادثة الحساب على تيليجرام مع رسالة استفسار باسم الفرصة.</p>
+                        </div>
+                      )}
+
+                      <div className="grid gap-3 sm:grid-cols-2 pt-1">
+                        <TextField
+                          label="نص الزر بالعربية (أسفل سجل الآن)"
+                          value={settings.brand.opportunityInquiryLabelAr || "تواصل معنا للاستفسار 💬"}
+                          onChange={(v) => updateBrand("opportunityInquiryLabelAr", v)}
+                          placeholder="تواصل معنا للاستفسار 💬"
+                        />
+                        <TextField
+                          label="نص الزر بالإنجليزية"
+                          value={settings.brand.opportunityInquiryLabelEn || "Contact us for inquiries 💬"}
+                          onChange={(v) => updateBrand("opportunityInquiryLabelEn", v)}
+                          placeholder="Contact us for inquiries 💬"
+                        />
+                      </div>
+
+                      <div className="grid gap-3 sm:grid-cols-2 pt-2 border-t border-slate-100">
+                        <TextField
+                          label="قالب رسالة الاستفسار بالعربية ({title} = اسم الفرصة)"
+                          value={settings.brand.opportunityInquiryMessageAr || "مرحباً، أود الاستفسار والتسجيل بخصوص الفرصة البحثية: {title}"}
+                          onChange={(v) => updateBrand("opportunityInquiryMessageAr", v)}
+                          placeholder="مرحباً، أود الاستفسار والتسجيل بخصوص الفرصة البحثية: {title}"
+                        />
+                        <TextField
+                          label="قالب رسالة الاستفسار بالإنجليزية"
+                          value={settings.brand.opportunityInquiryMessageEn || "Hello, I would like to inquire about the research opportunity: {title}"}
+                          onChange={(v) => updateBrand("opportunityInquiryMessageEn", v)}
+                          placeholder="Hello, I would like to inquire about the research opportunity: {title}"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Interactive Preview Card */}
+                    <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
+                      <p className="text-xs font-black text-slate-700 mb-2 flex items-center gap-1.5">
+                        <span>👁️</span>
+                        <span>معاينة حية لشكل الزر وموضعه تحت «سجل الآن»:</span>
+                      </p>
+                      <div className="max-w-xs mx-auto bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs space-y-2">
+                        <div className="flex gap-2">
+                          <div className="flex-1 bg-[#0C3156] text-white font-bold py-2.5 rounded-xl text-xs text-center flex items-center justify-center gap-1">
+                            <span>سجل الآن</span> <span>👤</span>
+                          </div>
+                          <div className="border border-[#0C3156]/30 text-[#0C3156] font-bold px-3 py-2.5 rounded-xl text-xs flex items-center justify-center gap-1">
+                            <span>التفاصيل</span> <span>‹</span>
+                          </div>
+                        </div>
+
+                        <div
+                          className={`w-full font-bold py-2.5 rounded-xl text-xs text-center flex items-center justify-center gap-1.5 border transition-all ${
+                            (settings.brand.opportunityInquiryChannel || "whatsapp") === "whatsapp"
+                              ? "border-emerald-500/40 bg-emerald-50 text-emerald-800"
+                              : settings.brand.opportunityInquiryChannel === "telegram"
+                              ? "border-sky-500/40 bg-sky-50 text-sky-800"
+                              : "border-amber-500/40 bg-amber-50 text-amber-800"
+                          }`}
+                        >
+                          {(settings.brand.opportunityInquiryChannel || "whatsapp") === "whatsapp" && (
+                            <MessageCircle size={15} className="text-emerald-600 shrink-0" />
+                          )}
+                          {settings.brand.opportunityInquiryChannel === "telegram" && (
+                            <Send size={14} className="text-sky-600 shrink-0" />
+                          )}
+                          {settings.brand.opportunityInquiryChannel === "email" && (
+                            <Mail size={14} className="text-amber-600 shrink-0" />
+                          )}
+                          <span className="truncate">{settings.brand.opportunityInquiryLabelAr || "تواصل معنا للاستفسار 💬"}</span>
+                        </div>
+
+                        <div className="text-[11px] text-slate-400 py-0.5 text-center font-medium">
+                          🔗 نسخ رابط الفرصة
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Opportunity Page Direct Contact Channels */}
               <div className="md:col-span-2 rounded-2xl border border-emerald-100 bg-emerald-50/30 p-5 space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">

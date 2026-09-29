@@ -41,6 +41,7 @@ export interface PublicPageContent { titleAr: string; titleEn: string; descripti
 
 export type ContactUsType = "whatsapp" | "phone" | "email" | "telegram" | "instagram" | "custom_url";
 export type ForwardingType = "whatsapp" | "whatsapp_direct_url" | "email" | "telegram" | "messenger" | "instagram" | "custom_url" | "none";
+export type OpportunityInquiryChannel = "whatsapp" | "email" | "telegram";
 
 export interface BrandContactSettings {
   siteNameAr: string; siteNameEn: string; logoUrl: string;
@@ -60,12 +61,23 @@ export interface BrandContactSettings {
   // Opportunity Contact Channels (under registration / order button)
   opportunityContactEnabled?: boolean;
   opportunityContactChannels?: ("whatsapp" | "telegram" | "email" | "phone")[];
+  opportunityContactType?: ContactUsType;
+  opportunityContactValue?: string;
   opportunityContactLabelAr?: string;
   opportunityContactLabelEn?: string;
   opportunityContactEmail?: string;
   opportunityContactPhone?: string;
   opportunityContactTelegram?: string;
   opportunityContactWhatsapp?: string;
+
+  // Opportunity Inquiry Button directly under Register Button
+  opportunityInquiryEnabled?: boolean;
+  opportunityInquiryChannel?: OpportunityInquiryChannel;
+  opportunityInquiryValue?: string;
+  opportunityInquiryLabelAr?: string;
+  opportunityInquiryLabelEn?: string;
+  opportunityInquiryMessageAr?: string;
+  opportunityInquiryMessageEn?: string;
 
   // Post-Registration Forwarding for Participants
   participantForwardType: ForwardingType;
@@ -228,12 +240,21 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
     coordinatorCustomMessage: "",
     opportunityContactEnabled: true,
     opportunityContactChannels: ["whatsapp", "telegram", "email", "phone"],
+    opportunityContactType: "whatsapp",
+    opportunityContactValue: "966562159258",
     opportunityContactLabelAr: "تواصل معنا بخصوص هذه الفرصة",
     opportunityContactLabelEn: "Contact us about this opportunity",
     opportunityContactEmail: "srmaacademy@gmail.com",
     opportunityContactPhone: "966562159258",
     opportunityContactTelegram: "SRMAAcademy",
     opportunityContactWhatsapp: "966562159258",
+    opportunityInquiryEnabled: true,
+    opportunityInquiryChannel: "whatsapp",
+    opportunityInquiryValue: "966562159258",
+    opportunityInquiryLabelAr: "تواصل معنا للاستفسار 💬",
+    opportunityInquiryLabelEn: "Contact us for inquiries 💬",
+    opportunityInquiryMessageAr: "مرحباً، أود الاستفسار والتسجيل بخصوص الفرصة البحثية: {title}",
+    opportunityInquiryMessageEn: "Hello, I would like to inquire about the research opportunity: {title}",
   },
   pages: {
     home: { titleAr: "أكاديمية SRMA للأبحاث", titleEn: "SRMA Research Academy", descriptionAr: "نحو مجتمع بحثي أكثر تأثيراً", descriptionEn: "Building a more impactful research community", contentAr: "", contentEn: "" },
@@ -371,6 +392,88 @@ export function getOpportunityContactLinks(
   }
 
   return links;
+}
+
+export interface OpportunityInquiryLink {
+  channel: OpportunityInquiryChannel;
+  href: string;
+  isExternal: boolean;
+  labelAr: string;
+  labelEn: string;
+  displayValue: string;
+}
+
+export function getOpportunityInquiryLink(
+  brand?: BrandContactSettings,
+  opportunityTitle?: string,
+  language: "ar" | "en" = "ar"
+): OpportunityInquiryLink | null {
+  const b = brand || DEFAULT_SITE_CONTENT_SETTINGS.brand;
+  if (b.opportunityInquiryEnabled === false) {
+    return null;
+  }
+
+  // Determine channel (whatsapp / email / telegram)
+  let channel: OpportunityInquiryChannel = "whatsapp";
+  if (b.opportunityInquiryChannel === "email" || b.opportunityContactType === "email") {
+    channel = "email";
+  } else if (b.opportunityInquiryChannel === "telegram" || b.opportunityContactType === "telegram") {
+    channel = "telegram";
+  } else {
+    channel = "whatsapp";
+  }
+
+  const titleText = opportunityTitle ? `"${opportunityTitle}"` : "";
+  const defaultArMsg = b.opportunityInquiryMessageAr || "مرحباً، أود الاستفسار والتسجيل بخصوص الفرصة البحثية: {title}";
+  const defaultEnMsg = b.opportunityInquiryMessageEn || "Hello, I would like to inquire about the research opportunity: {title}";
+  const rawMsg = language === "en" ? defaultEnMsg : defaultArMsg;
+  const message = rawMsg.replace(/{title}/g, titleText).replace(/{name}/g, titleText);
+
+  const labelAr = b.opportunityInquiryLabelAr || b.opportunityContactLabelAr || "تواصل معنا للاستفسار 💬";
+  const labelEn = b.opportunityInquiryLabelEn || b.opportunityContactLabelEn || "Contact us for inquiries 💬";
+
+  if (channel === "whatsapp") {
+    const rawVal = (b.opportunityInquiryValue || b.opportunityContactWhatsapp || b.opportunityContactValue || b.participantWhatsapp || b.whatsapp || "966562159258").trim();
+    const cleanNum = rawVal.replace(/[^\d+]/g, "").replace(/^\+/, "");
+    return {
+      channel: "whatsapp",
+      href: `https://wa.me/${cleanNum}?text=${encodeURIComponent(message)}`,
+      isExternal: true,
+      labelAr,
+      labelEn,
+      displayValue: cleanNum,
+    };
+  }
+
+  if (channel === "email") {
+    const emailVal = (b.opportunityInquiryValue || b.opportunityContactEmail || (b.contactUsType === "email" ? b.contactUsValue : "") || b.email || "srmaacademy@gmail.com").trim();
+    const subject = language === "en"
+      ? `Inquiry regarding research opportunity: ${opportunityTitle || ""}`
+      : `استفسار بخصوص الفرصة البحثية: ${opportunityTitle || ""}`;
+    return {
+      channel: "email",
+      href: `mailto:${emailVal}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`,
+      isExternal: false,
+      labelAr,
+      labelEn,
+      displayValue: emailVal,
+    };
+  }
+
+  if (channel === "telegram") {
+    const tgVal = (b.opportunityInquiryValue || b.opportunityContactTelegram || b.telegramUsername || "SRMAAcademy").trim();
+    const cleanUsername = tgVal.replace(/^@/, "").replace(/^https?:\/\/t\.me\//, "");
+    return {
+      channel: "telegram",
+      href: `https://t.me/${cleanUsername}?text=${encodeURIComponent(message)}`,
+      isExternal: true,
+      labelAr,
+      labelEn,
+      displayValue: `@${cleanUsername}`,
+    };
+  }
+
+  return null;
 }
 
 export function buildForwardingUrl({

@@ -3,7 +3,7 @@ import { useParams, Link } from "wouter";
 import { ChevronLeft, Users, Clock, BookOpen, CheckCircle2, ArrowLeft, ExternalLink, MessageCircle, Send, Mail, Phone, Copy } from "lucide-react";
 import { ResearchOpportunity } from "@/lib/researchData";
 import RegistrationModal from "@/components/RegistrationModal";
-import { DEFAULT_SITE_CONTENT_SETTINGS, SiteContentSettings, getContactUsHref, getOpportunityContactLinks } from "@/lib/siteContentSettings";
+import { DEFAULT_SITE_CONTENT_SETTINGS, SiteContentSettings, getContactUsHref, getOpportunityContactLinks, getOpportunityInquiryLink } from "@/lib/siteContentSettings";
 import OpportunityMedia from "@/components/OpportunityMedia";
 import OpportunityPrice from "@/components/OpportunityPrice";
 import { OpportunityCurrency, RESEARCH_STATUS_LABELS } from "@/lib/opportunityPricing";
@@ -227,15 +227,46 @@ export default function ResearchDetail() {
                 <button
                   data-testid="button-detail-register"
                   onClick={() => setModalOpen(true)}
-                  className="w-full bg-[#0C3156] text-white font-bold py-3.5 rounded-xl hover:bg-[#0a2847] transition-colors text-base shadow-sm mb-3"
+                  className="w-full bg-[#0C3156] text-white font-bold py-3.5 rounded-xl hover:bg-[#0a2847] transition-colors text-base shadow-sm mb-2.5"
                 >
                   {t("common.registerNow")} 👤
                 </button>
               ) : (
-                <div className="w-full bg-slate-100 text-slate-500 font-bold py-3.5 rounded-xl text-center text-base mb-3">
+                <div className="w-full bg-slate-100 text-slate-500 font-bold py-3.5 rounded-xl text-center text-base mb-2.5">
                   🔒 {localize("مغلق التسجيل", "Registration closed")}
                 </div>
               )}
+
+              {/* Inquiry Button directly under Register Button */}
+              {(() => {
+                const inquiry = getOpportunityInquiryLink(
+                  contentSettings.brand,
+                  research.titleAr || research.titleEn || research.title,
+                  language as "ar" | "en"
+                );
+                if (!inquiry) return null;
+
+                return (
+                  <a
+                    href={inquiry.href}
+                    target={inquiry.isExternal ? "_blank" : undefined}
+                    rel={inquiry.isExternal ? "noopener noreferrer" : undefined}
+                    data-testid="button-detail-inquiry"
+                    className={`w-full font-bold py-3 rounded-xl text-sm text-center transition-all flex items-center justify-center gap-2 mb-3 shadow-2xs ${
+                      inquiry.channel === "whatsapp"
+                        ? "border border-emerald-500/35 bg-emerald-50 hover:bg-emerald-100 text-emerald-800"
+                        : inquiry.channel === "telegram"
+                        ? "border border-sky-500/35 bg-sky-50 hover:bg-sky-100 text-sky-800"
+                        : "border border-amber-500/35 bg-amber-50 hover:bg-amber-100 text-amber-800"
+                    }`}
+                  >
+                    {inquiry.channel === "whatsapp" && <MessageCircle size={16} className="text-emerald-600 shrink-0" />}
+                    {inquiry.channel === "telegram" && <Send size={15} className="text-sky-600 shrink-0" />}
+                    {inquiry.channel === "email" && <Mail size={15} className="text-amber-600 shrink-0" />}
+                    <span>{language === "ar" ? inquiry.labelAr : inquiry.labelEn}</span>
+                  </a>
+                );
+              })()}
 
               {(() => {
                 const oppLinks = getOpportunityContactLinks(

@@ -99,6 +99,15 @@ export interface BrandContactSettings {
   opportunityContactPhone: string;
   opportunityContactTelegram: string;
   opportunityContactWhatsapp: string;
+
+  // Opportunity Inquiry Button directly under Register Button
+  opportunityInquiryEnabled: boolean;
+  opportunityInquiryChannel: "whatsapp" | "email" | "telegram";
+  opportunityInquiryValue: string;
+  opportunityInquiryLabelAr: string;
+  opportunityInquiryLabelEn: string;
+  opportunityInquiryMessageAr: string;
+  opportunityInquiryMessageEn: string;
 }
 type SocialIconId = "whatsapp" | "telegram" | "instagram" | "x" | "linkedin" | "facebook" | "tiktok" | "youtube" | "snapchat" | "email" | "phone";
 type FloatingIconPosition = "bottom-left" | "bottom-right" | "middle-left" | "middle-right";
@@ -251,6 +260,13 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
     opportunityContactPhone: "+966562159258",
     opportunityContactTelegram: "SRMAAcademy",
     opportunityContactWhatsapp: "966562159258",
+    opportunityInquiryEnabled: true,
+    opportunityInquiryChannel: "whatsapp",
+    opportunityInquiryValue: "966562159258",
+    opportunityInquiryLabelAr: "تواصل معنا للاستفسار 💬",
+    opportunityInquiryLabelEn: "Contact us for inquiries 💬",
+    opportunityInquiryMessageAr: "مرحباً، أود الاستفسار والتسجيل بخصوص الفرصة البحثية: {title}",
+    opportunityInquiryMessageEn: "Hello, I would like to inquire about the research opportunity: {title}",
   },
   pages: {
     home: { titleAr: "أكاديمية SRMA للأبحاث", titleEn: "SRMA Research Academy", descriptionAr: "نحو مجتمع بحثي أكثر تأثيراً", descriptionEn: "Building a more impactful research community", contentAr: "", contentEn: "" },
@@ -484,6 +500,13 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
       opportunityContactPhone: brandText("opportunityContactPhone", 40) || brandText("phone", 40) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactPhone,
       opportunityContactTelegram: brandText("opportunityContactTelegram", 100).replace(/^@/, "") || brandText("telegramUsername", 100).replace(/^@/, "") || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactTelegram,
       opportunityContactWhatsapp: (brandText("opportunityContactWhatsapp", 40) || globalWhatsapp || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactWhatsapp).replace(/[^\d+]/g, ""),
+      opportunityInquiryEnabled: typeof brandInput.opportunityInquiryEnabled === "boolean" ? brandInput.opportunityInquiryEnabled : (typeof brandInput.opportunityContactEnabled === "boolean" ? brandInput.opportunityContactEnabled : DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryEnabled),
+      opportunityInquiryChannel: (["whatsapp", "email", "telegram"] as const).includes(brandInput.opportunityInquiryChannel as any) ? (brandInput.opportunityInquiryChannel as "whatsapp" | "email" | "telegram") : DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryChannel,
+      opportunityInquiryValue: brandText("opportunityInquiryValue", 200) || brandText("opportunityContactWhatsapp", 200) || globalWhatsapp || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryValue,
+      opportunityInquiryLabelAr: brandText("opportunityInquiryLabelAr", 100) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryLabelAr,
+      opportunityInquiryLabelEn: brandText("opportunityInquiryLabelEn", 100) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryLabelEn,
+      opportunityInquiryMessageAr: brandText("opportunityInquiryMessageAr", 500) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryMessageAr,
+      opportunityInquiryMessageEn: brandText("opportunityInquiryMessageEn", 500) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryMessageEn,
     },
     pages,
   };

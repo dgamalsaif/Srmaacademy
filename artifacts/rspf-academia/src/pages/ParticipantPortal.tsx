@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp, Lock, Flame, ChevronLeft, ChevronRight, MessageCircle, ExternalLink, Send, Phone, LayoutGrid, SlidersHorizontal, Copy } from "lucide-react";
+import { ChevronDown, ChevronUp, Lock, Flame, ChevronLeft, ChevronRight, MessageCircle, ExternalLink, Send, Phone, LayoutGrid, SlidersHorizontal, Copy, Mail } from "lucide-react";
 import { Link } from "wouter";
 import { ResearchOpportunity } from "@/lib/researchData";
 import RegistrationModal from "@/components/RegistrationModal";
-import { DEFAULT_SITE_CONTENT_SETTINGS, SiteContentSettings, getContactUsHref } from "@/lib/siteContentSettings";
+import { DEFAULT_SITE_CONTENT_SETTINGS, SiteContentSettings, getContactUsHref, getOpportunityInquiryLink } from "@/lib/siteContentSettings";
 import OpportunityMedia from "@/components/OpportunityMedia";
 import OpportunityPrice from "@/components/OpportunityPrice";
 import { OpportunityCurrency } from "@/lib/opportunityPricing";
@@ -369,25 +369,38 @@ export default function ParticipantPortal() {
                             </Link>
                           </div>
 
-                          {/* 2. Contact Us (تحت زر سجل الآن مباشرة) */}
-                          <a
-                            href={`https://wa.me/${(contentSettings.brand.opportunityContactWhatsapp || contentSettings.brand.participantWhatsapp || contentSettings.brand.whatsapp || "966562159258").replace(/[^\d+]/g, "").replace(/^\+/, "")}?text=${encodeURIComponent(
-                              language === "en"
-                                ? `Hello, I would like to inquire about the research opportunity: "${displayTitle(opp)}"`
-                                : `مرحباً، أود الاستفسار والتسجيل بخصوص الفرصة البحثية: "${displayTitle(opp)}"`
-                            )}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            data-testid={`button-contact-${opp.id}`}
-                            className="w-full border border-emerald-500/30 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold py-2.5 rounded-xl text-xs text-center transition-colors flex items-center justify-center gap-2 shadow-2xs"
-                          >
-                            <MessageCircle size={15} className="text-emerald-600" />
-                            <span>
-                              {language === "ar"
-                                ? (contentSettings.brand.opportunityContactLabelAr || contentSettings.brand.contactUsLabelAr || "تواصل معنا للاستفسار")
-                                : (contentSettings.brand.opportunityContactLabelEn || contentSettings.brand.contactUsLabelEn || "Contact Us for Inquiries")}
-                            </span>
-                          </a>
+                          {/* 2. Inquiry Contact Button (تحت زر سجل الآن مباشرة بتخصيص الأدمن) */}
+                          {(() => {
+                            const inquiry = getOpportunityInquiryLink(
+                              contentSettings.brand,
+                              displayTitle(opp),
+                              language as "ar" | "en"
+                            );
+                            if (!inquiry) return null;
+
+                            return (
+                              <a
+                                href={inquiry.href}
+                                target={inquiry.isExternal ? "_blank" : undefined}
+                                rel={inquiry.isExternal ? "noopener noreferrer" : undefined}
+                                data-testid={`button-contact-${opp.id}`}
+                                className={`w-full font-bold py-2.5 rounded-xl text-xs text-center transition-all flex items-center justify-center gap-2 shadow-2xs ${
+                                  inquiry.channel === "whatsapp"
+                                    ? "border border-emerald-500/35 bg-emerald-50 hover:bg-emerald-100 text-emerald-800"
+                                    : inquiry.channel === "telegram"
+                                    ? "border border-sky-500/35 bg-sky-50 hover:bg-sky-100 text-sky-800"
+                                    : "border border-amber-500/35 bg-amber-50 hover:bg-amber-100 text-amber-800"
+                                }`}
+                              >
+                                {inquiry.channel === "whatsapp" && <MessageCircle size={15} className="text-emerald-600 shrink-0" />}
+                                {inquiry.channel === "telegram" && <Send size={14} className="text-sky-600 shrink-0" />}
+                                {inquiry.channel === "email" && <Mail size={14} className="text-amber-600 shrink-0" />}
+                                <span className="truncate">
+                                  {language === "ar" ? inquiry.labelAr : inquiry.labelEn}
+                                </span>
+                              </a>
+                            );
+                          })()}
 
                           {/* 3. Copy Opportunity Link (زر نسخ الرابط) */}
                           <button
