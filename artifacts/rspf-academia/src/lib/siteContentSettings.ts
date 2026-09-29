@@ -57,6 +57,16 @@ export interface BrandContactSettings {
   contactUsLabelAr: string;
   contactUsLabelEn: string;
 
+  // Opportunity Contact Channels (under registration / order button)
+  opportunityContactEnabled?: boolean;
+  opportunityContactChannels?: ("whatsapp" | "telegram" | "email" | "phone")[];
+  opportunityContactLabelAr?: string;
+  opportunityContactLabelEn?: string;
+  opportunityContactEmail?: string;
+  opportunityContactPhone?: string;
+  opportunityContactTelegram?: string;
+  opportunityContactWhatsapp?: string;
+
   // Post-Registration Forwarding for Participants
   participantForwardType: ForwardingType;
   participantForwardTarget: string;
@@ -216,6 +226,14 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
     coordinatorForwardTarget: "966562159258",
     coordinatorAutoRedirect: false,
     coordinatorCustomMessage: "",
+    opportunityContactEnabled: true,
+    opportunityContactChannels: ["whatsapp", "telegram", "email", "phone"],
+    opportunityContactLabelAr: "تواصل معنا بخصوص هذه الفرصة",
+    opportunityContactLabelEn: "Contact us about this opportunity",
+    opportunityContactEmail: "srmaacademy@gmail.com",
+    opportunityContactPhone: "966562159258",
+    opportunityContactTelegram: "SRMAAcademy",
+    opportunityContactWhatsapp: "966562159258",
   },
   pages: {
     home: { titleAr: "أكاديمية SRMA للأبحاث", titleEn: "SRMA Research Academy", descriptionAr: "نحو مجتمع بحثي أكثر تأثيراً", descriptionEn: "Building a more impactful research community", contentAr: "", contentEn: "" },
@@ -267,6 +285,92 @@ export function getContactUsHref(brand?: BrandContactSettings): { href: string; 
       };
     }
   }
+}
+
+export interface OpportunityContactLink {
+  id: "whatsapp" | "telegram" | "email" | "phone";
+  href: string;
+  isExternal: boolean;
+  labelAr: string;
+  labelEn: string;
+  displayValue: string;
+}
+
+export function getOpportunityContactLinks(
+  brand?: BrandContactSettings,
+  opportunityTitle?: string,
+  language: "ar" | "en" = "ar"
+): OpportunityContactLink[] {
+  const b = brand || DEFAULT_SITE_CONTENT_SETTINGS.brand;
+  if (b.opportunityContactEnabled === false) return [];
+
+  const channels = b.opportunityContactChannels || ["whatsapp", "telegram", "email", "phone"];
+  const links: OpportunityContactLink[] = [];
+
+  const titleText = opportunityTitle ? `"${opportunityTitle}"` : "";
+  const whatsappMsg = language === "en"
+    ? `Hello, I would like to inquire about the research opportunity: ${titleText}`
+    : `مرحباً، أود الاستفسار والتسجيل بخصوص الفرصة البحثية: ${titleText}`;
+  const emailSubject = language === "en"
+    ? `Inquiry regarding research opportunity: ${opportunityTitle || ""}`
+    : `استفسار بخصوص الفرصة البحثية: ${opportunityTitle || ""}`;
+
+  for (const channel of channels) {
+    if (channel === "whatsapp") {
+      const num = (b.opportunityContactWhatsapp || b.whatsapp || "966562159258").trim();
+      if (num) {
+        const clean = num.replace(/[^\d+]/g, "").replace(/^\+/, "");
+        links.push({
+          id: "whatsapp",
+          href: `https://wa.me/${clean}?text=${encodeURIComponent(whatsappMsg)}`,
+          isExternal: true,
+          labelAr: "واتساب",
+          labelEn: "WhatsApp",
+          displayValue: num,
+        });
+      }
+    } else if (channel === "telegram") {
+      const tg = (b.opportunityContactTelegram || b.telegramUsername || "SRMAAcademy").trim();
+      if (tg) {
+        const clean = tg.replace(/^@/, "").replace(/^https?:\/\/t\.me\//, "");
+        links.push({
+          id: "telegram",
+          href: `https://t.me/${clean}`,
+          isExternal: true,
+          labelAr: "تيليجرام",
+          labelEn: "Telegram",
+          displayValue: `@${clean}`,
+        });
+      }
+    } else if (channel === "email") {
+      const mail = (b.opportunityContactEmail || b.email || "srmaacademy@gmail.com").trim();
+      if (mail) {
+        links.push({
+          id: "email",
+          href: `mailto:${mail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(whatsappMsg)}`,
+          isExternal: false,
+          labelAr: "البريد الإلكتروني",
+          labelEn: "Email",
+          displayValue: mail,
+        });
+      }
+    } else if (channel === "phone") {
+      const ph = (b.opportunityContactPhone || b.phone || b.whatsapp || "966562159258").trim();
+      if (ph) {
+        const clean = ph.replace(/[^\d+]/g, "");
+        links.push({
+          id: "phone",
+          href: `tel:${clean}`,
+          isExternal: false,
+          labelAr: "اتصال هاتفي",
+          labelEn: "Phone Call",
+          displayValue: ph,
+        });
+      }
+    }
+  }
+
+  return links;
 }
 
 export function buildForwardingUrl({

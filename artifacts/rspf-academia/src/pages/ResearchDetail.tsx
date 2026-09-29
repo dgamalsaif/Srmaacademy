@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "wouter";
-import { ChevronLeft, Users, Clock, BookOpen, CheckCircle2, ArrowLeft, ExternalLink } from "lucide-react";
+import { ChevronLeft, Users, Clock, BookOpen, CheckCircle2, ArrowLeft, ExternalLink, MessageCircle, Send, Mail, Phone } from "lucide-react";
 import { ResearchOpportunity } from "@/lib/researchData";
 import RegistrationModal from "@/components/RegistrationModal";
-import { DEFAULT_SITE_CONTENT_SETTINGS, SiteContentSettings } from "@/lib/siteContentSettings";
+import { DEFAULT_SITE_CONTENT_SETTINGS, SiteContentSettings, getContactUsHref, getOpportunityContactLinks } from "@/lib/siteContentSettings";
 import OpportunityMedia from "@/components/OpportunityMedia";
 import OpportunityPrice from "@/components/OpportunityPrice";
 import { OpportunityCurrency, RESEARCH_STATUS_LABELS } from "@/lib/opportunityPricing";
@@ -237,16 +237,74 @@ export default function ResearchDetail() {
                 </div>
               )}
 
-              <a
-                href={`https://wa.me/${contentSettings.brand.whatsapp || "966562159258"}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-testid="link-detail-whatsapp"
-                className="w-full border border-[#0C3156]/25 text-[#0C3156] font-semibold py-2.5 rounded-xl text-sm text-center hover:bg-[#0C3156]/5 transition-colors flex items-center justify-center gap-2"
-              >
-                <ExternalLink size={14} />
-                {localize("تواصل معنا", "Contact us")}
-              </a>
+              {(() => {
+                const oppLinks = getOpportunityContactLinks(
+                  contentSettings.brand,
+                  research.titleAr || research.titleEn || research.title,
+                  language as "ar" | "en"
+                );
+                const contact = getContactUsHref(contentSettings.brand);
+                const sectionTitle = language === "ar"
+                  ? (contentSettings.brand.opportunityContactLabelAr || "تواصل معنا بخصوص هذه الفرصة")
+                  : (contentSettings.brand.opportunityContactLabelEn || "Contact us about this opportunity");
+
+                if (oppLinks.length === 0) {
+                  return (
+                    <a
+                      href={contact.href}
+                      target={contact.isExternal ? "_blank" : undefined}
+                      rel={contact.isExternal ? "noopener noreferrer" : undefined}
+                      data-testid="link-detail-contact"
+                      className="w-full border border-[#0C3156]/25 text-[#0C3156] font-semibold py-2.5 rounded-xl text-sm text-center hover:bg-[#0C3156]/5 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <ExternalLink size={14} />
+                      {language === "ar" ? contact.labelAr : contact.labelEn}
+                    </a>
+                  );
+                }
+
+                return (
+                  <div className="mt-4 pt-4 border-t border-slate-100">
+                    <p className="text-xs font-bold text-slate-500 mb-2.5 text-center flex items-center justify-center gap-1.5">
+                      <span>💬</span>
+                      <span>{sectionTitle}</span>
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 mb-2.5">
+                      {oppLinks.map((link) => {
+                        const icon =
+                          link.id === "whatsapp" ? <MessageCircle size={15} className="text-emerald-600 shrink-0" /> :
+                          link.id === "telegram" ? <Send size={14} className="text-sky-500 shrink-0" /> :
+                          link.id === "email" ? <Mail size={14} className="text-amber-600 shrink-0" /> :
+                          <Phone size={14} className="text-blue-600 shrink-0" />;
+
+                        return (
+                          <a
+                            key={link.id}
+                            href={link.href}
+                            target={link.isExternal ? "_blank" : undefined}
+                            rel={link.isExternal ? "noopener noreferrer" : undefined}
+                            data-testid={`link-opportunity-contact-${link.id}`}
+                            className="flex items-center justify-center gap-1.5 px-2.5 py-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-700 hover:text-slate-950 transition-colors shadow-xs"
+                          >
+                            {icon}
+                            <span>{language === "ar" ? link.labelAr : link.labelEn}</span>
+                          </a>
+                        );
+                      })}
+                    </div>
+                    <a
+                      href={contact.href}
+                      target={contact.isExternal ? "_blank" : undefined}
+                      rel={contact.isExternal ? "noopener noreferrer" : undefined}
+                      data-testid="link-detail-contact"
+                      className="w-full border border-[#0C3156]/20 text-[#0C3156] font-semibold py-2 rounded-xl text-xs text-center hover:bg-[#0C3156]/5 transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <ExternalLink size={12} />
+                      {language === "ar" ? contact.labelAr : contact.labelEn}
+                    </a>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>

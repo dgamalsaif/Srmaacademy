@@ -84,6 +84,21 @@ export interface BrandContactSettings {
   coordinatorForwardTarget: string;
   coordinatorAutoRedirect: boolean;
   coordinatorCustomMessage: string;
+
+  // New: Direct Contact under Opportunity Register Option
+  opportunityContactEnabled: boolean;
+  opportunityContactTitleAr: string;
+  opportunityContactTitleEn: string;
+  opportunityContactSubtitleAr: string;
+  opportunityContactSubtitleEn: string;
+  opportunityContactShowEmail: boolean;
+  opportunityContactShowPhone: boolean;
+  opportunityContactShowTelegram: boolean;
+  opportunityContactShowWhatsapp: boolean;
+  opportunityContactEmail: string;
+  opportunityContactPhone: string;
+  opportunityContactTelegram: string;
+  opportunityContactWhatsapp: string;
 }
 type SocialIconId = "whatsapp" | "telegram" | "instagram" | "x" | "linkedin" | "facebook" | "tiktok" | "youtube" | "snapchat" | "email" | "phone";
 type FloatingIconPosition = "bottom-left" | "bottom-right" | "middle-left" | "middle-right";
@@ -223,6 +238,19 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
     coordinatorForwardTarget: "966562159258",
     coordinatorAutoRedirect: false,
     coordinatorCustomMessage: "",
+    opportunityContactEnabled: true,
+    opportunityContactTitleAr: "تواصل معنا للاستفسار عن هذه الفرصة",
+    opportunityContactTitleEn: "Contact us to inquire about this opportunity",
+    opportunityContactSubtitleAr: "فريق الأكاديمية متواجد لمساعدتك عبر القنوات التالية:",
+    opportunityContactSubtitleEn: "The academy team is here to assist you via:",
+    opportunityContactShowEmail: true,
+    opportunityContactShowPhone: true,
+    opportunityContactShowTelegram: true,
+    opportunityContactShowWhatsapp: true,
+    opportunityContactEmail: "srmaacademy@gmail.com",
+    opportunityContactPhone: "+966562159258",
+    opportunityContactTelegram: "SRMAAcademy",
+    opportunityContactWhatsapp: "966562159258",
   },
   pages: {
     home: { titleAr: "أكاديمية SRMA للأبحاث", titleEn: "SRMA Research Academy", descriptionAr: "نحو مجتمع بحثي أكثر تأثيراً", descriptionEn: "Building a more impactful research community", contentAr: "", contentEn: "" },
@@ -443,6 +471,19 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
       coordinatorForwardTarget: brandText("coordinatorForwardTarget", 500) || audienceWhatsapp("coordinatorWhatsapp"),
       coordinatorAutoRedirect: typeof brandInput.coordinatorAutoRedirect === "boolean" ? brandInput.coordinatorAutoRedirect : DEFAULT_SITE_CONTENT_SETTINGS.brand.coordinatorAutoRedirect,
       coordinatorCustomMessage: brandText("coordinatorCustomMessage", 1000),
+      opportunityContactEnabled: typeof brandInput.opportunityContactEnabled === "boolean" ? brandInput.opportunityContactEnabled : DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactEnabled,
+      opportunityContactTitleAr: brandText("opportunityContactTitleAr", 120) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactTitleAr,
+      opportunityContactTitleEn: brandText("opportunityContactTitleEn", 120) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactTitleEn,
+      opportunityContactSubtitleAr: brandText("opportunityContactSubtitleAr", 300) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactSubtitleAr,
+      opportunityContactSubtitleEn: brandText("opportunityContactSubtitleEn", 300) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactSubtitleEn,
+      opportunityContactShowEmail: typeof brandInput.opportunityContactShowEmail === "boolean" ? brandInput.opportunityContactShowEmail : DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactShowEmail,
+      opportunityContactShowPhone: typeof brandInput.opportunityContactShowPhone === "boolean" ? brandInput.opportunityContactShowPhone : DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactShowPhone,
+      opportunityContactShowTelegram: typeof brandInput.opportunityContactShowTelegram === "boolean" ? brandInput.opportunityContactShowTelegram : DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactShowTelegram,
+      opportunityContactShowWhatsapp: typeof brandInput.opportunityContactShowWhatsapp === "boolean" ? brandInput.opportunityContactShowWhatsapp : DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactShowWhatsapp,
+      opportunityContactEmail: brandText("opportunityContactEmail", 254) || brandText("email", 254) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactEmail,
+      opportunityContactPhone: brandText("opportunityContactPhone", 40) || brandText("phone", 40) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactPhone,
+      opportunityContactTelegram: brandText("opportunityContactTelegram", 100).replace(/^@/, "") || brandText("telegramUsername", 100).replace(/^@/, "") || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactTelegram,
+      opportunityContactWhatsapp: (brandText("opportunityContactWhatsapp", 40) || globalWhatsapp || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactWhatsapp).replace(/[^\d+]/g, ""),
     },
     pages,
   };

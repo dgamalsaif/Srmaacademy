@@ -448,6 +448,12 @@ router.post("/programs/batch-update", requireOwner, async (req, res) => {
   if (typeof updates.indexedIn === "string") {
     patch.indexedIn = updates.indexedIn.trim();
   }
+  if (typeof updates.totalSeats === "number" && updates.totalSeats > 0) {
+    patch.totalSeats = Math.round(updates.totalSeats);
+  }
+  if (typeof updates.seatsLeft === "number" && updates.seatsLeft >= 0) {
+    patch.seatsLeft = Math.round(updates.seatsLeft);
+  }
 
   try {
     let affected = 0;
@@ -465,7 +471,8 @@ router.post("/programs/batch-update", requireOwner, async (req, res) => {
         affected++;
       }
     }
-    res.json({ success: true, affected });
+    const freshRows = await db.select().from(researchProgramsTable).orderBy(desc(researchProgramsTable.createdAt));
+    res.json({ success: true, affected, programs: freshRows.map((r) => toClient(r, true)) });
   } catch (error) {
     req.log.error({ err: error }, "Failed to batch update programs");
     res.status(500).json({ error: "تعذر تحديث البرامج المحددة" });

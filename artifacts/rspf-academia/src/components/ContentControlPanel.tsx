@@ -151,9 +151,9 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
               <div className="md:col-span-2 rounded-2xl border-2 border-emerald-300 bg-emerald-50/50 p-5 space-y-4">
                 <div className="flex items-center gap-2">
                   <Phone className="text-[#117b59]" size={20} />
-                  <h3 className="font-black text-slate-900 text-base">التحكم في طريقة التواصل في زر "تواصل معنا"</h3>
+                  <h3 className="font-black text-slate-900 text-base">التحكم في طريقة التواصل في زر "تواصل معنا" (صفحة تفاصيل الفرصة وبقية الموقع)</h3>
                 </div>
-                <p className="text-xs text-slate-600 leading-5">حدد كيف يتواصل الزوار عند الضغط على "تواصل معنا" في الموقع (رقم هاتف، واتساب، اسم مستخدم، بريد، أو رابط مخصص).</p>
+                <p className="text-xs text-slate-600 leading-5">حدد كيف يتواصل الزوار عند الضغط على "تواصل معنا" في الموقع وتحت خيار التسجيل في صفحة الفرصة البحثية (عبر الإيميل، الهاتف، تيليجرام، واتساب، أو رابط مخصص).</p>
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 mb-1">نوع وسيلة التواصل</label>
@@ -191,6 +191,105 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                   <TextField label="نص الزر بالعربية" value={settings.brand.contactUsLabelAr || "تواصل معنا"} onChange={(v) => updateBrand("contactUsLabelAr", v)} />
                   <TextField label="نص الزر بالإنجليزية" value={settings.brand.contactUsLabelEn || "Contact Us"} onChange={(v) => updateBrand("contactUsLabelEn", v)} />
                 </div>
+              </div>
+
+              {/* Opportunity Page Direct Contact Channels */}
+              <div className="md:col-span-2 rounded-2xl border border-emerald-100 bg-emerald-50/30 p-5 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-600 text-white font-bold text-xs">💬</span>
+                    <div>
+                      <h4 className="text-sm font-black text-slate-800">قنوات التواصل في صفحة الفرصة البحثية (تحت زر التسجيل والطلب)</h4>
+                      <p className="text-xs text-slate-600">إظهار أزرار تواصل مباشرة (واتساب، تيليجرام، إيميل، هاتف) أسفل زر التسجيل للتسهيل على المشتركين والباحثين.</p>
+                    </div>
+                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer bg-white px-3.5 py-1.5 rounded-xl border border-emerald-200 text-xs font-bold text-emerald-800">
+                    <input
+                      type="checkbox"
+                      checked={settings.brand.opportunityContactEnabled !== false}
+                      onChange={(e) => updateBrand("opportunityContactEnabled", e.target.checked)}
+                      className="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4"
+                    />
+                    <span>تفعيل قنوات التواصل في صفحة الفرصة</span>
+                  </label>
+                </div>
+
+                {settings.brand.opportunityContactEnabled !== false && (
+                  <div className="space-y-4 pt-2 border-t border-emerald-100">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-2">القنوات المفعلة للظهور:</label>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { id: "whatsapp" as const, label: "واتساب (WhatsApp)" },
+                          { id: "telegram" as const, label: "تيليجرام (Telegram)" },
+                          { id: "email" as const, label: "البريد الإلكتروني (Email)" },
+                          { id: "phone" as const, label: "الهاتف (Phone Call)" },
+                        ].map((ch) => {
+                          const activeChannels = settings.brand.opportunityContactChannels || ["whatsapp", "telegram", "email", "phone"];
+                          const isSelected = activeChannels.includes(ch.id);
+                          return (
+                            <button
+                              key={ch.id}
+                              type="button"
+                              onClick={() => {
+                                const next = isSelected
+                                  ? activeChannels.filter((c) => c !== ch.id)
+                                  : [...activeChannels, ch.id];
+                                updateBrand("opportunityContactChannels", next);
+                              }}
+                              className={`rounded-xl border px-3.5 py-2 text-xs font-bold transition-all ${
+                                isSelected
+                                  ? "border-emerald-600 bg-emerald-600 text-white shadow-sm"
+                                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+                              }`}
+                            >
+                              {isSelected ? "✓ " : "+ "}{ch.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <TextField
+                        label="عنوان القسم بالعربية (تحت زر التسجيل)"
+                        value={settings.brand.opportunityContactLabelAr || "تواصل معنا بخصوص هذه الفرصة"}
+                        onChange={(v) => updateBrand("opportunityContactLabelAr", v)}
+                        placeholder="تواصل معنا بخصوص هذه الفرصة"
+                      />
+                      <TextField
+                        label="عنوان القسم بالإنجليزية"
+                        value={settings.brand.opportunityContactLabelEn || "Contact us about this opportunity"}
+                        onChange={(v) => updateBrand("opportunityContactLabelEn", v)}
+                        placeholder="Contact us about this opportunity"
+                      />
+                      <TextField
+                        label="رقم واتساب المخصص للفرص (فارغ = استخدام واتساب العام)"
+                        value={settings.brand.opportunityContactWhatsapp || ""}
+                        onChange={(v) => updateBrand("opportunityContactWhatsapp", v)}
+                        placeholder={settings.brand.whatsapp || "966562159258"}
+                      />
+                      <TextField
+                        label="معرف تيليجرام المخصص (فارغ = استخدام معرف تيليجرام العام)"
+                        value={settings.brand.opportunityContactTelegram || ""}
+                        onChange={(v) => updateBrand("opportunityContactTelegram", v)}
+                        placeholder={settings.brand.telegramUsername || "SRMAAcademy"}
+                      />
+                      <TextField
+                        label="البريد الإلكتروني المخصص (فارغ = استخدام البريد العام)"
+                        value={settings.brand.opportunityContactEmail || ""}
+                        onChange={(v) => updateBrand("opportunityContactEmail", v)}
+                        placeholder={settings.brand.email || "srmaacademy@gmail.com"}
+                      />
+                      <TextField
+                        label="رقم الهاتف المخصص للاتصال (فارغ = استخدام هاتف الأكاديمية)"
+                        value={settings.brand.opportunityContactPhone || ""}
+                        onChange={(v) => updateBrand("opportunityContactPhone", v)}
+                        placeholder={settings.brand.phone || "966562159258"}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {(["public", "participant", "coordinator"] as const).map((audience) => {

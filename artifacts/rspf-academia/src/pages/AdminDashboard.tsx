@@ -2,9 +2,10 @@ import { useState, useEffect, useMemo } from "react";
 import { useClerk } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
-import { Plus, Pencil, Trash2, Eye, X, ChevronRight, LogOut, Search, Users, BookOpen, TrendingUp, AlertCircle, UserPlus, GraduationCap, Award, Landmark, LayoutDashboard, CreditCard, Settings, ClipboardList, CheckCircle, FlaskConical, Stethoscope, User, Clock, Copy, Check, Edit, FileSpreadsheet, Database } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, X, ChevronRight, LogOut, Search, Users, BookOpen, TrendingUp, AlertCircle, UserPlus, GraduationCap, Award, Landmark, LayoutDashboard, CreditCard, Settings, ClipboardList, CheckCircle, FlaskConical, Stethoscope, User, Clock, Copy, Check, Edit, FileSpreadsheet, Database, Layers, CheckSquare } from "lucide-react";
 import { ResearchOpportunity, SPECIALTY_COLORS } from "@/lib/researchData";
 import RegistrationModal from "@/components/RegistrationModal";
+import BulkEditModal from "@/components/BulkEditModal";
 import CoordinatorPortalSettingsPanel from "@/components/CoordinatorPortalSettingsPanel";
 import { CoordinatorPortalSettings, DEFAULT_COORDINATOR_PORTAL_SETTINGS } from "@/lib/coordinatorPortalSettings";
 import ContentControlPanel from "@/components/ContentControlPanel";
@@ -500,7 +501,7 @@ const STATUS_MAP: Record<string, { label: string, className: string }> = {
   published: { label: "تم النشر", className: "bg-[#e6f5ef] text-[#117b59]" },
 };
 
-function ProgramCard({ research, onRegister, onEdit, onDelete, canManage }: any) {
+function ProgramCard({ research, onRegister, onEdit, onDelete, canManage, isSelected, onToggleSelect }: any) {
   const [copied, setCopied] = useState(false);
   const copyLink = () => {
     navigator.clipboard.writeText(`${window.location.origin}/research/${research.id}`);
@@ -521,30 +522,54 @@ function ProgramCard({ research, onRegister, onEdit, onDelete, canManage }: any)
     : STATUS_MAP[research.status]?.label || research.status;
 
   return (
-    <div className="bg-white rounded-[1.25rem] border border-slate-200 p-5 shadow-sm hover:shadow-md transition-all flex flex-col relative group">
+    <div className={`bg-white rounded-[1.25rem] border p-5 shadow-sm hover:shadow-md transition-all flex flex-col relative group ${
+      isSelected ? "border-[#117b59] ring-2 ring-[#117b59]/25 shadow-md bg-emerald-50/10" : "border-slate-200"
+    }`}>
       {canManage && (
-        <div className="absolute top-4 left-4 flex items-center gap-1.5 z-10 bg-white rounded-xl p-1 border border-slate-200 shadow-sm">
-          <button
-            type="button"
-            onClick={() => onEdit(research)}
-            title="تعديل الفرصة"
-            aria-label="تعديل الفرصة"
-            className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold text-[#117b59] hover:bg-[#e6f5ef] transition-colors"
-          >
-            <Edit size={15} />
-            تعديل
-          </button>
-          <button
-            type="button"
-            onClick={() => onDelete(research)}
-            title="حذف الفرصة"
-            aria-label="حذف الفرصة"
-            className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 transition-colors"
-          >
-            <Trash2 size={15} />
-            حذف
-          </button>
-        </div>
+        <>
+          <div className="absolute top-4 left-4 flex items-center gap-1.5 z-10 bg-white rounded-xl p-1 border border-slate-200 shadow-sm">
+            <button
+              type="button"
+              onClick={() => onEdit(research)}
+              title="تعديل الفرصة"
+              aria-label="تعديل الفرصة"
+              className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold text-[#117b59] hover:bg-[#e6f5ef] transition-colors"
+            >
+              <Edit size={15} />
+              تعديل
+            </button>
+            <button
+              type="button"
+              onClick={() => onDelete(research)}
+              title="حذف الفرصة"
+              aria-label="حذف الفرصة"
+              className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold text-red-600 hover:bg-red-50 transition-colors"
+            >
+              <Trash2 size={15} />
+              حذف
+            </button>
+          </div>
+
+          <div className="absolute top-4 right-4 z-10">
+            <label
+              onClick={(e) => e.stopPropagation()}
+              className={`flex items-center justify-center h-8 w-8 rounded-xl backdrop-blur-xs border transition-all cursor-pointer shadow-xs ${
+                isSelected
+                  ? "bg-[#117b59] text-white border-[#117b59]"
+                  : "bg-white/95 border-slate-200 hover:border-[#117b59]/40 text-slate-400"
+              }`}
+              title={isSelected ? "إلغاء تحديد الفرصة" : "تحديد الفرصة"}
+            >
+              <input
+                type="checkbox"
+                checked={!!isSelected}
+                onChange={() => onToggleSelect && onToggleSelect()}
+                className="sr-only"
+              />
+              {isSelected ? <Check size={16} className="stroke-[3]" /> : <span className="h-3.5 w-3.5 rounded-md border-2 border-slate-300" />}
+            </label>
+          </div>
+        </>
       )}
 
       <div className="mb-4">
@@ -660,6 +685,9 @@ export default function AdminDashboard() {
   const [contentSettingsSaving, setContentSettingsSaving] = useState(false);
   const [contentSettingsMessage, setContentSettingsMessage] = useState("");
   const [importOpen, setImportOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [bulkEditOpen, setBulkEditOpen] = useState(false);
+  const [batchLoading, setBatchLoading] = useState(false);
   const ownerWorkspace = location === "/admin";
 
   useEffect(() => {
@@ -787,6 +815,98 @@ export default function AdminDashboard() {
       setResearch((items) => items.filter((item) => item.id !== deleteItem.id));
       setDeleteItem(null);
     }
+  };
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAllFiltered = (filteredItems: ResearchOpportunity[]) => {
+    const allFilteredIds = filteredItems.map((r) => r.id);
+    const isAllSelected = allFilteredIds.length > 0 && allFilteredIds.every((id) => selectedIds.has(id));
+    if (isAllSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(allFilteredIds));
+    }
+  };
+
+  const toggleSelectGroup = (groupItems: ResearchOpportunity[]) => {
+    const groupIds = groupItems.map((r) => r.id);
+    const isGroupAllSelected = groupIds.length > 0 && groupIds.every((id) => selectedIds.has(id));
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (isGroupAllSelected) {
+        groupIds.forEach((id) => next.delete(id));
+      } else {
+        groupIds.forEach((id) => next.add(id));
+      }
+      return next;
+    });
+  };
+
+  const handleQuickStatusChange = async (newStatus: string) => {
+    if (selectedIds.size === 0) return;
+    setBatchLoading(true);
+    try {
+      const response = await fetch("/api/programs/batch-update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ids: Array.from(selectedIds),
+          updates: { status: newStatus },
+        }),
+      });
+      const data = await response.json();
+      if (response.ok && data.programs) {
+        setResearch(data.programs);
+        setSelectedIds(new Set());
+      } else {
+        alert(data.error || "تعذر تحديث الحالة للفرص المحددة");
+      }
+    } catch {
+      alert("تعذر تحديث الحالة للفرص المحددة");
+    } finally {
+      setBatchLoading(false);
+    }
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`هل أنت متأكد من حذف ${selectedIds.size} فرصة بحثية محددة؟ لا يمكن التراجع عن هذا الإجراء.`)) return;
+    setBatchLoading(true);
+    try {
+      const response = await fetch("/api/programs/batch-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ids: Array.from(selectedIds),
+        }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setResearch((prev) => prev.filter((r) => !selectedIds.has(r.id)));
+        setSelectedIds(new Set());
+      } else {
+        alert(data.error || "تعذر حذف الفرص المحددة");
+      }
+    } catch {
+      alert("تعذر حذف الفرص المحددة");
+    } finally {
+      setBatchLoading(false);
+    }
+  };
+
+  const handleBatchSuccess = (freshPrograms: ResearchOpportunity[]) => {
+    if (freshPrograms.length > 0) {
+      setResearch(freshPrograms);
+    }
+    setSelectedIds(new Set());
   };
 
   const handleImportComplete = (programs: ResearchOpportunity[], specialtyOptions: SiteContentSettings["specialtyOptions"]) => {
@@ -1125,6 +1245,53 @@ export default function AdminDashboard() {
                     className="w-full bg-white border border-slate-200 rounded-2xl py-4 pr-12 pl-4 outline-none focus:border-[#117b59] focus:ring-2 focus:ring-[#117b59]/20 transition-all text-sm font-bold shadow-sm"
                   />
                 </div>
+
+                {canManage && filtered.length > 0 && (
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => toggleSelectAllFiltered(filtered)}
+                        className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors ${
+                          filtered.every((r) => selectedIds.has(r.id))
+                            ? "bg-[#117b59] text-white"
+                            : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                        }`}
+                      >
+                        <CheckSquare size={15} />
+                        <span>
+                          {filtered.every((r) => selectedIds.has(r.id))
+                            ? "إلغاء تحديد الكل"
+                            : `تحديد الكل (${filtered.length} معروضة)`}
+                        </span>
+                      </button>
+                      {selectedIds.size > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedIds(new Set())}
+                          className="text-xs text-slate-500 hover:text-slate-700 underline font-medium"
+                        >
+                          إلغاء التحديد ({selectedIds.size})
+                        </button>
+                      )}
+                    </div>
+                    {selectedIds.size > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-[#117b59]">
+                          تم تحديد {selectedIds.size} فرصة
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setBulkEditOpen(true)}
+                          className="flex items-center gap-1.5 bg-[#117b59] text-white px-3.5 py-1.5 rounded-xl text-xs font-bold hover:bg-[#0c6549] transition-colors shadow-xs"
+                        >
+                          <Layers size={13} />
+                          <span>تعديل جماعي شامل</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {Object.keys(groupedResearch).length === 0 ? (
@@ -1140,9 +1307,21 @@ export default function AdminDashboard() {
                   <div key={specialty} className="mb-10">
                     <div className="flex items-center gap-4 mb-6">
                       <div className="h-px bg-slate-200 flex-1"></div>
-                      <span className="bg-slate-50 text-slate-600 px-5 py-1.5 rounded-full text-[11px] font-bold border border-slate-200 shadow-sm">
-                        {specialty}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="bg-slate-50 text-slate-600 px-5 py-1.5 rounded-full text-[11px] font-bold border border-slate-200 shadow-sm">
+                          {specialty} ({items.length})
+                        </span>
+                        {canManage && items.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => toggleSelectGroup(items)}
+                            className="text-[10px] font-bold text-slate-500 hover:text-[#117b59] bg-white border border-slate-200 px-2.5 py-1 rounded-full hover:border-[#117b59]/30 transition-colors"
+                            title="تحديد أو إلغاء تحديد هذه المجموعة"
+                          >
+                            {items.every((r) => selectedIds.has(r.id)) ? "إلغاء تحديد القسم" : "تحديد القسم"}
+                          </button>
+                        )}
+                      </div>
                       <div className="h-px bg-slate-200 flex-1"></div>
                     </div>
 
@@ -1155,6 +1334,8 @@ export default function AdminDashboard() {
                             onEdit={setEditItem}
                             onDelete={setDeleteItem}
                             canManage={canManage}
+                            isSelected={selectedIds.has(r.id)}
+                            onToggleSelect={() => toggleSelect(r.id)}
                           />
                         </div>
                       ))}
@@ -1317,6 +1498,90 @@ export default function AdminDashboard() {
           coordinatorEntry={true}
         />
       )}
+
+      {/* Floating Bulk Actions Bar */}
+      {canManage && selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white backdrop-blur-md px-5 py-3.5 rounded-2xl shadow-2xl border border-slate-700/60 flex flex-wrap items-center justify-between gap-4 max-w-[95vw] animate-in fade-in slide-in-from-bottom-5">
+          <div className="flex items-center gap-2.5 font-bold text-xs sm:text-sm">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#117b59] text-white text-xs font-black shadow-xs">
+              {selectedIds.size}
+            </span>
+            <span className="whitespace-nowrap">تم تحديد {selectedIds.size} فرصة</span>
+          </div>
+
+          <div className="h-5 w-px bg-slate-700 hidden sm:block" />
+
+          {/* Quick Status Change */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-300 hidden md:inline">تغيير الحالة:</span>
+            <select
+              onChange={(e) => {
+                if (e.target.value) {
+                  void handleQuickStatusChange(e.target.value);
+                  e.target.value = "";
+                }
+              }}
+              disabled={batchLoading}
+              defaultValue=""
+              className="bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-1.5 text-xs font-bold focus:outline-none focus:border-[#117b59]"
+            >
+              <option value="" disabled>-- تغيير الحالة سريعاً --</option>
+              <option value="open">مفتوح للتسجيل</option>
+              <option value="closed">مغلق</option>
+              <option value="upcoming">قادم</option>
+              <option value="seats_full">اكتملت المقاعد</option>
+              <option value="draft">مسودة</option>
+              <option value="published">تم النشر</option>
+            </select>
+          </div>
+
+          {/* Bulk Edit Modal Button */}
+          <button
+            type="button"
+            onClick={() => setBulkEditOpen(true)}
+            disabled={batchLoading}
+            className="flex items-center gap-1.5 bg-[#117b59] hover:bg-[#0c6549] text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors shadow-sm whitespace-nowrap"
+          >
+            <Layers size={14} />
+            <span>تعديل جماعي شامل</span>
+          </button>
+
+          {/* Bulk Delete Button */}
+          {role === "owner" && (
+            <button
+              type="button"
+              onClick={() => void handleBatchDelete()}
+              disabled={batchLoading}
+              className="flex items-center gap-1.5 bg-red-600/85 hover:bg-red-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-colors whitespace-nowrap"
+            >
+              <Trash2 size={14} />
+              <span>حذف المحدد</span>
+            </button>
+          )}
+
+          {/* Deselect All */}
+          <button
+            type="button"
+            onClick={() => setSelectedIds(new Set())}
+            className="text-xs text-slate-400 hover:text-white px-2 py-1 transition-colors whitespace-nowrap"
+          >
+            إلغاء التحديد
+          </button>
+        </div>
+      )}
+
+      {/* Bulk Edit Modal */}
+      {bulkEditOpen && (
+        <BulkEditModal
+          isOpen={bulkEditOpen}
+          onClose={() => setBulkEditOpen(false)}
+          selectedCount={selectedIds.size}
+          selectedIds={Array.from(selectedIds)}
+          specialtyOptions={contentSettings.specialtyOptions}
+          onSuccess={handleBatchSuccess}
+        />
+      )}
+
       <Footer />
     </div>
   );
