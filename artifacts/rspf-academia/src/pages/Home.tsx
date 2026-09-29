@@ -2,8 +2,8 @@ import { ChevronLeft } from "lucide-react";
 import { Link } from "wouter";
 import { motion } from "framer-motion";
 import { useMemo } from "react";
-import { useTranslation } from "../i18n/useTranslation";
-import type { ResearchOpportunity } from "../types";
+import { useLanguage } from "@/lib/i18n";
+import type { ResearchOpportunity } from "@/lib/researchData";
 
 const staticEnglish: Record<string, string> = {
   "استكشف الفرص البحثية": "Explore research opportunities",
@@ -13,14 +13,14 @@ const staticEnglish: Record<string, string> = {
 };
 
 export default function Home() {
-  const { locale, t, localize } = useTranslation();
+  const { direction, localize, t } = useLanguage();
 
   const s = (arabic: string) => localize(arabic, staticEnglish[arabic] ?? arabic);
 
-  const opportunities: ResearchOpportunity[] = useMemo(
+  const opportunities: Partial<ResearchOpportunity>[] = useMemo(
     () => [
       {
-        id: "1",
+        id: 1,
         title: s("فرص بحثية"),
         description: s("اكتشف مشاريع بحثية متنوعة"),
       },
@@ -29,7 +29,7 @@ export default function Home() {
   );
 
   return (
-    <main className="min-h-screen bg-[#f5f5f5]">
+    <main className="min-h-screen bg-[#f5f5f5]" dir={direction}>
       <section className="mx-auto max-w-7xl px-6 py-20">
         <div className="flex flex-col items-center gap-8 text-center">
           <motion.h1
