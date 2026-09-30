@@ -1,6 +1,6 @@
-import { ChevronDown, ChevronUp, Eye, EyeOff, Palette, Save, SlidersHorizontal, Image, Phone, Mail, Link as LinkIcon, FileText, Send, Share2, ExternalLink, MessageCircle, Check } from "lucide-react";
+import { ChevronDown, ChevronUp, Eye, EyeOff, Palette, Save, SlidersHorizontal, Image, Phone, Mail, Link as LinkIcon, FileText, Send, Share2, ExternalLink, MessageCircle, Check, GraduationCap, ShieldCheck, Plus, Trash2, AlertTriangle } from "lucide-react";
 import { useState } from "react";
-import { CARD_PARTS, OPPORTUNITY_FIELDS, OpportunityDisplayMode, OpportunityFieldId, RegistrationFieldSetting, SiteContentSettings, SpecialtyOption, JournalOption, PublicPageId, BrandContactSettings, PublicPageContent, SOCIAL_ICON_OPTIONS, SocialIconId, FloatingIconPosition, ForwardingType, ContactUsType } from "@/lib/siteContentSettings";
+import { CARD_PARTS, OPPORTUNITY_FIELDS, OpportunityDisplayMode, OpportunityFieldId, RegistrationFieldSetting, SiteContentSettings, SpecialtyOption, JournalOption, PublicPageId, BrandContactSettings, PublicPageContent, SOCIAL_ICON_OPTIONS, SocialIconId, FloatingIconPosition, ForwardingType, ContactUsType, AcademicDegreeOption, DEFAULT_ACADEMIC_DEGREE_SETTINGS, DEFAULT_RESEARCH_EXPERIENCE_SETTINGS, DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS } from "@/lib/siteContentSettings";
 
 interface Props {
   settings: SiteContentSettings;
@@ -13,9 +13,45 @@ interface Props {
 export default function ContentControlPanel({ settings, onChange, onSave, saving, message }: Props) {
   const [specialtyDraft, setSpecialtyDraft] = useState({ nameAr: "", nameEn: "", groupUrl: "" });
   const [journalDraft, setJournalDraft] = useState({ nameAr: "", nameEn: "", issn: "", pubmed: "", scopus: "", wos: "", specialty: "" });
+  const [degreeDraft, setDegreeDraft] = useState({ nameAr: "", nameEn: "" });
   const [activePageTab, setActivePageTab] = useState<PublicPageId>("home");
   const [activeForwardTab, setActiveForwardTab] = useState<"participant" | "coordinator">("participant");
   const update = <K extends keyof SiteContentSettings>(key: K, value: SiteContentSettings[K]) => onChange({ ...settings, [key]: value });
+
+  const academicDegreeSettings = settings.academicDegreeSettings || DEFAULT_ACADEMIC_DEGREE_SETTINGS;
+  const researchExpSettings = settings.researchExperienceSettings || DEFAULT_RESEARCH_EXPERIENCE_SETTINGS;
+  const feeAgreementSettings = settings.feeAndTaskAgreementSettings || DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS;
+
+  const updateAcademicDegree = (changes: Partial<typeof academicDegreeSettings>) => {
+    update("academicDegreeSettings", { ...academicDegreeSettings, ...changes });
+  };
+
+  const addAcademicDegreeOption = () => {
+    if (!degreeDraft.nameAr.trim() && !degreeDraft.nameEn.trim()) return;
+    const newOpt: AcademicDegreeOption = {
+      id: `degree-${Date.now()}`,
+      nameAr: degreeDraft.nameAr.trim() || degreeDraft.nameEn.trim(),
+      nameEn: degreeDraft.nameEn.trim() || degreeDraft.nameAr.trim(),
+    };
+    updateAcademicDegree({
+      options: [...academicDegreeSettings.options, newOpt],
+    });
+    setDegreeDraft({ nameAr: "", nameEn: "" });
+  };
+
+  const removeAcademicDegreeOption = (id: string) => {
+    updateAcademicDegree({
+      options: academicDegreeSettings.options.filter((opt) => opt.id !== id),
+    });
+  };
+
+  const updateResearchExp = (changes: Partial<typeof researchExpSettings>) => {
+    update("researchExperienceSettings", { ...researchExpSettings, ...changes });
+  };
+
+  const updateFeeAgreement = (changes: Partial<typeof feeAgreementSettings>) => {
+    update("feeAndTaskAgreementSettings", { ...feeAgreementSettings, ...changes });
+  };
   const updateField = (index: number, changes: Partial<RegistrationFieldSetting>) => {
     const fields = [...settings.registrationFields];
     fields[index] = { ...fields[index], ...changes };
@@ -1073,7 +1109,7 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
           </Panel>
 
           <Panel title="نصوص الصفحات العامة" icon={FileText}>
-            <div className="mb-6 flex flex-wrap gap-2 border-b border-slate-100 pb-4">
+            <div className="mb-4 flex flex-wrap gap-2 border-b border-slate-100 pb-4">
               {(Object.keys(settings.pages) as PublicPageId[]).map((pageId) => {
                 const label = pageId === "home" ? "الرئيسية" : pageId === "participant" ? "بوابة المشارك" : pageId === "knowledge" ? "مركز المعرفة" : pageId === "about" ? "عن الأكاديمية" : pageId === "faq" ? "الأسئلة الشائعة" : pageId === "specialRequests" ? "الطلبات الخاصة" : "تفاصيل الفرصة";
                 return (
@@ -1081,23 +1117,63 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                     key={pageId}
                     type="button"
                     onClick={() => setActivePageTab(pageId)}
-                    className={`rounded-xl px-4 py-2 text-sm font-bold transition ${activePageTab === pageId ? "bg-[#117b59] text-white" : "bg-slate-50 text-slate-600 hover:bg-slate-100"}`}
+                    className={`rounded-xl px-4 py-2 text-sm font-bold transition ${activePageTab === pageId ? "bg-[#117b59] text-white shadow-xs" : "bg-slate-50 text-slate-600 hover:bg-slate-100"}`}
                   >
                     {label}
                   </button>
                 );
               })}
             </div>
+
+            {activePageTab === "home" && (
+              <div className="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 text-xs leading-relaxed text-emerald-900">
+                <span className="font-black text-emerald-800">💡 التحكم بالصفحة الرئيسية (عربي وإنجليزي):</span>
+                <p className="mt-1">
+                  يمكنك من هنا تخصيص العنوان البارز (Hero Headline)، والوصف الترحيبي (Hero Subtitle)، بالإضافة إلى إمكانية كتابة «إعلان أو تنويه رسمي من إدارة الأكاديمية» يظهر كبانر بارز ومميز في صدر الصفحة الرئيسية باللغتين.
+                </p>
+              </div>
+            )}
+
             <div className="grid gap-4 md:grid-cols-2">
-              <TextField label="العنوان الرئيسي (عربي)" value={settings.pages[activePageTab].titleAr} onChange={(v) => updatePage(activePageTab, "titleAr", v)} />
-              <TextField label="Main Title (English)" value={settings.pages[activePageTab].titleEn} onChange={(v) => updatePage(activePageTab, "titleEn", v)} />
-              <TextArea label="الوصف التقديمي (عربي)" value={settings.pages[activePageTab].descriptionAr} onChange={(v) => updatePage(activePageTab, "descriptionAr", v)} />
-              <TextArea label="Intro Description (English)" value={settings.pages[activePageTab].descriptionEn} onChange={(v) => updatePage(activePageTab, "descriptionEn", v)} />
+              <TextField
+                label={activePageTab === "home" ? "العنوان الرئيسي للهيرو (عربي)" : "العنوان الرئيسي (عربي)"}
+                value={settings.pages[activePageTab].titleAr}
+                onChange={(v) => updatePage(activePageTab, "titleAr", v)}
+                placeholder={activePageTab === "home" ? "مثال: منصتك الموثوقة للنشر في أرقى المجلات العالمية Q1 & Q2" : ""}
+              />
+              <TextField
+                label={activePageTab === "home" ? "Hero Main Title (English)" : "Main Title (English)"}
+                value={settings.pages[activePageTab].titleEn}
+                onChange={(v) => updatePage(activePageTab, "titleEn", v)}
+                placeholder={activePageTab === "home" ? "e.g., Your Trusted Academic Gateway to Publishing in Top International Journals" : ""}
+              />
+              <TextArea
+                label={activePageTab === "home" ? "الوصف التقديمي للهيرو (عربي)" : "الوصف التقديمي (عربي)"}
+                value={settings.pages[activePageTab].descriptionAr}
+                onChange={(v) => updatePage(activePageTab, "descriptionAr", v)}
+                placeholder={activePageTab === "home" ? "نوفر للأطباء والباحثين الصحيين فرصاً بحثية حقيقية متكاملة..." : ""}
+              />
+              <TextArea
+                label={activePageTab === "home" ? "Hero Intro Description (English)" : "Intro Description (English)"}
+                value={settings.pages[activePageTab].descriptionEn}
+                onChange={(v) => updatePage(activePageTab, "descriptionEn", v)}
+                placeholder={activePageTab === "home" ? "We provide physicians and healthcare researchers with authentic..." : ""}
+              />
               <div className="md:col-span-2">
-                <TextArea label="المحتوى التفصيلي (عربي)" value={settings.pages[activePageTab].contentAr || ""} onChange={(v) => updatePage(activePageTab, "contentAr", v)} />
+                <TextArea
+                  label={activePageTab === "home" ? "إعلان وتنويه رسمي يظهر كبانر بارز على الرئيسية (عربي - اختياري)" : "المحتوى التفصيلي (عربي)"}
+                  value={settings.pages[activePageTab].contentAr || ""}
+                  onChange={(v) => updatePage(activePageTab, "contentAr", v)}
+                  placeholder={activePageTab === "home" ? "مثال: تم فتح التسجيل في الدفعة الجديدة من الأبحاث الطبية الموجهة للبورد وبدل التميز للربع الحالي..." : ""}
+                />
               </div>
               <div className="md:col-span-2">
-                <TextArea label="Detailed Content (English)" value={settings.pages[activePageTab].contentEn || ""} onChange={(v) => updatePage(activePageTab, "contentEn", v)} />
+                <TextArea
+                  label={activePageTab === "home" ? "Featured Announcement Banner on Homepage (English - Optional)" : "Detailed Content (English)"}
+                  value={settings.pages[activePageTab].contentEn || ""}
+                  onChange={(v) => updatePage(activePageTab, "contentEn", v)}
+                  placeholder={activePageTab === "home" ? "e.g., Registration is now officially open for new Q1/Q2 research cohorts..." : ""}
+                />
               </div>
             </div>
           </Panel>
@@ -1395,7 +1471,271 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
               ))}
             </div>
           </Panel>
-          <Panel title="حقول إضافة وتعديل الفرص" icon={SlidersHorizontal}>
+
+          {/* New Panel: التحكم ببيانات التسجيل المتقدمة (الدرجة الأكاديمية، الخبرات، وإقرار الرسوم والمهام) */}
+          <Panel title="بيانات التسجيل والشروط (الدرجة، الخبرات، وإقرار الرسوم والمهام)" icon={ShieldCheck}>
+            <p className="mb-6 text-sm leading-6 text-slate-500">
+              تحكم كامل في خيارات استمارة التسجيل: تحديد الدرجات الأكاديمية (امتياز، استشاري، رزدنت، وغيرها)، تفعيل وتخصيص سؤال الخبرات البحثية السابقة، وإدارة شرط وإقرار دفع رسوم التحليل والنشر والالتزام بالمهام في النطاق الزمني المحدد مع إمكانية منع التسجيل في حال الرفض.
+            </p>
+
+            <div className="space-y-6">
+              {/* SECTION 1: Academic Degree */}
+              <div className="rounded-2xl border border-emerald-100 bg-[#fbfdfc] p-5 shadow-xs">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-emerald-100/70 pb-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="rounded-xl bg-emerald-100/80 p-2 text-[#117b59]">
+                      <GraduationCap size={20} />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-slate-800 text-base">حقل الدرجة الأكاديمية / الوظيفية</h3>
+                      <p className="text-xs text-slate-500">يتيح للمشارك اختيار درجته مثل: امتياز، رزدنت، استشاري، أخصائي، طالب...</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => updateAcademicDegree({ enabled: !academicDegreeSettings.enabled })}
+                      className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition ${
+                        academicDegreeSettings.enabled ? "border-emerald-300 bg-[#e6f5ef] text-[#117b59]" : "border-slate-200 bg-white text-slate-400"
+                      }`}
+                    >
+                      {academicDegreeSettings.enabled ? <Eye size={14} /> : <EyeOff size={14} />}
+                      <span>{academicDegreeSettings.enabled ? "الحقل مفعل" : "الحقل معطل"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateAcademicDegree({ required: !academicDegreeSettings.required })}
+                      className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition ${
+                        academicDegreeSettings.required ? "border-rose-300 bg-rose-50 text-rose-700" : "border-slate-200 bg-white text-slate-400"
+                      }`}
+                    >
+                      <span>{academicDegreeSettings.required ? "إلزامي للمشارك *" : "اختياري"}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <TextField label="تسمية الحقل (عربي)" value={academicDegreeSettings.labelAr} onChange={(val) => updateAcademicDegree({ labelAr: val })} />
+                  <TextField label="Field Label (English)" value={academicDegreeSettings.labelEn} onChange={(val) => updateAcademicDegree({ labelEn: val })} />
+                </div>
+
+                {/* Degree Options List */}
+                <div className="mt-4">
+                  <label className="mb-2 block text-xs font-bold text-slate-700">خيارات الدرجات الأكاديمية المتاحة للاختيار:</label>
+                  <div className="space-y-2">
+                    {academicDegreeSettings.options.map((opt) => (
+                      <div key={opt.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-2.5">
+                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <input
+                            type="text"
+                            value={opt.nameAr}
+                            onChange={(e) => {
+                              const updated = academicDegreeSettings.options.map((o) => o.id === opt.id ? { ...o, nameAr: e.target.value } : o);
+                              updateAcademicDegree({ options: updated });
+                            }}
+                            placeholder="الاسم بالعربية"
+                            className="rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-[#117b59]"
+                          />
+                          <input
+                            type="text"
+                            value={opt.nameEn}
+                            onChange={(e) => {
+                              const updated = academicDegreeSettings.options.map((o) => o.id === opt.id ? { ...o, nameEn: e.target.value } : o);
+                              updateAcademicDegree({ options: updated });
+                            }}
+                            placeholder="Name in English"
+                            dir="ltr"
+                            className="rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-1.5 text-xs font-bold text-slate-800 outline-none focus:border-[#117b59]"
+                          />
+                        </div>
+                        {academicDegreeSettings.options.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeAcademicDegreeOption(opt.id)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg transition"
+                            title="حذف هذا الخيار"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Add New Degree */}
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <input
+                      type="text"
+                      placeholder="درجة جديدة (عربي)..."
+                      value={degreeDraft.nameAr}
+                      onChange={(e) => setDegreeDraft({ ...degreeDraft, nameAr: e.target.value })}
+                      className="min-w-[140px] flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 outline-none focus:border-[#117b59]"
+                    />
+                    <input
+                      type="text"
+                      placeholder="New degree (English)..."
+                      dir="ltr"
+                      value={degreeDraft.nameEn}
+                      onChange={(e) => setDegreeDraft({ ...degreeDraft, nameEn: e.target.value })}
+                      className="min-w-[140px] flex-1 rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 outline-none focus:border-[#117b59]"
+                    />
+                    <button
+                      type="button"
+                      onClick={addAcademicDegreeOption}
+                      disabled={!degreeDraft.nameAr.trim() && !degreeDraft.nameEn.trim()}
+                      className="flex items-center gap-1.5 rounded-xl bg-[#117b59] px-4 py-2 text-xs font-black text-white transition hover:bg-[#0c6549] disabled:opacity-40"
+                    >
+                      <Plus size={15} /> إضافة خيار
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 2: Prior Research Experience */}
+              <div className="rounded-2xl border border-blue-100 bg-[#fbfdff] p-5 shadow-xs">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-blue-100/70 pb-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="rounded-xl bg-blue-100/80 p-2 text-blue-700">
+                      <SlidersHorizontal size={20} />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-slate-800 text-base">حقل الخبرات البحثية السابقة (نعم / لا + حقل التفاصيل)</h3>
+                      <p className="text-xs text-slate-500">يسأل المشترك إن كان لديه خبرات سابقة، وعند اختيار "نعم" يظهر حقل لكتابة وتوضيح الخبرات.</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => updateResearchExp({ enabled: !researchExpSettings.enabled })}
+                      className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition ${
+                        researchExpSettings.enabled ? "border-blue-300 bg-blue-50 text-blue-700" : "border-slate-200 bg-white text-slate-400"
+                      }`}
+                    >
+                      {researchExpSettings.enabled ? <Eye size={14} /> : <EyeOff size={14} />}
+                      <span>{researchExpSettings.enabled ? "السؤال مفعل" : "السؤال معطل"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateResearchExp({ required: !researchExpSettings.required })}
+                      className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition ${
+                        researchExpSettings.required ? "border-rose-300 bg-rose-50 text-rose-700" : "border-slate-200 bg-white text-slate-400"
+                      }`}
+                    >
+                      <span>{researchExpSettings.required ? "الإجابة إجبارية *" : "اختياري"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateResearchExp({ detailsRequiredWhenYes: !researchExpSettings.detailsRequiredWhenYes })}
+                      className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition ${
+                        researchExpSettings.detailsRequiredWhenYes ? "border-emerald-300 bg-[#e6f5ef] text-[#117b59]" : "border-slate-200 bg-white text-slate-400"
+                      }`}
+                    >
+                      <span>{researchExpSettings.detailsRequiredWhenYes ? "كتابة التفاصيل إجبارية إذا نعم" : "التفاصيل اختيارية"}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <TextField label="نص السؤال (عربي)" value={researchExpSettings.labelAr} onChange={(val) => updateResearchExp({ labelAr: val })} />
+                  <TextField label="Question Text (English)" value={researchExpSettings.labelEn} onChange={(val) => updateResearchExp({ labelEn: val })} />
+                  <TextField label="نص خيار 'نعم' (عربي)" value={researchExpSettings.yesLabelAr} onChange={(val) => updateResearchExp({ yesLabelAr: val })} />
+                  <TextField label="Yes Option Text (English)" value={researchExpSettings.yesLabelEn} onChange={(val) => updateResearchExp({ yesLabelEn: val })} />
+                  <TextField label="نص خيار 'لا' (عربي)" value={researchExpSettings.noLabelAr} onChange={(val) => updateResearchExp({ noLabelAr: val })} />
+                  <TextField label="No Option Text (English)" value={researchExpSettings.noLabelEn} onChange={(val) => updateResearchExp({ noLabelEn: val })} />
+                  <TextField label="عنوان حقل تفاصيل الخبرات (عربي)" value={researchExpSettings.detailsLabelAr} onChange={(val) => updateResearchExp({ detailsLabelAr: val })} />
+                  <TextField label="Details Field Label (English)" value={researchExpSettings.detailsLabelEn} onChange={(val) => updateResearchExp({ detailsLabelEn: val })} />
+                  <TextField label="نص تلميح التفاصيل (Placeholder)" value={researchExpSettings.detailsPlaceholderAr} onChange={(val) => updateResearchExp({ detailsPlaceholderAr: val })} />
+                  <TextField label="Details Placeholder (English)" value={researchExpSettings.detailsPlaceholderEn} onChange={(val) => updateResearchExp({ detailsPlaceholderEn: val })} />
+                </div>
+              </div>
+
+              {/* SECTION 3: Fee & Tasks Mandatory Agreement */}
+              <div className="rounded-2xl border border-amber-200 bg-[#fffdf9] p-5 shadow-xs">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-200/80 pb-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="rounded-xl bg-amber-100 p-2 text-amber-800">
+                      <ShieldCheck size={20} />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-slate-800 text-base">شرط وإقرار دفع رسوم التحليل والنشر والمهام في النطاق الزمني</h3>
+                      <p className="text-xs text-slate-500">يتضمن خياري (أوافق / لا أوافق) مع حظر ومنع التسجيل كلياً في حال عدم الموافقة.</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => updateFeeAgreement({ enabled: !feeAgreementSettings.enabled })}
+                      className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition ${
+                        feeAgreementSettings.enabled ? "border-amber-300 bg-amber-50 text-amber-800" : "border-slate-200 bg-white text-slate-400"
+                      }`}
+                    >
+                      {feeAgreementSettings.enabled ? <Eye size={14} /> : <EyeOff size={14} />}
+                      <span>{feeAgreementSettings.enabled ? "الشرط مفعل" : "الشرط معطل"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateFeeAgreement({ required: !feeAgreementSettings.required })}
+                      className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-bold transition ${
+                        feeAgreementSettings.required ? "border-rose-400 bg-rose-100 text-rose-800 ring-1 ring-rose-300" : "border-slate-200 bg-white text-slate-400"
+                      }`}
+                    >
+                      <AlertTriangle size={13} />
+                      <span>{feeAgreementSettings.required ? "إلزامي (حظر التسجيل عند الرفض)" : "غير إلزامي"}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  <div>
+                    <label className="mb-1.5 block text-xs font-bold text-slate-700">نص الإقرار / السؤال الكامل (عربي)</label>
+                    <textarea
+                      rows={2}
+                      value={feeAgreementSettings.questionAr}
+                      onChange={(e) => updateFeeAgreement({ questionAr: e.target.value })}
+                      className="w-full resize-none rounded-xl border border-slate-300 bg-white p-3 text-xs font-bold text-slate-800 outline-none focus:border-[#117b59]"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-xs font-bold text-slate-700">Agreement Statement (English)</label>
+                    <textarea
+                      rows={2}
+                      dir="ltr"
+                      value={feeAgreementSettings.questionEn}
+                      onChange={(e) => updateFeeAgreement({ questionEn: e.target.value })}
+                      className="w-full resize-none rounded-xl border border-slate-300 bg-white p-3 text-xs font-bold text-slate-800 outline-none focus:border-[#117b59]"
+                    />
+                  </div>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <TextField label="تسمية زر الموافقة (عربي)" value={feeAgreementSettings.agreeLabelAr} onChange={(val) => updateFeeAgreement({ agreeLabelAr: val })} />
+                    <TextField label="Agree Button Label (English)" value={feeAgreementSettings.agreeLabelEn} onChange={(val) => updateFeeAgreement({ agreeLabelEn: val })} />
+                    <TextField label="تسمية زر عدم الموافقة (عربي)" value={feeAgreementSettings.disagreeLabelAr} onChange={(val) => updateFeeAgreement({ disagreeLabelAr: val })} />
+                    <TextField label="Disagree Button Label (English)" value={feeAgreementSettings.disagreeLabelEn} onChange={(val) => updateFeeAgreement({ disagreeLabelEn: val })} />
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-xs font-bold text-slate-700">نص رسالة التنبيه عند النقر على 'لا أوافق' (عربي)</label>
+                    <input
+                      type="text"
+                      value={feeAgreementSettings.warningNoticeAr}
+                      onChange={(e) => updateFeeAgreement({ warningNoticeAr: e.target.value })}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-medium text-slate-800 outline-none focus:border-[#117b59]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-1.5 block text-xs font-bold text-slate-700">رسالة حظر ومنع التسجيل عند محاولة الإرسال دون موافقة</label>
+                    <input
+                      type="text"
+                      value={feeAgreementSettings.blockingMessageAr}
+                      onChange={(e) => updateFeeAgreement({ blockingMessageAr: e.target.value })}
+                      className="w-full rounded-xl border border-rose-300 bg-rose-50/50 px-3.5 py-2.5 text-xs font-bold text-rose-800 outline-none focus:border-rose-500"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Panel>
             <p className="mb-5 text-sm leading-6 text-slate-500">حدّد الحقول التي تريد إلزام المالك بإدخالها عند إضافة أو تعديل فرصة. جميعها اختيارية حالياً.</p>
             <div className="grid gap-3 sm:grid-cols-2">
               {OPPORTUNITY_FIELDS.map((field) => {

@@ -25,8 +25,10 @@ import OwnerSignIn from "@/pages/OwnerSignIn";
 import OwnerSignUp from "@/pages/OwnerSignUp";
 import NotFound from "@/pages/not-found";
 import { LanguageProvider, useLanguage } from "@/lib/i18n";
+import { CurrencyProvider } from "@/lib/currency";
 import { PageSeo } from "@/lib/seo";
 import SiteIdentitySync from "@/components/SiteIdentitySync";
+import { ResearchProtectionProvider } from "@/components/ResearchProtection";
 
 const queryClient = new QueryClient();
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -104,10 +106,14 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <LanguageProvider>
-            <SiteIdentitySync />
-            <WouterRouter base={basePath}>
-              <Router />
-            </WouterRouter>
+            <CurrencyProvider>
+              <SiteIdentitySync />
+              <ResearchProtectionProvider>
+                <WouterRouter base={basePath}>
+                  <Router />
+                </WouterRouter>
+              </ResearchProtectionProvider>
+            </CurrencyProvider>
           </LanguageProvider>
           <Toaster />
         </TooltipProvider>

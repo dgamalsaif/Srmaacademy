@@ -4,6 +4,7 @@ import { Check, ChevronDown, Languages, Menu, MessageCircle, X } from "lucide-re
 import { SRMA_LOGO } from "@/components/BrandBackground";
 import InstallAppButton from "@/components/InstallAppButton";
 import { useLanguage } from "@/lib/i18n";
+import { useCurrency, OpportunityCurrency } from "@/lib/currency";
 import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
 import { getContactUsHref } from "@/lib/siteContentSettings";
 
@@ -11,6 +12,7 @@ export default function Navbar() {
   const [location] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { t, language, setLanguage } = useLanguage();
+  const { currency, setCurrency } = useCurrency();
   const { data: settings } = useSiteContentSettings();
   const contact = getContactUsHref(settings?.brand);
   const contactLabel = language === "ar" ? contact.labelAr : contact.labelEn;
@@ -76,6 +78,11 @@ export default function Navbar() {
             <MessageCircle size={14} />
             {contactLabel}
           </a>
+          <CurrencyToggle
+            currency={currency}
+            onSelect={setCurrency}
+            triggerClassName="hidden sm:inline-flex"
+          />
           <LanguageMenu
             language={language}
             label={languageLabel}
@@ -122,6 +129,12 @@ export default function Navbar() {
               <MessageCircle size={16} />
               {contactLabel}
             </a>
+            <CurrencyToggle
+              currency={currency}
+              onSelect={(next) => { setCurrency(next); setMobileOpen(false); }}
+              triggerClassName="mb-2 flex w-full"
+              mobile
+            />
             <LanguageMenu
               language={language}
               label={languageLabel}
@@ -191,3 +204,57 @@ export function LanguageMenu({
     </div>
   );
 }
+
+export function CurrencyToggle({
+  currency,
+  onSelect,
+  triggerClassName,
+  mobile = false,
+}: {
+  currency: OpportunityCurrency;
+  onSelect: (currency: OpportunityCurrency) => void;
+  triggerClassName: string;
+  mobile?: boolean;
+}) {
+  return (
+    <div className={`${triggerClassName} items-center`} dir="ltr">
+      <div
+        className={`${
+          mobile ? "w-full justify-center" : ""
+        } inline-flex items-center rounded-full border border-[#0C3156]/20 bg-slate-100 p-0.5 shadow-2xs`}
+      >
+        <button
+          type="button"
+          data-testid={mobile ? "button-currency-sar-mobile" : "button-currency-sar-nav"}
+          onClick={() => onSelect("SAR")}
+          className={`${
+            mobile ? "flex-1 py-2 text-xs" : "px-3 py-1.5 text-xs"
+          } rounded-full font-black transition-all ${
+            currency === "SAR"
+              ? "bg-[#0C3156] text-white shadow-xs"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+          title="Saudi Riyal (SAR)"
+        >
+          🇸🇦 SAR
+        </button>
+        <button
+          type="button"
+          data-testid={mobile ? "button-currency-usd-mobile" : "button-currency-usd-nav"}
+          onClick={() => onSelect("USD")}
+          className={`${
+            mobile ? "flex-1 py-2 text-xs" : "px-3 py-1.5 text-xs"
+          } rounded-full font-black transition-all ${
+            currency === "USD"
+              ? "bg-[#0C3156] text-white shadow-xs"
+              : "text-slate-600 hover:text-slate-900"
+          }`}
+          title="US Dollar (USD)"
+        >
+          🇺🇸 USD
+        </button>
+      </div>
+    </div>
+  );
+}
+

@@ -10,6 +10,51 @@ export interface SpecialtyOption { id: string; nameAr: string; nameEn: string; g
 export interface JournalOption { id: string; nameAr: string; nameEn: string; issn: string; pubmed: string; scopus: string; wos: string; specialty?: string; }
 type FieldType = "text" | "email" | "tel";
 
+export interface AcademicDegreeOption {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+}
+
+export interface AcademicDegreeSettings {
+  enabled: boolean;
+  required: boolean;
+  labelAr: string;
+  labelEn: string;
+  options: AcademicDegreeOption[];
+}
+
+export interface ResearchExperienceSettings {
+  enabled: boolean;
+  required: boolean;
+  labelAr: string;
+  labelEn: string;
+  yesLabelAr: string;
+  yesLabelEn: string;
+  noLabelAr: string;
+  noLabelEn: string;
+  detailsLabelAr: string;
+  detailsLabelEn: string;
+  detailsPlaceholderAr: string;
+  detailsPlaceholderEn: string;
+  detailsRequiredWhenYes: boolean;
+}
+
+export interface FeeAndTaskAgreementSettings {
+  enabled: boolean;
+  required: boolean;
+  questionAr: string;
+  questionEn: string;
+  agreeLabelAr: string;
+  agreeLabelEn: string;
+  disagreeLabelAr: string;
+  disagreeLabelEn: string;
+  warningNoticeAr: string;
+  warningNoticeEn: string;
+  blockingMessageAr: string;
+  blockingMessageEn: string;
+}
+
 export interface RegistrationFieldSetting {
   id: FieldId;
   label: string;
@@ -144,6 +189,9 @@ export interface SiteContentSettings {
   requiredOpportunityFields: OpportunityFieldId[];
   specialtyOptions: SpecialtyOption[];
   journalOptions: JournalOption[];
+  academicDegreeSettings: AcademicDegreeSettings;
+  researchExperienceSettings: ResearchExperienceSettings;
+  feeAndTaskAgreementSettings: FeeAndTaskAgreementSettings;
   registrationFields: RegistrationFieldSetting[];
   brand: BrandContactSettings;
   pages: Record<PublicPageId, PublicPageContent>;
@@ -182,6 +230,54 @@ export const DEFAULT_JOURNAL_OPTIONS: JournalOption[] = [
   { id: "frontiers-med", nameAr: "فرونتيرز في الطب", nameEn: "Frontiers in Medicine", issn: "2296-858X", pubmed: "Indexed", scopus: "Q2", wos: "Q2", specialty: "General Medicine / الطب العام" },
 ];
 
+export const DEFAULT_ACADEMIC_DEGREE_OPTIONS: AcademicDegreeOption[] = [
+  { id: "intern", nameAr: "طبيب امتياز (Intern)", nameEn: "Intern / House Officer" },
+  { id: "resident", nameAr: "طبيب مقيم / رزدنت (Resident)", nameEn: "Resident" },
+  { id: "consultant", nameAr: "طبيب استشاري (Consultant)", nameEn: "Consultant" },
+  { id: "specialist", nameAr: "طبيب أخصائي (Specialist)", nameEn: "Specialist" },
+  { id: "student", nameAr: "طالب طب / علوم صحية", nameEn: "Medical / Health Sciences Student" },
+  { id: "other", nameAr: "باحث / درجة أكاديمية أخرى", nameEn: "Researcher / Other" },
+];
+
+export const DEFAULT_ACADEMIC_DEGREE_SETTINGS: AcademicDegreeSettings = {
+  enabled: true,
+  required: true,
+  labelAr: "الدرجة الأكاديمية / الوظيفية",
+  labelEn: "Academic Degree / Status",
+  options: [...DEFAULT_ACADEMIC_DEGREE_OPTIONS],
+};
+
+export const DEFAULT_RESEARCH_EXPERIENCE_SETTINGS: ResearchExperienceSettings = {
+  enabled: true,
+  required: true,
+  labelAr: "هل لديك خبرات بحثية سابقة؟",
+  labelEn: "Do you have prior research experience?",
+  yesLabelAr: "نعم",
+  yesLabelEn: "Yes",
+  noLabelAr: "لا",
+  noLabelEn: "No",
+  detailsLabelAr: "يرجى ذكر وتوضيح تفاصيل خبراتك البحثية السابقة",
+  detailsLabelEn: "Please detail your previous research experience",
+  detailsPlaceholderAr: "مثال: أبحاث منشورة، مشاريع بحثية، مهارات إحصائية (SPSS/R)، كتابة أوراق علمية...",
+  detailsPlaceholderEn: "e.g., published papers, research projects, data analysis (SPSS/R), protocol writing...",
+  detailsRequiredWhenYes: true,
+};
+
+export const DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS: FeeAndTaskAgreementSettings = {
+  enabled: true,
+  required: true,
+  questionAr: "هل أنت موافق على دفع رسوم التحليل والنشر والقيام بالمهام الموكلة إليك في البحث وفي النطاق الزمني المحدد، من أجل التحليل ضمن الفريق البحثي؟",
+  questionEn: "Do you agree to pay the analysis and publication fees and carry out the tasks assigned to you in the research within the specified timeline, for analysis within the research team?",
+  agreeLabelAr: "أوافق",
+  agreeLabelEn: "I Agree",
+  disagreeLabelAr: "لا أوافق",
+  disagreeLabelEn: "I Do Not Agree",
+  warningNoticeAr: "تنبيه: الموافقة على دفع رسوم التحليل والنشر والالتزام بالمهام في النطاق الزمني شرط إلزامي للانضمام للفريق البحثي وإتمام عملية التسجيل.",
+  warningNoticeEn: "Notice: Agreeing to pay analysis and publication fees and commit to tasks within the timeline is mandatory to join the research team and complete registration.",
+  blockingMessageAr: "لا يمكن إتمام عملية التسجيل دون الموافقة على دفع رسوم التحليل والنشر والقيام بالمهام في النطاق الزمني المحدد.",
+  blockingMessageEn: "Registration cannot be completed without agreeing to pay the fees and perform the assigned tasks within the specified timeline.",
+};
+
 export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
   participantTitle: "بوابة المشارك",
   participantTitleEn: "Participant Portal",
@@ -204,6 +300,9 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
   requiredOpportunityFields: [],
   specialtyOptions: [...DEFAULT_SPECIALTY_OPTIONS],
   journalOptions: [...DEFAULT_JOURNAL_OPTIONS],
+  academicDegreeSettings: { ...DEFAULT_ACADEMIC_DEGREE_SETTINGS },
+  researchExperienceSettings: { ...DEFAULT_RESEARCH_EXPERIENCE_SETTINGS },
+  feeAndTaskAgreementSettings: { ...DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS },
   registrationFields: [
     { id: "fullName", label: "الاسم الكامل", labelEn: "Full name", placeholder: "د. أحمد محمد", placeholderEn: "Dr. Ahmed Mohammed", type: "text", requiredParticipant: true, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#117b59" },
     { id: "specialization", label: "التخصص الدقيق", labelEn: "Specialization", placeholder: "مثال: طب القلب", placeholderEn: "e.g., Cardiology", type: "text", requiredParticipant: true, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#117b59" },
@@ -431,6 +530,58 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
     const supplied = brandInput[key];
     return (typeof supplied === "string" ? supplied : globalWhatsapp).replace(/[^\d+]/g, "").slice(0, 40);
   };
+
+  const rawAcademic = input.academicDegreeSettings && typeof input.academicDegreeSettings === "object" ? input.academicDegreeSettings as Record<string, unknown> : {};
+  const rawOptions = Array.isArray(rawAcademic.options) ? rawAcademic.options : [];
+  const academicOptions = rawOptions.flatMap((item) => {
+    if (!item || typeof item !== "object") return [];
+    const val = item as Record<string, unknown>;
+    const nameAr = typeof val.nameAr === "string" ? val.nameAr.trim().slice(0, 120) : "";
+    const nameEn = typeof val.nameEn === "string" ? val.nameEn.trim().slice(0, 120) : "";
+    const id = typeof val.id === "string" && val.id.trim() ? val.id.trim().slice(0, 80) : `${nameAr}-${nameEn}`;
+    return nameAr || nameEn ? [{ id, nameAr, nameEn }] : [];
+  });
+  const academicDegreeSettings: AcademicDegreeSettings = {
+    enabled: typeof rawAcademic.enabled === "boolean" ? rawAcademic.enabled : DEFAULT_ACADEMIC_DEGREE_SETTINGS.enabled,
+    required: typeof rawAcademic.required === "boolean" ? rawAcademic.required : DEFAULT_ACADEMIC_DEGREE_SETTINGS.required,
+    labelAr: typeof rawAcademic.labelAr === "string" ? rawAcademic.labelAr.trim().slice(0, 120) : DEFAULT_ACADEMIC_DEGREE_SETTINGS.labelAr,
+    labelEn: typeof rawAcademic.labelEn === "string" ? rawAcademic.labelEn.trim().slice(0, 120) : DEFAULT_ACADEMIC_DEGREE_SETTINGS.labelEn,
+    options: academicOptions.length > 0 ? academicOptions : DEFAULT_ACADEMIC_DEGREE_SETTINGS.options,
+  };
+
+  const rawResearchExp = input.researchExperienceSettings && typeof input.researchExperienceSettings === "object" ? input.researchExperienceSettings as Record<string, unknown> : {};
+  const researchExperienceSettings: ResearchExperienceSettings = {
+    enabled: typeof rawResearchExp.enabled === "boolean" ? rawResearchExp.enabled : DEFAULT_RESEARCH_EXPERIENCE_SETTINGS.enabled,
+    required: typeof rawResearchExp.required === "boolean" ? rawResearchExp.required : DEFAULT_RESEARCH_EXPERIENCE_SETTINGS.required,
+    labelAr: typeof rawResearchExp.labelAr === "string" ? rawResearchExp.labelAr.trim().slice(0, 200) : DEFAULT_RESEARCH_EXPERIENCE_SETTINGS.labelAr,
+    labelEn: typeof rawResearchExp.labelEn === "string" ? rawResearchExp.labelEn.trim().slice(0, 200) : DEFAULT_RESEARCH_EXPERIENCE_SETTINGS.labelEn,
+    yesLabelAr: typeof rawResearchExp.yesLabelAr === "string" ? rawResearchExp.yesLabelAr.trim().slice(0, 100) : DEFAULT_RESEARCH_EXPERIENCE_SETTINGS.yesLabelAr,
+    yesLabelEn: typeof rawResearchExp.yesLabelEn === "string" ? rawResearchExp.yesLabelEn.trim().slice(0, 100) : DEFAULT_RESEARCH_EXPERIENCE_SETTINGS.yesLabelEn,
+    noLabelAr: typeof rawResearchExp.noLabelAr === "string" ? rawResearchExp.noLabelAr.trim().slice(0, 100) : DEFAULT_RESEARCH_EXPERIENCE_SETTINGS.noLabelAr,
+    noLabelEn: typeof rawResearchExp.noLabelEn === "string" ? rawResearchExp.noLabelEn.trim().slice(0, 100) : DEFAULT_RESEARCH_EXPERIENCE_SETTINGS.noLabelEn,
+    detailsLabelAr: typeof rawResearchExp.detailsLabelAr === "string" ? rawResearchExp.detailsLabelAr.trim().slice(0, 200) : DEFAULT_RESEARCH_EXPERIENCE_SETTINGS.detailsLabelAr,
+    detailsLabelEn: typeof rawResearchExp.detailsLabelEn === "string" ? rawResearchExp.detailsLabelEn.trim().slice(0, 200) : DEFAULT_RESEARCH_EXPERIENCE_SETTINGS.detailsLabelEn,
+    detailsPlaceholderAr: typeof rawResearchExp.detailsPlaceholderAr === "string" ? rawResearchExp.detailsPlaceholderAr.trim().slice(0, 300) : DEFAULT_RESEARCH_EXPERIENCE_SETTINGS.detailsPlaceholderAr,
+    detailsPlaceholderEn: typeof rawResearchExp.detailsPlaceholderEn === "string" ? rawResearchExp.detailsPlaceholderEn.trim().slice(0, 300) : DEFAULT_RESEARCH_EXPERIENCE_SETTINGS.detailsPlaceholderEn,
+    detailsRequiredWhenYes: typeof rawResearchExp.detailsRequiredWhenYes === "boolean" ? rawResearchExp.detailsRequiredWhenYes : DEFAULT_RESEARCH_EXPERIENCE_SETTINGS.detailsRequiredWhenYes,
+  };
+
+  const rawFeeAgreement = input.feeAndTaskAgreementSettings && typeof input.feeAndTaskAgreementSettings === "object" ? input.feeAndTaskAgreementSettings as Record<string, unknown> : {};
+  const feeAndTaskAgreementSettings: FeeAndTaskAgreementSettings = {
+    enabled: typeof rawFeeAgreement.enabled === "boolean" ? rawFeeAgreement.enabled : DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS.enabled,
+    required: typeof rawFeeAgreement.required === "boolean" ? rawFeeAgreement.required : DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS.required,
+    questionAr: typeof rawFeeAgreement.questionAr === "string" ? rawFeeAgreement.questionAr.trim().slice(0, 500) : DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS.questionAr,
+    questionEn: typeof rawFeeAgreement.questionEn === "string" ? rawFeeAgreement.questionEn.trim().slice(0, 500) : DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS.questionEn,
+    agreeLabelAr: typeof rawFeeAgreement.agreeLabelAr === "string" ? rawFeeAgreement.agreeLabelAr.trim().slice(0, 80) : DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS.agreeLabelAr,
+    agreeLabelEn: typeof rawFeeAgreement.agreeLabelEn === "string" ? rawFeeAgreement.agreeLabelEn.trim().slice(0, 80) : DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS.agreeLabelEn,
+    disagreeLabelAr: typeof rawFeeAgreement.disagreeLabelAr === "string" ? rawFeeAgreement.disagreeLabelAr.trim().slice(0, 80) : DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS.disagreeLabelAr,
+    disagreeLabelEn: typeof rawFeeAgreement.disagreeLabelEn === "string" ? rawFeeAgreement.disagreeLabelEn.trim().slice(0, 80) : DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS.disagreeLabelEn,
+    warningNoticeAr: typeof rawFeeAgreement.warningNoticeAr === "string" ? rawFeeAgreement.warningNoticeAr.trim().slice(0, 500) : DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS.warningNoticeAr,
+    warningNoticeEn: typeof rawFeeAgreement.warningNoticeEn === "string" ? rawFeeAgreement.warningNoticeEn.trim().slice(0, 500) : DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS.warningNoticeEn,
+    blockingMessageAr: typeof rawFeeAgreement.blockingMessageAr === "string" ? rawFeeAgreement.blockingMessageAr.trim().slice(0, 500) : DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS.blockingMessageAr,
+    blockingMessageEn: typeof rawFeeAgreement.blockingMessageEn === "string" ? rawFeeAgreement.blockingMessageEn.trim().slice(0, 500) : DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS.blockingMessageEn,
+  };
+
   return {
     participantTitle: text("participantTitle", 120),
     participantTitleEn: translatedText("participantTitleEn", "participantTitle", 120),
@@ -455,6 +606,9 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
     requiredOpportunityFields,
     specialtyOptions,
     journalOptions,
+    academicDegreeSettings,
+    researchExperienceSettings,
+    feeAndTaskAgreementSettings,
     registrationFields: fields,
     brand: {
       siteNameAr: brandText("siteNameAr", 160),

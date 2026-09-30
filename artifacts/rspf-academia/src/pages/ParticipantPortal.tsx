@@ -6,9 +6,10 @@ import RegistrationModal from "@/components/RegistrationModal";
 import { DEFAULT_SITE_CONTENT_SETTINGS, SiteContentSettings, getContactUsHref, getOpportunityInquiryLink } from "@/lib/siteContentSettings";
 import OpportunityMedia from "@/components/OpportunityMedia";
 import OpportunityPrice from "@/components/OpportunityPrice";
-import { OpportunityCurrency } from "@/lib/opportunityPricing";
+import { OpportunityCurrency, useCurrency } from "@/lib/opportunityPricing";
 import { useLanguage } from "@/lib/i18n";
 import SpecialtyFilter, { buildSpecialtyOptions, canonicalSpecialty, specialtyMatches } from "@/components/SpecialtyFilter";
+import { ResearchProtectionBanner, ProtectedResearchWatermark, AntiCaptureResearchTitle } from "@/components/ResearchProtection";
 
 const hallOfFame = [
   { specialty: "ENT – Head and Neck Surgery", specialtyColor: "bg-indigo-100 text-indigo-700", title: "Efficacy of Biologic Therapy versus Conventional Treatment in Chronic Rhinosinusitis" },
@@ -24,7 +25,7 @@ export default function ParticipantPortal() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedResearch, setSelectedResearch] = useState<ResearchOpportunity | null>(null);
   const [opportunities, setOpportunities] = useState<ResearchOpportunity[]>([]);
-  const [currency, setCurrency] = useState<OpportunityCurrency>("SAR");
+  const { currency, setCurrency } = useCurrency();
   const [contentSettings, setContentSettings] = useState<SiteContentSettings>(DEFAULT_SITE_CONTENT_SETTINGS);
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
   const [displayMode, setDisplayMode] = useState<"grid" | "scroll">("grid");
@@ -217,6 +218,9 @@ export default function ParticipantPortal() {
           </section>
           {activeTab === 0 && (
             <>
+              {/* Intellectual Property & Anti-Theft Protection Banner */}
+              <ResearchProtectionBanner />
+
               <div className={`mb-6 flex flex-wrap items-center justify-between gap-3 ${contentFlow}`}>
                 <div>
                   <h2 className="text-xl font-black text-slate-900">✨ {localize("الفرص البحثية المتاحة للتسجيل", "Research opportunities open for registration")}</h2>
@@ -322,19 +326,42 @@ export default function ParticipantPortal() {
                     const seatsUsed = opp.totalSeats - opp.seatsLeft;
                     const pct = Math.round((seatsUsed / opp.totalSeats) * 100);
                     return (
-                      <div key={opp.id} className={`${isSpecialtyScroll ? "w-[min(88vw,390px)] shrink-0 snap-start" : ""} rounded-2xl border border-slate-200 p-5 shadow-sm transition-shadow hover:shadow-md`} style={{ backgroundColor: contentSettings.cardBackgroundColor }} data-testid={`card-research-${opp.id}`}>
-                        <div className={`flex items-center justify-between gap-3 mb-3 ${contentFlow}`}>
-                          {contentSettings.visibleParticipantCardParts.includes("specialty") && <span className={`text-xs font-bold px-3 py-1 rounded-full ${opp.specialtyColor}`}>{localize(displaySpecialty(opp).nameAr, displaySpecialty(opp).nameEn, opp.specialty)}</span>}
+                      <div
+                        key={opp.id}
+                        data-protected="research"
+                        className={`protected-research-content research-card relative overflow-hidden select-none ${isSpecialtyScroll ? "w-[min(88vw,390px)] shrink-0 snap-start" : ""} rounded-2xl border border-slate-200 p-5 shadow-sm transition-shadow hover:shadow-md`}
+                        style={{
+                          backgroundColor: contentSettings.cardBackgroundColor,
+                          userSelect: "none",
+                          WebkitUserSelect: "none",
+                        }}
+                        onContextMenu={(e) => e.preventDefault()}
+                        onDragStart={(e) => e.preventDefault()}
+                        data-testid={`card-research-${opp.id}`}
+                      >
+                        {/* Dynamic Anti-Camera Watermark */}
+                        <ProtectedResearchWatermark />
+
+                        <div className={`flex items-center justify-between gap-3 mb-3 relative z-10 ${contentFlow}`}>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            {contentSettings.visibleParticipantCardParts.includes("specialty") && <span className={`text-xs font-bold px-3 py-1 rounded-full ${opp.specialtyColor}`}>{localize(displaySpecialty(opp).nameAr, displaySpecialty(opp).nameEn, opp.specialty)}</span>}
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <Lock size={10} className="text-emerald-600" />
+                              <span>{localize("محمي", "Protected")}</span>
+                            </span>
+                          </div>
                           <span className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 border border-red-100 px-3 py-1 rounded-full">
                             <Flame size={11} /> {localize("مقاعد محدودة متبقية", "Limited seats remaining")}
                           </span>
                         </div>
 
-                        <Link href={`/research/${opp.id}`} data-testid={`link-research-title-${opp.id}`}>
-                          <h3 dir="ltr" className="mb-2 cursor-pointer text-left font-bold leading-snug text-slate-900 transition-colors" style={{ color: contentSettings.primaryColor }}>
-                            {displayTitle(opp)}
-                          </h3>
-                        </Link>
+                        <div className="relative z-10 mb-2">
+                          <AntiCaptureResearchTitle
+                            title={displayTitle(opp)}
+                            titleHref={`/research/${opp.id}`}
+                            titleClassName="mb-1 cursor-pointer text-left font-bold leading-snug text-slate-900 transition-colors select-none text-base"
+                          />
+                        </div>
                         <div className="mb-4"><OpportunityMedia research={opp} className="aspect-[4/3] min-h-[172px]" /></div>
 
                         <p className="mb-3 text-start text-sm font-medium italic text-[#0C3156]">
@@ -705,7 +732,17 @@ export default function ParticipantPortal() {
         </div>
       </section>
 
-      <RegistrationModal isOpen={modalOpen} onClose={() => { setModalOpen(false); setSelectedResearch(null); }} researchTitle={selectedResearch ? displayTitle(selectedResearch) : ""} researchId={selectedResearch?.id} firstAuthorSeatsLeft={selectedResearch?.firstAuthorSeatsLeft} coAuthorSeatsLeft={selectedResearch?.coAuthorSeatsLeft} onRegistered={refreshOpportunities} />
+      <RegistrationModal
+        isOpen={modalOpen}
+        onClose={() => { setModalOpen(false); setSelectedResearch(null); }}
+        researchTitle={selectedResearch ? displayTitle(selectedResearch) : ""}
+        researchId={selectedResearch?.id}
+        firstAuthorSeatsLeft={selectedResearch?.firstAuthorSeatsLeft}
+        coAuthorSeatsLeft={selectedResearch?.coAuthorSeatsLeft}
+        priceOriginalSar={selectedResearch?.priceOriginalSar}
+        priceDiscountedSar={selectedResearch?.priceDiscountedSar}
+        onRegistered={refreshOpportunities}
+      />
     </div>
   );
 }

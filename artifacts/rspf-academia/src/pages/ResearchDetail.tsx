@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "wouter";
-import { ChevronLeft, Users, Clock, BookOpen, CheckCircle2, ArrowLeft, ExternalLink, MessageCircle, Send, Mail, Phone, Copy } from "lucide-react";
+import { ChevronLeft, Users, Clock, BookOpen, CheckCircle2, ArrowLeft, ExternalLink, MessageCircle, Send, Mail, Phone, Copy, Lock, ShieldCheck } from "lucide-react";
 import { ResearchOpportunity } from "@/lib/researchData";
 import RegistrationModal from "@/components/RegistrationModal";
 import { DEFAULT_SITE_CONTENT_SETTINGS, SiteContentSettings, getContactUsHref, getOpportunityContactLinks, getOpportunityInquiryLink } from "@/lib/siteContentSettings";
 import OpportunityMedia from "@/components/OpportunityMedia";
 import OpportunityPrice from "@/components/OpportunityPrice";
-import { OpportunityCurrency, RESEARCH_STATUS_LABELS } from "@/lib/opportunityPricing";
+import { OpportunityCurrency, RESEARCH_STATUS_LABELS, useCurrency } from "@/lib/opportunityPricing";
 import { useLanguage } from "@/lib/i18n";
 import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
 import { PageSeo } from "@/lib/seo";
+import { ProtectedResearchWatermark, AntiCaptureResearchTitle } from "@/components/ResearchProtection";
 
 export default function ResearchDetail() {
   const { direction, language, localize, t } = useLanguage();
@@ -17,7 +18,7 @@ export default function ResearchDetail() {
   const [research, setResearch] = useState<ResearchOpportunity | null>(null);
   const [allResearch, setAllResearch] = useState<ResearchOpportunity[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
-  const [currency, setCurrency] = useState<OpportunityCurrency>("SAR");
+  const { currency, setCurrency } = useCurrency();
   const { data: contentSettings = DEFAULT_SITE_CONTENT_SETTINGS } = useSiteContentSettings();
 
   const loadResearch = () => {
@@ -100,10 +101,23 @@ export default function ResearchDetail() {
           {/* MAIN CONTENT */}
           <div className="lg:col-span-2 space-y-6">
             {/* Header */}
-            <div className="rounded-2xl bg-gradient-to-br from-[#0C3156] to-[#1A5FAE] p-7 text-start text-white">
-              <div className={`mb-4 flex items-center gap-3 ${contentFlow}`}>
+            <div
+              data-protected="research"
+              className="protected-research-content research-detail-content relative overflow-hidden select-none rounded-2xl bg-gradient-to-br from-[#0C3156] to-[#1A5FAE] p-7 text-start text-white shadow-md"
+              style={{ userSelect: "none", WebkitUserSelect: "none" }}
+              onContextMenu={(e) => e.preventDefault()}
+              onDragStart={(e) => e.preventDefault()}
+            >
+              {/* Dynamic Watermark */}
+              <ProtectedResearchWatermark />
+
+              <div className={`mb-4 flex items-center gap-3 relative z-10 ${contentFlow}`}>
                 <span className={`text-xs font-bold px-3 py-1 rounded-full bg-white/20 text-white`}>
                   {specialty}
+                </span>
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+                  <ShieldCheck size={12} className="text-emerald-300" />
+                  <span>{localize("محمي بالملكية الفكرية", "IP Protected")}</span>
                 </span>
                 {isCompletedResearch || research.status === "ethics_approved" || research.status === "under_review" ? (
                   <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-400 text-[#0C3156]">
@@ -125,18 +139,38 @@ export default function ResearchDetail() {
                   </span>
                 )}
               </div>
-              <h1 className="mb-2 text-left text-xl font-black leading-snug sm:text-2xl" dir="ltr">{title}</h1>
-              <p className="text-blue-200 text-sm">{localize("تاريخ الإضافة:", "Date added:")} {research.createdAt}</p>
+              <div className="relative z-10 mb-2">
+                <AntiCaptureResearchTitle
+                  title={title}
+                  titleClassName="mb-1 text-left text-xl font-black leading-snug sm:text-2xl select-none text-white"
+                />
+              </div>
+              <p className="text-blue-200 text-sm relative z-10">{localize("تاريخ الإضافة:", "Date added:")} {research.createdAt}</p>
             </div>
             <OpportunityMedia research={research} className="aspect-[4/3] min-h-[240px]" />
 
             {/* Description */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-6 text-start shadow-sm">
-              <h2 className={`mb-3 flex items-center gap-2 text-lg font-black text-slate-900 ${contentFlow}`}>
-                <BookOpen size={20} className="text-[#0C3156]" />
-                {localize("وصف الدراسة", "Study description")}
-              </h2>
-              <p className="text-slate-600 leading-relaxed">{localize(research.descriptionAr, research.descriptionEn, research.description)}</p>
+            <div
+              data-protected="research"
+              className="protected-research-content research-detail-content relative overflow-hidden select-none rounded-2xl border border-slate-200 bg-white p-6 text-start shadow-sm"
+              style={{ userSelect: "none", WebkitUserSelect: "none" }}
+              onContextMenu={(e) => e.preventDefault()}
+              onDragStart={(e) => e.preventDefault()}
+            >
+              <ProtectedResearchWatermark />
+              <div className="relative z-10">
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <h2 className={`flex items-center gap-2 text-lg font-black text-slate-900 ${contentFlow}`}>
+                    <BookOpen size={20} className="text-[#0C3156]" />
+                    {localize("وصف الدراسة", "Study description")}
+                  </h2>
+                  <span className="text-[11px] font-bold text-slate-400 inline-flex items-center gap-1">
+                    <Lock size={12} />
+                    {localize("محتوى محمي", "Protected")}
+                  </span>
+                </div>
+                <p className="text-slate-600 leading-relaxed select-none">{localize(research.descriptionAr, research.descriptionEn, research.description)}</p>
+              </div>
             </div>
 
             {/* Benefits */}
@@ -383,7 +417,17 @@ export default function ResearchDetail() {
         )}
       </div>
 
-      <RegistrationModal isOpen={modalOpen} onClose={() => setModalOpen(false)} researchTitle={title} researchId={research.id} firstAuthorSeatsLeft={research.firstAuthorSeatsLeft} coAuthorSeatsLeft={research.coAuthorSeatsLeft} onRegistered={loadResearch} />
+      <RegistrationModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        researchTitle={title}
+        researchId={research.id}
+        firstAuthorSeatsLeft={research.firstAuthorSeatsLeft}
+        coAuthorSeatsLeft={research.coAuthorSeatsLeft}
+        priceOriginalSar={research.priceOriginalSar}
+        priceDiscountedSar={research.priceDiscountedSar}
+        onRegistered={loadResearch}
+      />
       </div>
     </>
   );

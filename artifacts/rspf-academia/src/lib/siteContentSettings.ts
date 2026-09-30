@@ -22,6 +22,51 @@ export interface JournalOption {
   specialty?: string;
 }
 
+export interface AcademicDegreeOption {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+}
+
+export interface AcademicDegreeSettings {
+  enabled: boolean;
+  required: boolean;
+  labelAr: string;
+  labelEn: string;
+  options: AcademicDegreeOption[];
+}
+
+export interface ResearchExperienceSettings {
+  enabled: boolean;
+  required: boolean;
+  labelAr: string;
+  labelEn: string;
+  yesLabelAr: string;
+  yesLabelEn: string;
+  noLabelAr: string;
+  noLabelEn: string;
+  detailsLabelAr: string;
+  detailsLabelEn: string;
+  detailsPlaceholderAr: string;
+  detailsPlaceholderEn: string;
+  detailsRequiredWhenYes: boolean;
+}
+
+export interface FeeAndTaskAgreementSettings {
+  enabled: boolean;
+  required: boolean;
+  questionAr: string;
+  questionEn: string;
+  agreeLabelAr: string;
+  agreeLabelEn: string;
+  disagreeLabelAr: string;
+  disagreeLabelEn: string;
+  warningNoticeAr: string;
+  warningNoticeEn: string;
+  blockingMessageAr: string;
+  blockingMessageEn: string;
+}
+
 export interface RegistrationFieldSetting {
   id: RegistrationFieldId;
   label: string;
@@ -128,6 +173,9 @@ export interface SiteContentSettings {
   requiredOpportunityFields: OpportunityFieldId[];
   specialtyOptions: SpecialtyOption[];
   journalOptions: JournalOption[];
+  academicDegreeSettings: AcademicDegreeSettings;
+  researchExperienceSettings: ResearchExperienceSettings;
+  feeAndTaskAgreementSettings: FeeAndTaskAgreementSettings;
   registrationFields: RegistrationFieldSetting[];
   brand: BrandContactSettings;
   pages: Record<PublicPageId, PublicPageContent>;
@@ -192,6 +240,54 @@ export const DEFAULT_JOURNAL_OPTIONS: JournalOption[] = [
   { id: "frontiers-med", nameAr: "فرونتيرز في الطب", nameEn: "Frontiers in Medicine", issn: "2296-858X", pubmed: "Indexed", scopus: "Q2", wos: "Q2", specialty: "General Medicine / الطب العام" },
 ];
 
+export const DEFAULT_ACADEMIC_DEGREE_OPTIONS: AcademicDegreeOption[] = [
+  { id: "intern", nameAr: "طبيب امتياز (Intern)", nameEn: "Intern / House Officer" },
+  { id: "resident", nameAr: "طبيب مقيم / رزدنت (Resident)", nameEn: "Resident" },
+  { id: "consultant", nameAr: "طبيب استشاري (Consultant)", nameEn: "Consultant" },
+  { id: "specialist", nameAr: "طبيب أخصائي (Specialist)", nameEn: "Specialist" },
+  { id: "student", nameAr: "طالب طب / علوم صحية", nameEn: "Medical / Health Sciences Student" },
+  { id: "other", nameAr: "باحث / درجة أكاديمية أخرى", nameEn: "Researcher / Other" },
+];
+
+export const DEFAULT_ACADEMIC_DEGREE_SETTINGS: AcademicDegreeSettings = {
+  enabled: true,
+  required: true,
+  labelAr: "الدرجة الأكاديمية / الوظيفية",
+  labelEn: "Academic Degree / Status",
+  options: [...DEFAULT_ACADEMIC_DEGREE_OPTIONS],
+};
+
+export const DEFAULT_RESEARCH_EXPERIENCE_SETTINGS: ResearchExperienceSettings = {
+  enabled: true,
+  required: true,
+  labelAr: "هل لديك خبرات بحثية سابقة؟",
+  labelEn: "Do you have prior research experience?",
+  yesLabelAr: "نعم",
+  yesLabelEn: "Yes",
+  noLabelAr: "لا",
+  noLabelEn: "No",
+  detailsLabelAr: "يرجى ذكر وتوضيح تفاصيل خبراتك البحثية السابقة",
+  detailsLabelEn: "Please detail your previous research experience",
+  detailsPlaceholderAr: "مثال: أبحاث منشورة، مشاريع بحثية، مهارات إحصائية (SPSS/R)، كتابة أوراق علمية...",
+  detailsPlaceholderEn: "e.g., published papers, research projects, data analysis (SPSS/R), protocol writing...",
+  detailsRequiredWhenYes: true,
+};
+
+export const DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS: FeeAndTaskAgreementSettings = {
+  enabled: true,
+  required: true,
+  questionAr: "هل أنت موافق على دفع رسوم التحليل والنشر والقيام بالمهام الموكلة إليك في البحث وفي النطاق الزمني المحدد، من أجل التحليل ضمن الفريق البحثي؟",
+  questionEn: "Do you agree to pay the analysis and publication fees and carry out the tasks assigned to you in the research within the specified timeline, for analysis within the research team?",
+  agreeLabelAr: "أوافق",
+  agreeLabelEn: "I Agree",
+  disagreeLabelAr: "لا أوافق",
+  disagreeLabelEn: "I Do Not Agree",
+  warningNoticeAr: "تنبيه: الموافقة على دفع رسوم التحليل والنشر والالتزام بالمهام في النطاق الزمني شرط إلزامي للانضمام للفريق البحثي وإتمام عملية التسجيل.",
+  warningNoticeEn: "Notice: Agreeing to pay analysis and publication fees and commit to tasks within the timeline is mandatory to join the research team and complete registration.",
+  blockingMessageAr: "لا يمكن إتمام عملية التسجيل دون الموافقة على دفع رسوم التحليل والنشر والقيام بالمهام في النطاق الزمني المحدد.",
+  blockingMessageEn: "Registration cannot be completed without agreeing to pay the fees and perform the assigned tasks within the specified timeline.",
+};
+
 export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
   participantTitle: "بوابة المشارك",
   participantTitleEn: "Participant Portal",
@@ -214,6 +310,9 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
   requiredOpportunityFields: [],
   specialtyOptions: [...DEFAULT_SPECIALTY_OPTIONS],
   journalOptions: [...DEFAULT_JOURNAL_OPTIONS],
+  academicDegreeSettings: { ...DEFAULT_ACADEMIC_DEGREE_SETTINGS },
+  researchExperienceSettings: { ...DEFAULT_RESEARCH_EXPERIENCE_SETTINGS },
+  feeAndTaskAgreementSettings: { ...DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS },
   registrationFields: [
     { id: "fullName", label: "الاسم الكامل", labelEn: "Full name", placeholder: "د. أحمد محمد", placeholderEn: "Dr. Ahmed Mohammed", type: "text", requiredParticipant: true, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#117b59" },
     { id: "specialization", label: "التخصص الدقيق", labelEn: "Specialization", placeholder: "مثال: طب القلب", placeholderEn: "e.g., Cardiology", type: "text", requiredParticipant: true, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#117b59" },

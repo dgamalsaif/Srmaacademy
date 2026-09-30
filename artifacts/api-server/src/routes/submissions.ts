@@ -34,6 +34,27 @@ async function createRegistration(req: Request, res: Response, coordinatorId: nu
       .filter(([, value]) => typeof value === "string")
       .map(([key, value]) => [key.slice(0, 64), (value as string).trim().slice(0, 1000)]))
     : {};
+
+  const rawAgreed = String(source.agreedToFeeAndTasks ?? source.agreeFeesAndTasks ?? "").trim().toLowerCase();
+  const isAgreed = rawAgreed === "yes" || rawAgreed === "agree" || rawAgreed === "true" || rawAgreed === "أوافق";
+  const feeRequired = audience === "participant" && (settings.feeAndTaskAgreementSettings?.enabled !== false && settings.feeAndTaskAgreementSettings?.required !== false);
+  if (feeRequired && !isAgreed) {
+    res.status(400).json({
+      error: settings.feeAndTaskAgreementSettings?.blockingMessageAr || "الموافقة على دفع رسوم التحليل والنشر والقيام بالمهام الموكلة في النطاق الزمني المحدد شرط إلزامي لإتمام التسجيل.",
+    });
+    return;
+  }
+
+  const academicDegree = valueOf("academicDegree");
+  const hasResearchExperience = valueOf("hasResearchExperience");
+  const researchExperienceDetails = valueOf("researchExperienceDetails");
+  const agreedToFeeAndTasks = isAgreed ? "yes" : (rawAgreed === "no" || rawAgreed === "disagree" ? "no" : rawAgreed);
+
+  if (academicDegree) customFields.academicDegree = academicDegree;
+  if (hasResearchExperience) customFields.hasResearchExperience = hasResearchExperience;
+  if (researchExperienceDetails) customFields.researchExperienceDetails = researchExperienceDetails;
+  if (agreedToFeeAndTasks) customFields.agreedToFeeAndTasks = agreedToFeeAndTasks;
+
   const parsed = insertRegistrationSchema.safeParse({
     ...source,
     fullName: valueOf("fullName"),
@@ -44,6 +65,10 @@ async function createRegistration(req: Request, res: Response, coordinatorId: nu
     country: valueOf("country") || "المملكة العربية السعودية",
     city: valueOf("city"),
     orcid: valueOf("orcid"),
+    academicDegree,
+    hasResearchExperience,
+    researchExperienceDetails,
+    agreedToFeeAndTasks,
     customFields,
   });
   if (!parsed.success) {
@@ -153,16 +178,23 @@ router.get("/registrations", requireCoordinator, async (req, res) => {
   }).from(researchProgramsTable);
   const programById = new Map(programs.map((program) => [program.id, program]));
 
-  res.json(rows.map((registration) => ({
-    ...registration,
-    researchTitle: programById.get(registration.researchId)?.titleAr || programById.get(registration.researchId)?.titleEn || registration.researchTitle,
-    researchStatus: programById.get(registration.researchId)?.status || "",
-    researchCategory: programById.get(registration.researchId)?.category || "active",
-    coordinatorName: staff.role === "owner" && registration.coordinatorId
-      ? coordinatorNames.get(registration.coordinatorId) || "منسق سابق"
-      : null,
-    registrationSource: registration.coordinatorId ? "coordinator" : "public",
-  })));
+  res.json(rows.map((registration) => {
+    const custom = (registration.customFields && typeof registration.customFields === "object" ? registration.customFields : {}) as Record<string, string>;
+    return {
+      ...registration,
+      academicDegree: registration.academicDegree || custom.academicDegree || "",
+      hasResearchExperience: registration.hasResearchExperience || custom.hasResearchExperience || "",
+      researchExperienceDetails: registration.researchExperienceDetails || custom.researchExperienceDetails || "",
+      agreedToFeeAndTasks: registration.agreedToFeeAndTasks || custom.agreedToFeeAndTasks || "",
+      researchTitle: programById.get(registration.researchId)?.titleAr || programById.get(registration.researchId)?.titleEn || registration.researchTitle,
+      researchStatus: programById.get(registration.researchId)?.status || "",
+      researchCategory: programById.get(registration.researchId)?.category || "active",
+      coordinatorName: staff.role === "owner" && registration.coordinatorId
+        ? coordinatorNames.get(registration.coordinatorId) || "منسق سابق"
+        : null,
+      registrationSource: registration.coordinatorId ? "coordinator" : "public",
+    };
+  }));
 });
 
 /* ── PATCH /api/registrations/:id ──
@@ -184,7 +216,10 @@ router.patch("/registrations/:id", requireCoordinator, async (req, res) => {
   }
 
   const source = req.body && typeof req.body === "object" ? req.body as Record<string, unknown> : {};
-  const editableKeys = ["fullName", "specialization", "email", "whatsapp", "affiliation", "country", "city", "orcid", "customFields"] as const;
+  const editableKeys = [
+    "fullName", "specialization", "email", "whatsapp", "affiliation", "country", "city", "orcid", "customFields",
+    "academicDegree", "hasResearchExperience", "researchExperienceDetails", "agreedToFeeAndTasks",
+  ] as const;
   const updates = Object.fromEntries(editableKeys
     .filter((key) => key in source)
     .map((key) => [key, key === "customFields" ? source[key] : typeof source[key] === "string" ? source[key].trim() : source[key]]));

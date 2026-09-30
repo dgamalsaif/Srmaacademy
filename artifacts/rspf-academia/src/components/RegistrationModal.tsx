@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { X, CheckCircle2, Loader2, UserRound, Building2, MapPin, AtSign, ExternalLink, MessageCircle, Send, Mail, Share2 } from "lucide-react";
+import { X, CheckCircle2, Loader2, UserRound, Building2, MapPin, AtSign, ExternalLink, MessageCircle, Send, Mail, Share2, GraduationCap, AlertTriangle, ShieldCheck } from "lucide-react";
 import CountrySelector from "./CountrySelector";
-import { DEFAULT_SITE_CONTENT_SETTINGS, RegistrationFieldId, SiteContentSettings, buildForwardingUrl, ForwardingType } from "@/lib/siteContentSettings";
+import OpportunityPrice from "./OpportunityPrice";
+import { DEFAULT_SITE_CONTENT_SETTINGS, RegistrationFieldId, SiteContentSettings, buildForwardingUrl, ForwardingType, DEFAULT_ACADEMIC_DEGREE_SETTINGS, DEFAULT_RESEARCH_EXPERIENCE_SETTINGS, DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS } from "@/lib/siteContentSettings";
 import { useLanguage } from "@/lib/i18n";
 
 interface RegistrationModalProps {
@@ -13,15 +14,32 @@ interface RegistrationModalProps {
   firstAuthorSeatsLeft?: number;
   coAuthorSeatsLeft?: number;
   onRegistered?: () => void;
+  priceOriginalSar?: number;
+  priceDiscountedSar?: number;
 }
 
 const API_BASE = "/api";
 const initialForm = { fullName: "", specialization: "", email: "", whatsapp: "", affiliation: "", country: "المملكة العربية السعودية", dialCode: "+966", city: "", orcid: "" };
 
-export default function RegistrationModal({ isOpen, onClose, researchTitle, researchId = 0, coordinatorEntry = false, firstAuthorSeatsLeft, coAuthorSeatsLeft, onRegistered }: RegistrationModalProps) {
+export default function RegistrationModal({
+  isOpen,
+  onClose,
+  researchTitle,
+  researchId = 0,
+  coordinatorEntry = false,
+  firstAuthorSeatsLeft,
+  coAuthorSeatsLeft,
+  onRegistered,
+  priceOriginalSar,
+  priceDiscountedSar,
+}: RegistrationModalProps) {
   const { language, localize } = useLanguage();
   const [form, setForm] = useState(initialForm);
   const [authorRole, setAuthorRole] = useState<"first_author" | "co_author">("co_author");
+  const [academicDegree, setAcademicDegree] = useState("");
+  const [hasResearchExp, setHasResearchExp] = useState<"yes" | "no" | "">("");
+  const [researchExpDetails, setResearchExpDetails] = useState("");
+  const [agreeFeesAndTasks, setAgreeFeesAndTasks] = useState<"agree" | "disagree" | "">("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
@@ -33,6 +51,9 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
   const fieldSetting = (id: RegistrationFieldId) => contentSettings.registrationFields.find((field) => field.id === id) || DEFAULT_SITE_CONTENT_SETTINGS.registrationFields.find((field) => field.id === id)!;
   const visible = (id: RegistrationFieldId) => audience === "participant" ? fieldSetting(id).showParticipant : fieldSetting(id).showCoordinator;
   const required = (id: RegistrationFieldId) => audience === "participant" ? fieldSetting(id).requiredParticipant : fieldSetting(id).requiredCoordinator;
+  const degreeSettings = contentSettings.academicDegreeSettings || DEFAULT_ACADEMIC_DEGREE_SETTINGS;
+  const expSettings = contentSettings.researchExperienceSettings || DEFAULT_RESEARCH_EXPERIENCE_SETTINGS;
+  const agreementSettings = contentSettings.feeAndTaskAgreementSettings || DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS;
   const fieldText: Record<RegistrationFieldId, { label: string; placeholder: string }> = {
     fullName: { label: "Full name", placeholder: "Dr. Ahmed Mohammed" },
     specialization: { label: "Specialization", placeholder: "e.g., Cardiology" },
@@ -70,20 +91,68 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
     setAuthorRole(coAuthorSeatsLeft === 0 && (firstAuthorSeatsLeft || 0) > 0 ? "first_author" : "co_author");
   }, [isOpen, firstAuthorSeatsLeft, coAuthorSeatsLeft]);
 
-  const reset = () => { setForm(initialForm); setAuthorRole("co_author"); setDone(false); setError(""); setResearchGroupUrl(""); setLoading(false); };
+  const reset = () => {
+    setForm(initialForm);
+    setAuthorRole("co_author");
+    setAcademicDegree("");
+    setHasResearchExp("");
+    setResearchExpDetails("");
+    setAgreeFeesAndTasks("");
+    setDone(false);
+    setError("");
+    setResearchGroupUrl("");
+    setLoading(false);
+  };
   const handleClose = () => { reset(); onClose(); };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    setLoading(true);
     setError("");
+
+    // Validate mandatory fee & task agreement
+    if (audience === "participant" && agreementSettings.enabled && agreementSettings.required) {
+      if (agreeFeesAndTasks !== "agree") {
+        setError(language === "en" ? agreementSettings.blockingMessageEn : agreementSettings.blockingMessageAr);
+        return;
+      }
+    }
+
+    // Validate academic degree if required
+    if (audience === "participant" && degreeSettings.enabled && degreeSettings.required && !academicDegree) {
+      setError(localize("يرجى اختيار الدرجة الأكاديمية.", "Please select your academic degree."));
+      return;
+    }
+
+    // Validate prior research experience if required
+    if (audience === "participant" && expSettings.enabled && expSettings.required && !hasResearchExp) {
+      setError(localize("يرجى تحديد هل لديك خبرات بحثية سابقة أم لا.", "Please specify whether you have prior research experience."));
+      return;
+    }
+
+    // Validate research experience details if yes and details are required
+    if (audience === "participant" && expSettings.enabled && hasResearchExp === "yes" && expSettings.detailsRequiredWhenYes && !researchExpDetails.trim()) {
+      setError(localize("يرجى كتابة وتوضيح تفاصيل خبراتك البحثية السابقة.", "Please describe your previous research experience."));
+      return;
+    }
+
+    setLoading(true);
     try {
       const payload = {
         ...form,
         whatsapp: visible("whatsapp") ? `${form.dialCode} ${form.whatsapp}`.trim() : "",
+        academicDegree: degreeSettings.enabled ? academicDegree : "",
+        hasResearchExperience: expSettings.enabled ? hasResearchExp : "",
+        researchExperienceDetails: (expSettings.enabled && hasResearchExp === "yes") ? researchExpDetails : "",
+        agreedToFeeAndTasks: agreementSettings.enabled ? (agreeFeesAndTasks === "agree" ? "yes" : (agreeFeesAndTasks === "disagree" ? "no" : "")) : "",
         researchId,
         researchTitle,
         authorRole,
+        customFields: {
+          academicDegree: degreeSettings.enabled ? academicDegree : "",
+          hasResearchExperience: expSettings.enabled ? hasResearchExp : "",
+          researchExperienceDetails: (expSettings.enabled && hasResearchExp === "yes") ? researchExpDetails : "",
+          agreedToFeeAndTasks: agreementSettings.enabled ? (agreeFeesAndTasks === "agree" ? "yes" : (agreeFeesAndTasks === "disagree" ? "no" : "")) : "",
+        },
       };
       const response = await fetch(coordinatorEntry ? `${API_BASE}/coordinator/registrations` : `${API_BASE}/registrations`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
@@ -129,6 +198,8 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
         email: form.email,
         affiliation: form.affiliation,
         whatsapp: visible("whatsapp") ? `${form.dialCode} ${form.whatsapp}`.trim() : "",
+        academicDegree: degreeSettings.enabled ? academicDegree : undefined,
+        hasResearchExperience: expSettings.enabled ? hasResearchExp : undefined,
         language,
       });
 
@@ -251,6 +322,16 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
 
             {visible("country") && <CountrySelector country={form.country} onCountryChange={(country) => setForm((previous) => ({ ...previous, country }))} dialCode={form.dialCode} onDialCodeChange={(dialCode) => setForm((previous) => ({ ...previous, dialCode }))} id={coordinatorEntry ? "student-country" : "registration-country"} required={required("country")} />}
 
+            {!coordinatorEntry && (priceDiscountedSar || priceOriginalSar) && (
+              <div className="rounded-xl overflow-hidden mb-2">
+                <OpportunityPrice
+                  originalSar={priceOriginalSar || 2500}
+                  discountedSar={priceDiscountedSar || 1500}
+                  compact
+                />
+              </div>
+            )}
+
             {!coordinatorEntry && (typeof firstAuthorSeatsLeft === "number" || typeof coAuthorSeatsLeft === "number") && (
               <div className="rounded-xl border border-[#d8eee7] bg-[#f3fbf8] p-4 text-right">
                 <label className="mb-2 block text-sm font-black text-[#174c3d]">{localize("دور التأليف المطلوب", "Requested authorship role")}</label>
@@ -262,8 +343,202 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
               </div>
             )}
 
-            <button data-testid="button-submit-registration" type="submit" disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-base font-bold text-white shadow-[0_8px_18px_rgba(17,123,89,0.18)] transition disabled:opacity-60" style={{ backgroundColor: contentSettings.accentColor }}>
-               {loading ? <><Loader2 size={18} className="animate-spin" /> {localize("جارٍ الحفظ...", "Saving...")}</> : coordinatorEntry ? localize("حفظ تسجيل الطالب", "Save student registration") : localize("تسجيل الآن", "Register now")}
+            {/* 1. Academic Degree Field (الدرجة الأكاديمية) */}
+            {degreeSettings.enabled && (
+              <div className="text-right">
+                <label className="mb-1.5 flex items-center justify-between text-sm font-semibold text-slate-700">
+                  <span>
+                    {language === "en" ? degreeSettings.labelEn : degreeSettings.labelAr}{" "}
+                    {degreeSettings.required && <span className="text-rose-500">*</span>}
+                  </span>
+                  <span className="flex items-center gap-1 text-xs font-bold text-emerald-700">
+                    <GraduationCap size={15} />
+                    <span>{localize("الدرجة الأكاديمية", "Academic Degree")}</span>
+                  </span>
+                </label>
+                <div className="relative">
+                  <select
+                    data-testid="select-academic-degree"
+                    required={degreeSettings.required}
+                    value={academicDegree}
+                    onChange={(e) => setAcademicDegree(e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 bg-white py-3 px-4 text-right text-sm font-medium text-slate-800 outline-none transition focus:border-[#117b59] focus:ring-2 focus:ring-[#117b59]/20"
+                  >
+                    <option value="" disabled>
+                      {localize("— اختر الدرجة الأكاديمية (امتياز، استشاري، رزدنت...) —", "— Select Academic Degree (Intern, Consultant, Resident...) —")}
+                    </option>
+                    {degreeSettings.options.map((opt) => (
+                      <option key={opt.id} value={language === "en" ? opt.nameEn : opt.nameAr}>
+                        {language === "en" ? opt.nameEn : opt.nameAr}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* 2. Prior Research Experience Field (الخبرات البحثية السابقة) */}
+            {expSettings.enabled && (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4 text-right">
+                <label className="mb-2 block text-sm font-bold text-slate-800">
+                  {language === "en" ? expSettings.labelEn : expSettings.labelAr}{" "}
+                  {expSettings.required && <span className="text-rose-500">*</span>}
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    data-testid="button-research-exp-yes"
+                    onClick={() => setHasResearchExp("yes")}
+                    className={`flex items-center justify-center gap-2 rounded-xl border py-2.5 px-3 text-xs sm:text-sm font-black transition-all ${
+                      hasResearchExp === "yes"
+                        ? "border-[#117b59] bg-[#e6f5ef] text-[#117b59] shadow-sm ring-2 ring-[#117b59]/20"
+                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    <CheckCircle2 size={16} className={hasResearchExp === "yes" ? "text-[#117b59]" : "text-slate-400"} />
+                    <span>{language === "en" ? expSettings.yesLabelEn : expSettings.yesLabelAr}</span>
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="button-research-exp-no"
+                    onClick={() => {
+                      setHasResearchExp("no");
+                      setResearchExpDetails("");
+                    }}
+                    className={`flex items-center justify-center gap-2 rounded-xl border py-2.5 px-3 text-xs sm:text-sm font-black transition-all ${
+                      hasResearchExp === "no"
+                        ? "border-slate-500 bg-slate-200 text-slate-900 shadow-sm ring-2 ring-slate-400/20"
+                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    <span>{language === "en" ? expSettings.noLabelEn : expSettings.noLabelAr}</span>
+                  </button>
+                </div>
+
+                {hasResearchExp === "yes" && (
+                  <div className="mt-3.5 pt-3 border-t border-slate-200/80 animate-in fade-in slide-in-from-top-1 duration-200">
+                    <label className="mb-1.5 block text-xs font-bold text-slate-700">
+                      {language === "en" ? expSettings.detailsLabelEn : expSettings.detailsLabelAr}{" "}
+                      {expSettings.detailsRequiredWhenYes && <span className="text-rose-500">*</span>}
+                    </label>
+                    <textarea
+                      data-testid="textarea-research-exp-details"
+                      required={expSettings.detailsRequiredWhenYes}
+                      rows={3}
+                      value={researchExpDetails}
+                      onChange={(e) => setResearchExpDetails(e.target.value)}
+                      placeholder={language === "en" ? expSettings.detailsPlaceholderEn : expSettings.detailsPlaceholderAr}
+                      className="w-full resize-none rounded-xl border border-slate-300 bg-white p-3 text-right text-xs leading-5 text-slate-800 outline-none transition focus:border-[#117b59] focus:ring-2 focus:ring-[#117b59]/20"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 3. Mandatory Fee & Tasks Agreement (إقرار دفع الرسوم والمهام) */}
+            {!coordinatorEntry && agreementSettings.enabled && (
+              <div
+                data-testid="fee-task-agreement-card"
+                className={`rounded-2xl border p-4 text-right transition-all ${
+                  agreeFeesAndTasks === "disagree"
+                    ? "border-rose-400 bg-rose-50/90 shadow-sm"
+                    : agreeFeesAndTasks === "agree"
+                    ? "border-emerald-300 bg-emerald-50/60 shadow-sm"
+                    : "border-amber-300 bg-amber-50/50"
+                }`}
+              >
+                <div className="flex items-start gap-2.5">
+                  <div className={`mt-0.5 rounded-xl p-2 shrink-0 ${
+                    agreeFeesAndTasks === "disagree"
+                      ? "bg-rose-100 text-rose-700"
+                      : agreeFeesAndTasks === "agree"
+                      ? "bg-emerald-100 text-[#117b59]"
+                      : "bg-amber-100 text-amber-800"
+                  }`}>
+                    <ShieldCheck size={20} />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs sm:text-sm font-black leading-6 text-slate-900">
+                      {language === "en" ? agreementSettings.questionEn : agreementSettings.questionAr}
+                      {agreementSettings.required && <span className="mr-1 text-rose-500 font-bold">*</span>}
+                    </p>
+                    <p className="mt-1 text-[11px] font-medium text-slate-500 leading-4">
+                      {localize(
+                        "شرط إلزامي من أجل التحليل والاعتماد ضمن الفريق البحثي والالتزام بالمهام والمواعيد المحددة.",
+                        "Mandatory requirement for inclusion in the research team and commitment to tasks and timelines."
+                      )}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-3.5 grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    data-testid="button-agreement-agree"
+                    onClick={() => {
+                      setAgreeFeesAndTasks("agree");
+                      if (error) setError("");
+                    }}
+                    className={`flex items-center justify-center gap-2 rounded-xl border py-3 px-3 text-xs sm:text-sm font-black transition-all ${
+                      agreeFeesAndTasks === "agree"
+                        ? "border-emerald-600 bg-emerald-600 text-white shadow-md shadow-emerald-700/20 ring-2 ring-emerald-500/30"
+                        : "border-slate-200 bg-white text-slate-700 hover:border-emerald-300 hover:bg-emerald-50"
+                    }`}
+                  >
+                    <CheckCircle2 size={17} />
+                    <span>{language === "en" ? agreementSettings.agreeLabelEn : agreementSettings.agreeLabelAr}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    data-testid="button-agreement-disagree"
+                    onClick={() => {
+                      setAgreeFeesAndTasks("disagree");
+                    }}
+                    className={`flex items-center justify-center gap-2 rounded-xl border py-3 px-3 text-xs sm:text-sm font-black transition-all ${
+                      agreeFeesAndTasks === "disagree"
+                        ? "border-rose-600 bg-rose-600 text-white shadow-md shadow-rose-700/20 ring-2 ring-rose-500/30"
+                        : "border-slate-200 bg-white text-slate-700 hover:border-rose-300 hover:bg-rose-50"
+                    }`}
+                  >
+                    <AlertTriangle size={17} />
+                    <span>{language === "en" ? agreementSettings.disagreeLabelEn : agreementSettings.disagreeLabelAr}</span>
+                  </button>
+                </div>
+
+                {agreeFeesAndTasks === "disagree" && (
+                  <div
+                    data-testid="agreement-rejection-warning"
+                    className="mt-3.5 flex items-start gap-2 rounded-xl border border-rose-300 bg-rose-100 p-3 text-rose-900 text-xs font-bold leading-5 animate-in fade-in duration-200"
+                  >
+                    <AlertTriangle size={16} className="shrink-0 mt-0.5 text-rose-600" />
+                    <div>
+                      <p>{language === "en" ? agreementSettings.warningNoticeEn : agreementSettings.warningNoticeAr}</p>
+                      <p className="mt-1 text-[11px] font-black text-rose-700">
+                        {language === "en" ? agreementSettings.blockingMessageEn : agreementSettings.blockingMessageAr}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <button
+              data-testid="button-submit-registration"
+              type="submit"
+              disabled={loading || (!coordinatorEntry && agreementSettings.enabled && agreementSettings.required && agreeFeesAndTasks === "disagree")}
+              className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-base font-bold text-white shadow-[0_8px_18px_rgba(17,123,89,0.18)] transition disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: (!coordinatorEntry && agreementSettings.enabled && agreementSettings.required && agreeFeesAndTasks === "disagree") ? "#94a3b8" : contentSettings.accentColor }}
+            >
+               {loading ? (
+                 <><Loader2 size={18} className="animate-spin" /> {localize("جارٍ الحفظ...", "Saving...")}</>
+               ) : !coordinatorEntry && agreementSettings.enabled && agreementSettings.required && agreeFeesAndTasks === "disagree" ? (
+                 localize("التسجيل غير متاح دون الموافقة", "Registration not allowed without agreement")
+               ) : coordinatorEntry ? (
+                 localize("حفظ تسجيل الطالب", "Save student registration")
+               ) : (
+                 localize("تسجيل الآن", "Register now")
+               )}
             </button>
             {!coordinatorEntry && visible("whatsapp") && <p className="text-center text-xs text-slate-400">{localize("بعد التسجيل سيفتح واتساب برسالة جاهزة للتواصل", "After registration, WhatsApp will open with a ready-to-send contact message.")}</p>}
           </form>
