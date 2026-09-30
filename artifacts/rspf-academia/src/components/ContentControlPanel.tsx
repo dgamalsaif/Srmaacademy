@@ -1736,6 +1736,7 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
               </div>
             </div>
           </Panel>
+          <Panel title="إلزام حقول الفرصة" icon={SlidersHorizontal}>
             <p className="mb-5 text-sm leading-6 text-slate-500">حدّد الحقول التي تريد إلزام المالك بإدخالها عند إضافة أو تعديل فرصة. جميعها اختيارية حالياً.</p>
             <div className="grid gap-3 sm:grid-cols-2">
               {OPPORTUNITY_FIELDS.map((field) => {
