@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useClerk } from "@clerk/react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
-import { Plus, Pencil, Trash2, Eye, X, ChevronRight, LogOut, Search, Users, BookOpen, TrendingUp, AlertCircle, UserPlus, GraduationCap, Award, Landmark, LayoutDashboard, CreditCard, Settings, ClipboardList, CheckCircle, FlaskConical, Stethoscope, User, Clock, Copy, Check, Edit, FileSpreadsheet, Database, Layers, CheckSquare } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, X, ChevronRight, LogOut, Search, Users, BookOpen, TrendingUp, AlertCircle, UserPlus, GraduationCap, Award, Landmark, LayoutDashboard, CreditCard, Settings, ClipboardList, CheckCircle, FlaskConical, Stethoscope, User, Clock, Copy, Check, Edit, FileSpreadsheet, Database, Layers, CheckSquare, ExternalLink } from "lucide-react";
 import { ResearchOpportunity, SPECIALTY_COLORS } from "@/lib/researchData";
 import RegistrationModal from "@/components/RegistrationModal";
 import BulkEditModal from "@/components/BulkEditModal";
@@ -1118,21 +1118,52 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-[#f8fafc] text-right" dir="rtl">
       {/* TOP BAR */}
-      <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-5 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-20">
-        <div className="flex items-center gap-4">
-           <img src={SRMA_LOGO} alt="" className="h-12 w-12 rounded-2xl border border-emerald-100 object-cover shadow-sm" />
-           <div className="text-right">
-             <h1 className="text-2xl font-black text-slate-800">{role === "owner" ? "لوحة الإدارة والتحكم" : "لوحة تحكم المنسق"}</h1>
-              <p className="text-sm text-slate-500 mt-1 font-medium">أهلاً بك، {accountName || (role === "owner" ? "المدير العام" : "منسق البرامج")}</p>
-           </div>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="hidden sm:flex items-center border border-slate-200 rounded-xl px-4 py-2.5 bg-slate-50 shadow-sm">
-             <span className="text-slate-500 text-sm font-medium ml-2">الصلاحية:</span>
-             <span className="text-slate-800 text-sm font-bold">{role === "owner" ? "مالك النظام" : "منسق"}</span>
+      <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-30 shadow-2xs">
+        <div className="flex items-center gap-3.5">
+          <img src={SRMA_LOGO} alt="" className="h-11 w-11 rounded-2xl border border-emerald-100 object-cover shadow-2xs" />
+          <div className="text-right">
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900">
+                {role === "owner" ? "لوحة الإدارة والتحكم" : "لوحة تحكم المنسق"}
+              </h1>
+              <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-lg border ${
+                role === "owner"
+                  ? "bg-emerald-50 text-[#117b59] border-emerald-200"
+                  : "bg-blue-50 text-blue-700 border-blue-200"
+              }`}>
+                {role === "owner" ? "مالك النظام" : "منسق معتمد"}
+              </span>
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5 font-medium">
+              أهلاً بك، <span className="font-bold text-slate-700">{accountName || (role === "owner" ? "المدير العام" : "منسق البرامج")}</span>
+            </p>
           </div>
-          <button onClick={handleLogout} className="flex items-center gap-2 border border-red-200 text-red-600 hover:bg-red-50 px-4 py-2.5 rounded-xl text-sm font-bold transition-colors shadow-sm">
-            خروج <LogOut size={16} />
+        </div>
+
+        <div className="flex items-center gap-2.5">
+          <Link
+            href="/"
+            target="_blank"
+            className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-slate-600 hover:text-[#117b59] bg-slate-50 hover:bg-emerald-50 border border-slate-200 hover:border-emerald-200 px-3.5 py-2 rounded-xl transition-all shadow-2xs"
+            title="فتح الموقع في علامة تبويب جديدة لمعاينة التغييرات"
+          >
+            <ExternalLink size={14} />
+            <span>معاينة المنصة</span>
+          </Link>
+          <Link
+            href="/participant-portal"
+            target="_blank"
+            className="hidden md:flex items-center gap-1.5 text-xs font-bold text-[#0C3156] bg-sky-50/60 hover:bg-sky-50 border border-sky-200/80 px-3.5 py-2 rounded-xl transition-all shadow-2xs"
+            title="معاينة بوابة المشارك"
+          >
+            <span>بوابة المشارك ↗</span>
+          </Link>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-1.5 border border-red-200 text-red-600 hover:bg-red-50 px-3.5 py-2 rounded-xl text-xs font-bold transition-colors shadow-2xs"
+          >
+            <LogOut size={14} />
+            <span>خروج</span>
           </button>
         </div>
       </header>
@@ -1141,80 +1172,145 @@ export default function AdminDashboard() {
 
         {/* STATS ROW */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
-           <div className="bg-white rounded-3xl border border-slate-200 p-6 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
-             <div>
-               <p className="text-slate-500 text-sm font-bold mb-2">البرامج والدورات</p>
-               <p className="text-3xl font-black text-slate-800">{stats.training + stats.cme}</p>
-             </div>
-             <div className="w-14 h-14 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600">
-               <Award size={28} />
-             </div>
-           </div>
-           <div className="bg-white rounded-3xl border border-slate-200 p-6 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
-             <div>
-               <p className="text-slate-500 text-sm font-bold mb-2">الفرص البحثية المتاحة</p>
-               <p className="text-3xl font-black text-slate-800">{stats.open}</p>
-             </div>
-             <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600">
-               <FlaskConical size={28} />
-             </div>
-           </div>
-            <button type="button" onClick={() => { setView("programs"); setCategoryFilter("completed"); }} className="bg-white rounded-3xl border border-slate-200 p-6 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow text-right">
-              <div>
-                <p className="text-slate-500 text-sm font-bold mb-2">الدراسات المنجزة</p>
-                <p className="text-3xl font-black text-slate-800">{stats.completed}</p>
-              </div>
-              <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600">
-                <CheckCircle size={28} />
-              </div>
-            </button>
-           <div className="bg-[#117b59] rounded-3xl border border-[#0c6549] p-6 flex items-center justify-between shadow-md text-white hover:shadow-lg transition-shadow">
-             <div>
-               <p className="text-emerald-50 text-sm font-bold mb-2">إجمالي الطلاب المسجلين</p>
-               <p className="text-3xl font-black">{stats.totalParticipants}</p>
-             </div>
-             <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center text-white">
-               <Users size={28} />
-             </div>
-           </div>
+          <div className="bg-white rounded-3xl border border-slate-200/90 p-5 flex items-center justify-between shadow-2xs hover:shadow-xs transition-shadow">
+            <div>
+              <p className="text-slate-500 text-xs font-black mb-1">البرامج والدورات</p>
+              <p className="text-3xl font-black text-slate-900">{stats.training + stats.cme}</p>
+              <p className="text-[11px] font-bold text-purple-600 mt-1">{stats.training} باحث · {stats.cme} CME</p>
+            </div>
+            <div className="w-13 h-13 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-600 border border-purple-100">
+              <Award size={26} />
+            </div>
+          </div>
+
+          <div className="bg-white rounded-3xl border border-slate-200/90 p-5 flex items-center justify-between shadow-2xs hover:shadow-xs transition-shadow">
+            <div>
+              <p className="text-slate-500 text-xs font-black mb-1">الفرص البحثية المتاحة</p>
+              <p className="text-3xl font-black text-slate-900">{stats.open}</p>
+              <p className="text-[11px] font-bold text-blue-600 mt-1">جاهزة للتسجيل الفوري</p>
+            </div>
+            <div className="w-13 h-13 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 border border-blue-100">
+              <FlaskConical size={26} />
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => { setView("programs"); setCategoryFilter("completed"); }}
+            className="bg-white rounded-3xl border border-slate-200/90 p-5 flex items-center justify-between shadow-2xs hover:shadow-xs transition-shadow text-right group hover:border-amber-300"
+          >
+            <div>
+              <p className="text-slate-500 text-xs font-black mb-1">الدراسات المنجزة</p>
+              <p className="text-3xl font-black text-slate-900">{stats.completed}</p>
+              <p className="text-[11px] font-bold text-amber-600 mt-1 group-hover:underline">عرض لوحة الشرف ←</p>
+            </div>
+            <div className="w-13 h-13 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-600 border border-amber-100">
+              <CheckCircle size={26} />
+            </div>
+          </button>
+
+          <div className="bg-[#117b59] rounded-3xl border border-[#0c6549] p-5 flex items-center justify-between shadow-sm text-white hover:shadow-md transition-shadow">
+            <div>
+              <p className="text-emerald-100 text-xs font-black mb-1">إجمالي الطلاب المسجلين</p>
+              <p className="text-3xl font-black text-white">{stats.totalParticipants}</p>
+              <p className="text-[11px] font-bold text-emerald-200 mt-1">عبر كافة الفرص والبرامج</p>
+            </div>
+            <div className="w-13 h-13 rounded-2xl bg-white/20 flex items-center justify-center text-white">
+              <Users size={26} />
+            </div>
+          </div>
         </div>
 
-        {/* NAVIGATION PILLS */}
-        <div className="flex flex-wrap items-center gap-3 mb-8 pb-2">
-          <button onClick={() => setView('programs')} className={`flex items-center gap-2 px-6 py-3 border rounded-2xl text-sm font-bold transition-all shadow-sm ${view === 'programs' ? 'bg-[#117b59] text-white border-[#117b59]' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'}`}>
-            <Landmark size={18} className={view === 'programs' ? 'text-emerald-100' : 'text-slate-400'} />
-            إدارة البرامج
+        {/* NAVIGATION TABS (Segmented bar) */}
+        <div className="bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200 flex flex-wrap items-center gap-1.5 mb-8 shadow-2xs">
+          <button
+            onClick={() => setView('programs')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
+              view === 'programs'
+                ? 'bg-[#117b59] text-white shadow-xs'
+                : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
+            }`}
+          >
+            <Landmark size={16} />
+            <span>إدارة البرامج والفرص</span>
           </button>
-             <Link href={canManage ? "/admin/submissions" : "/coordinator/submissions"} className="flex items-center gap-2 px-6 py-3 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
-             <Users size={18} className="text-slate-400" />
-              {canManage ? "الطلاب المسجلون" : "طلابي المسجلون"}
-            </Link>
+
+          <Link
+            href={canManage ? "/admin/submissions" : "/coordinator/submissions"}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black text-slate-700 hover:text-slate-900 hover:bg-white/60 transition-all"
+          >
+            <Users size={16} />
+            <span>{canManage ? "الطلاب المسجلون" : "طلابي المسجلون"}</span>
+          </Link>
+
           {canManage && (
-            <button onClick={() => setView('payments')} className={`flex items-center gap-2 px-6 py-3 border rounded-2xl text-sm font-bold transition-all shadow-sm ${view === 'payments' ? 'bg-[#117b59] text-white border-[#117b59]' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'}`}>
-              <CreditCard size={18} className={view === 'payments' ? 'text-emerald-100' : 'text-slate-400'} />
-              المستحقات
+            <button
+              onClick={() => setView('payments')}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
+                view === 'payments'
+                  ? 'bg-[#117b59] text-white shadow-xs'
+                  : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
+              }`}
+            >
+              <CreditCard size={16} />
+              <span>المستحقات المالية</span>
             </button>
           )}
-          <button onClick={() => setView('settings')} className={`flex items-center gap-2 px-6 py-3 border rounded-2xl text-sm font-bold transition-all shadow-sm ${view === 'settings' ? 'bg-[#117b59] text-white border-[#117b59]' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'}`}>
-            <Settings size={18} className={view === 'settings' ? 'text-emerald-100' : 'text-slate-400'} />
-            الإعدادات
+
+          <button
+            onClick={() => setView('settings')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
+              view === 'settings'
+                ? 'bg-[#117b59] text-white shadow-xs'
+                : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
+            }`}
+          >
+            <Settings size={16} />
+            <span>الإعدادات</span>
           </button>
+
           {canManage && (
-            <button onClick={() => setView('portal-settings')} data-testid="button-portal-settings" className={`flex items-center gap-2 px-6 py-3 border rounded-2xl text-sm font-bold transition-all shadow-sm ${view === 'portal-settings' ? 'bg-[#117b59] text-white border-[#117b59]' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'}`}>
-              <LayoutDashboard size={18} className={view === 'portal-settings' ? 'text-emerald-100' : 'text-slate-400'} />
-              بوابة المنسق
+            <button
+              onClick={() => setView('portal-settings')}
+              data-testid="button-portal-settings"
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
+                view === 'portal-settings'
+                  ? 'bg-[#117b59] text-white shadow-xs'
+                  : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
+              }`}
+            >
+              <LayoutDashboard size={16} />
+              <span>بوابة المنسق</span>
             </button>
           )}
+
           {canManage && (
-            <button onClick={() => setView('content-settings')} data-testid="button-content-settings" className={`flex items-center gap-2 px-6 py-3 border rounded-2xl text-sm font-bold transition-all shadow-sm ${view === 'content-settings' ? 'bg-[#117b59] text-white border-[#117b59]' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'}`}>
-              <Edit size={18} className={view === 'content-settings' ? 'text-emerald-100' : 'text-slate-400'} />
-              المحتوى والمظهر
+            <button
+              onClick={() => setView('content-settings')}
+              data-testid="button-content-settings"
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
+                view === 'content-settings'
+                  ? 'bg-[#117b59] text-white shadow-xs'
+                  : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
+              }`}
+            >
+              <Edit size={16} />
+              <span>المحتوى والمظهر</span>
             </button>
           )}
+
           {ownerWorkspace && (
-            <button onClick={() => setView('data-management')} data-testid="button-data-management" className={`flex items-center gap-2 px-6 py-3 border rounded-2xl text-sm font-bold transition-all shadow-sm ${view === 'data-management' ? 'bg-slate-900 text-white border-slate-900' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300'}`}>
-              <Database size={18} className={view === 'data-management' ? 'text-slate-200' : 'text-slate-400'} />
-              إدارة البيانات
+            <button
+              onClick={() => setView('data-management')}
+              data-testid="button-data-management"
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
+                view === 'data-management'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
+              }`}
+            >
+              <Database size={16} />
+              <span>إدارة البيانات</span>
             </button>
           )}
         </div>

@@ -113,31 +113,65 @@ export default function ParticipantPortal() {
   return (
       <div className="min-h-screen bg-white" dir={direction}>
       {/* HEADER */}
-      <section className="py-14 px-4 text-center" style={{ background: `linear-gradient(135deg, ${contentSettings.primaryColor}10, ${contentSettings.accentColor}08, white)` }}>
-        <div className="max-w-4xl mx-auto">
-          <div className="inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-semibold" style={{ color: contentSettings.primaryColor, backgroundColor: `${contentSettings.primaryColor}0d`, borderColor: `${contentSettings.primaryColor}26` }}>
-            {participantTitle}
+      <section className="relative overflow-hidden border-b border-slate-100 bg-gradient-to-b from-slate-50/80 via-white to-white py-12 px-4 sm:py-16">
+        <div className="max-w-5xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 rounded-xl border border-emerald-200/80 bg-emerald-50/70 px-3.5 py-1.5 text-xs font-black text-[#117b59] mb-4 shadow-2xs">
+            <span className="w-2 h-2 rounded-full bg-[#117b59] animate-pulse" />
+            <span>{participantTitle}</span>
           </div>
-          <h1 className="mb-3 text-3xl font-black text-slate-900 sm:text-4xl">{participantTitle}</h1>
-          <p className="mx-auto max-w-xl text-slate-600">{participantDescription}</p>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-tight mb-4">
+            {participantTitle}
+          </h1>
+          <p className="mx-auto max-w-2xl text-sm sm:text-base text-slate-600 leading-relaxed font-medium">
+            {participantDescription}
+          </p>
+
+          {/* Value Stats Strip */}
+          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4 max-w-3xl mx-auto text-center">
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-2xs">
+              <p className="text-xl sm:text-2xl font-black text-[#117b59]">+500</p>
+              <p className="text-xs font-bold text-slate-600 mt-0.5">{localize("طبيب وباحث منجز", "Completed researchers")}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-2xs">
+              <p className="text-xl sm:text-2xl font-black text-[#0C3156]">100%</p>
+              <p className="text-xs font-bold text-slate-600 mt-0.5">{localize("مطابق للهيئة السعودية", "SCFHS compliant")}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-2xs">
+              <p className="text-xl sm:text-2xl font-black text-amber-600">Scopus/WoS</p>
+              <p className="text-xs font-bold text-slate-600 mt-0.5">{localize("مجلات عالمية مصنفة", "Indexed journals")}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-2xs">
+              <p className="text-xl sm:text-2xl font-black text-sky-600">1:1</p>
+              <p className="text-xs font-bold text-slate-600 mt-0.5">{localize("إشراف وتوجيه مباشر", "Direct supervision")}</p>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* TABS */}
-      <div className="bg-white border-b border-slate-200 px-4 py-4 sticky top-16 z-30 shadow-sm">
-        <div className="max-w-5xl mx-auto flex gap-2 overflow-x-auto">
+      {/* TABS (Segmented Control) */}
+      <div className="bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-3 sticky top-16 z-30 shadow-xs">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/70 gap-1.5 overflow-x-auto">
             {[
-             { label: localize("الفرص البحثية الجاهزة للنشر", "Research opportunities ready for publication"), activeClass: "bg-[#0C3156] text-white" },
-             { label: localize("برنامج تدريب باحث مع النشر", "Researcher training program with publication"), activeClass: "bg-[#0369A1] text-white" },
-             { label: localize("دورات طبية بساعات CME معتمدة", "Accredited CME medical courses"), activeClass: "bg-violet-600 text-white" },
-          ].map((tab, i) => (
-            <button key={i} data-testid={`button-tab-${i}`} onClick={() => setActiveTab(i)}
-              className={`flex-shrink-0 px-5 py-2.5 rounded-full font-semibold text-sm transition-all ${
-                activeTab === i ? tab.activeClass : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              }`}>
-              {tab.label}
-            </button>
-          ))}
+              { id: 0, icon: "🔬", label: localize("الفرص البحثية الجاهزة للنشر", "Research opportunities ready for publication") },
+              { id: 1, icon: "📚", label: localize("برنامج تدريب باحث مع النشر", "Researcher training program with publication") },
+              { id: 2, icon: "🎓", label: localize("دورات طبية بساعات CME معتمدة", "Accredited CME medical courses") },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                data-testid={`button-tab-${tab.id}`}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 min-w-[200px] sm:min-w-0 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all whitespace-nowrap ${
+                  activeTab === tab.id
+                    ? "bg-[#0C3156] text-white shadow-sm"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                }`}
+              >
+                <span>{tab.icon}</span>
+                <span>{tab.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -434,30 +468,215 @@ export default function ParticipantPortal() {
           )}
 
           {activeTab === 1 && (
-            <div className="text-center py-16">
-              <div className="text-5xl mb-5">📚</div>
-              <h2 className="text-2xl font-black text-slate-900 mb-3">{localize("برنامج تدريب باحث مع النشر", "Researcher training program with publication")}</h2>
-              <p className="text-slate-500 max-w-md mx-auto mb-6 leading-relaxed">
-                {localize("برنامج تدريبي متكامل يأخذك من الصفر إلى النشر الدولي. تدريب عملي مع إشراف متخصص وفرصة نشر حقيقية في نهاية البرنامج.", "A comprehensive training program that takes you from the basics to international publication, with practical training, specialized supervision, and a real publication opportunity at the end.")}
-              </p>
-              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" data-testid="button-trainer-whatsapp"
-                className="inline-flex items-center gap-2 bg-[#0369A1] text-white px-7 py-3.5 rounded-full font-bold hover:bg-[#025b88] transition-colors shadow-md">
-                {localize("تواصل معنا للتسجيل ←", "Contact us to register →")}
-              </a>
+            <div className="space-y-8 animate-in fade-in duration-300">
+              {/* Main Banner */}
+              <div className="rounded-3xl border border-sky-100 bg-gradient-to-br from-sky-50/80 via-white to-indigo-50/40 p-6 sm:p-10 shadow-xs text-start">
+                <div className="inline-flex items-center gap-2 rounded-xl bg-sky-100/80 px-3 py-1 text-xs font-bold text-sky-800 mb-3">
+                  <span>📚</span>
+                  <span>{localize("مسار تدريبي وعملي شامل", "Comprehensive practical training track")}</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 leading-snug">
+                  {localize("برنامج تدريب باحث سريري متقدم (من الفكرة حتى النشر الدولي)", "Advanced Clinical Researcher Program (From Concept to International Publication)")}
+                </h2>
+                <p className="mt-3 text-sm sm:text-base text-slate-600 leading-relaxed max-w-3xl">
+                  {localize(
+                    "برنامج تدريبي تطبيقي يدمج بين التدريب الأكاديمي النظري والممارسة العملية الفعلية تحت إشراف نخبة من كبار الباحثين والمحكمين الدوليين، وينتهي ببحث علمي منشور باسمك ومطابق لمعايير الهيئة السعودية للتخصصات الصحية.",
+                    "An applied training program combining theoretical academic training and real-world practical research under the mentorship of top international researchers and reviewers, concluding with a published paper under your name complying with SCFHS standards."
+                  )}
+                </p>
+
+                <div className="mt-6 flex flex-wrap items-center gap-3">
+                  <a
+                    href={contactHref.href}
+                    target={contactHref.isExternal ? "_blank" : undefined}
+                    rel={contactHref.isExternal ? "noopener noreferrer" : undefined}
+                    data-testid="button-trainer-register"
+                    className="inline-flex items-center gap-2 bg-[#0C3156] hover:bg-[#08223c] text-white px-6 py-3 rounded-xl font-bold text-sm transition-all shadow-sm"
+                  >
+                    <MessageCircle size={16} />
+                    <span>{localize("التسجيل في الدفعة القادمة", "Register for upcoming cohort")}</span>
+                  </a>
+                  <a
+                    href={whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl font-bold text-sm transition-all shadow-sm"
+                  >
+                    <span>💬</span>
+                    <span>{localize("استفسار عبر واتساب الأكاديمية", "Inquire via WhatsApp")}</span>
+                  </a>
+                </div>
+              </div>
+
+              {/* 4 Pillars Grid */}
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {[
+                  {
+                    icon: "💡",
+                    titleAr: "1. اختيار الفكرة والبروتوكول",
+                    titleEn: "1. Topic & Protocol Design",
+                    descAr: "صياغة سؤال البحث، بناء خطة الدراسة، وكتابة البروتوكول العلمي المعتمد.",
+                    descEn: "Formulate research question, design study plan, and write approved scientific protocol.",
+                  },
+                  {
+                    icon: "📊",
+                    titleAr: "2. الإحصاء وتحليل البيانات",
+                    titleEn: "2. Biostatistics & Data Analysis",
+                    descAr: "تدريب عملي على برامج الإحصاء (SPSS / R / RevMan) وإجراء الميتا أناليسيس.",
+                    descEn: "Hands-on training in statistical tools (SPSS, R, RevMan) and meta-analyses.",
+                  },
+                  {
+                    icon: "✍️",
+                    titleAr: "3. الكتابة والنشر المصنف",
+                    titleEn: "3. Academic Writing & Indexing",
+                    descAr: "صياغة المخطوطة وفق دليل النشر بمجلات Scopus وWeb of Science وPubMed.",
+                    descEn: "Draft manuscript adhering to guidelines of Scopus, Web of Science, and PubMed journals.",
+                  },
+                  {
+                    icon: "🎯",
+                    titleAr: "4. الرد على المحكمين والقبول",
+                    titleEn: "4. Peer Review & Acceptance",
+                    descAr: "متابعة الملاحظات والرد على المحكمين حتى صدور خطاب القبول النهائي.",
+                    descEn: "Handle reviewer feedback until final official acceptance letter is issued.",
+                  },
+                ].map((item, idx) => (
+                  <div key={idx} className="rounded-2xl border border-slate-200/90 bg-white p-5 space-y-2 shadow-2xs hover:border-sky-300 transition-colors text-start">
+                    <span className="text-2xl">{item.icon}</span>
+                    <h3 className="font-black text-slate-900 text-sm">{localize(item.titleAr, item.titleEn)}</h3>
+                    <p className="text-xs text-slate-600 leading-relaxed">{localize(item.descAr, item.descEn)}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Details and Target Audience */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 text-start space-y-3">
+                  <h4 className="font-black text-slate-900 text-base flex items-center gap-2">
+                    <span>🎯</span>
+                    <span>{localize("الفئات المستهدفة", "Target Audience")}</span>
+                  </h4>
+                  <ul className="space-y-2 text-xs font-medium text-slate-700">
+                    <li className="flex items-center gap-2">✓ {localize("الأطباء المقيمون وأطباء الزمالة (Residents & Fellows).", "Residents and Fellows.")}</li>
+                    <li className="flex items-center gap-2">✓ {localize("أطباء الامتياز والخريجون الباحثون عن نقاط المفاضلة.", "Interns and medical graduates seeking matching points.")}</li>
+                    <li className="flex items-center gap-2">✓ {localize("الممارسون الصحيون والراغبون في الترقية المهنية والأكاديمية.", "Healthcare practitioners seeking academic promotion.")}</li>
+                  </ul>
+                </div>
+
+                <div className="rounded-2xl border border-slate-200 bg-white p-6 text-start space-y-3">
+                  <h4 className="font-black text-slate-900 text-base flex items-center gap-2">
+                    <span>🏆</span>
+                    <span>{localize("مخرجات البرنامج والشهادة", "Program Outcomes & Certificate")}</span>
+                  </h4>
+                  <ul className="space-y-2 text-xs font-medium text-slate-700">
+                    <li className="flex items-center gap-2">✓ {localize("ورقة بحثية منشورة أو مقبولة في مجلة عالمية مصنفة.", "Published or accepted research paper in an indexed journal.")}</li>
+                    <li className="flex items-center gap-2">✓ {localize("شهادة إتمام برنامج تدريب باحث معتمدة من الأكاديمية.", "Certified program completion certificate from the Academy.")}</li>
+                    <li className="flex items-center gap-2">✓ {localize("ملف باحث متكامل (ORCID, ResearchGate, Google Scholar).", "Comprehensive researcher profile (ORCID, ResearchGate, Google Scholar).")}</li>
+                  </ul>
+                </div>
+              </div>
             </div>
           )}
 
           {activeTab === 2 && (
-            <div className="text-center py-16">
-              <div className="text-5xl mb-5">🎓</div>
-              <h2 className="text-2xl font-black text-slate-900 mb-3">{localize("دورات طبية بساعات CME معتمدة", "Accredited CME medical courses")}</h2>
-              <p className="text-slate-500 max-w-md mx-auto mb-6 leading-relaxed">
-                {localize("دورات طبية معتمدة من الهيئة السعودية للتخصصات الصحية. احصل على نقاطك CME مع شهادة رسمية معتمدة.", "Medical courses accredited by the Saudi Commission for Health Specialties. Earn your CME points with an official accredited certificate.")}
-              </p>
-              <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" data-testid="button-cme-whatsapp"
-                className="inline-flex items-center gap-2 bg-violet-600 text-white px-7 py-3.5 rounded-full font-bold hover:bg-violet-700 transition-colors shadow-md">
-                {localize("تواصل معنا للتسجيل ←", "Contact us to register →")}
-              </a>
+            <div className="space-y-8 animate-in fade-in duration-300">
+              {/* CME Header */}
+              <div className="rounded-3xl border border-violet-100 bg-gradient-to-br from-violet-50/80 via-white to-purple-50/40 p-6 sm:p-10 shadow-xs text-start">
+                <div className="inline-flex items-center gap-2 rounded-xl bg-violet-100/80 px-3 py-1 text-xs font-bold text-violet-800 mb-3">
+                  <span>🎓</span>
+                  <span>{localize("معتمدة من الهيئة السعودية للتخصصات الصحية (SCFHS)", "Accredited by Saudi Commission for Health Specialties (SCFHS)")}</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 leading-snug">
+                  {localize("دورات طبية تخصصية بساعات تعليم طبي مستمر (CME)", "Specialized Medical Courses with Continuing Medical Education (CME) Hours")}
+                </h2>
+                <p className="mt-3 text-sm sm:text-base text-slate-600 leading-relaxed max-w-3xl">
+                  {localize(
+                    "احصل على ساعات CME المعتمدة لتجديد التصنيف المهني والتسجيل في برامج البورد، مع تقديم محتوى عملي يقدمه خبراء سريريون وأكاديميون معتمدون وشهادات رقمية فورية.",
+                    "Earn accredited CME hours for professional re-registration and matching in residency programs, with practical curriculum by certified clinicians and instant verified digital certificates."
+                  )}
+                </p>
+
+                <div className="mt-6 flex flex-wrap items-center gap-3">
+                  <a
+                    href={contactHref.href}
+                    target={contactHref.isExternal ? "_blank" : undefined}
+                    rel={contactHref.isExternal ? "noopener noreferrer" : undefined}
+                    data-testid="button-cme-register"
+                    className="inline-flex items-center gap-2 bg-violet-700 hover:bg-violet-800 text-white px-6 py-3 rounded-xl font-bold text-sm transition-all shadow-sm"
+                  >
+                    <MessageCircle size={16} />
+                    <span>{localize("طلب التسجيل في الدورات", "Register for Courses")}</span>
+                  </a>
+                  <a
+                    href={whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-white border border-violet-300 text-violet-800 hover:bg-violet-50 px-5 py-3 rounded-xl font-bold text-sm transition-all shadow-sm"
+                  >
+                    <span>💬</span>
+                    <span>{localize("استفسار عن جدول الدورات القادمة", "Inquire about Upcoming Schedule")}</span>
+                  </a>
+                </div>
+              </div>
+
+              {/* Sample Courses Grid */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                {[
+                  {
+                    code: "CME-101",
+                    hours: "15 CME",
+                    titleAr: "منهجية الأبحاث السريرية وتصميم الدراسات الطبية",
+                    titleEn: "Clinical Research Methodology & Study Design",
+                    topicsAr: "أنواع الدراسات، صياغة السؤال البحثي PICO، عينات الدراسة، والتحيز السريري.",
+                    topicsEn: "Study designs, PICO question formulation, sampling, and clinical bias mitigation.",
+                  },
+                  {
+                    code: "CME-102",
+                    hours: "12 CME",
+                    titleAr: "التحليل الإحصائي الحيوي التطبيقي للأطباء (SPSS & R)",
+                    titleEn: "Applied Biostatistics for Physicians (SPSS & R)",
+                    topicsAr: "المتغيرات، اختبارات الفرضيات، تحليل الانحدار، وقراءة الجداول الإحصائية للأوراق العلمية.",
+                    topicsEn: "Variables, hypothesis testing, regression analysis, and reading journal statistical tables.",
+                  },
+                  {
+                    code: "CME-103",
+                    hours: "20 CME",
+                    titleAr: "المراجعات المنهجية والميتا أناليسيس (PRISMA Guideline)",
+                    titleEn: "Systematic Reviews & Meta-Analyses (PRISMA)",
+                    topicsAr: "استراتيجية البحث في قواعد البيانات، استخراج البيانات، تقييم جودة الدراسات، ورسم Forest Plot.",
+                    topicsEn: "Database search strategies, data extraction, risk of bias assessment, and Forest plots.",
+                  },
+                  {
+                    code: "CME-104",
+                    hours: "8 CME",
+                    titleAr: "أخلاقيات البحث الطبي والممارسة السريرية الجيدة (GCP)",
+                    titleEn: "Good Clinical Practice (GCP) & Medical Ethics",
+                    topicsAr: "موافقات اللجان الأخلاقية IRB، حماية خصوصية المرضى، وتطبيق إعلان هلسنكي.",
+                    topicsEn: "IRB ethical approval requirements, patient privacy, and the Declaration of Helsinki.",
+                  },
+                ].map((course, idx) => (
+                  <div key={idx} className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3 text-start shadow-2xs hover:border-violet-300 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-mono font-bold text-slate-400">{course.code}</span>
+                      <span className="text-xs font-black text-violet-700 bg-violet-50 border border-violet-200 px-2.5 py-1 rounded-lg">
+                        {course.hours}
+                      </span>
+                    </div>
+                    <h3 className="font-black text-slate-900 text-sm leading-snug">{localize(course.titleAr, course.titleEn)}</h3>
+                    <p className="text-xs text-slate-600 leading-relaxed">{localize(course.topicsAr, course.topicsEn)}</p>
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
+                      <span className="text-emerald-700">✓ شهادة معتمدة فورية</span>
+                      <a
+                        href={whatsappUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-violet-700 hover:text-violet-900 hover:underline"
+                      >
+                        {localize("احجز مقعدك ←", "Reserve seat →")}
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

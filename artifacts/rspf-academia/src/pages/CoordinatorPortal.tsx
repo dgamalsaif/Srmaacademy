@@ -213,63 +213,179 @@ export default function CoordinatorPortal() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f7fa] text-[#172238]" dir={direction}>
+    <div className="min-h-screen bg-[#f8fafc] text-[#172238]" dir={direction}>
       <CoordinatorHeader settings={settings} />
-      <main className="flex min-h-[calc(100vh-78px)] justify-center px-4 pb-28 pt-20 sm:pt-40 lg:pt-[260px]">
-        <div className="w-full max-w-[448px]">
-          <div className="mb-7 text-center">
-            <p className="text-[17px] font-black text-[#172238]">{localize(settings.pageTitle, settings.translations.pageTitle)}</p>
+
+      {/* Hero Banner */}
+      <section className="border-b border-slate-200/80 bg-gradient-to-b from-emerald-50/60 via-slate-50/40 to-[#f8fafc] py-10 px-4 sm:py-14 text-center">
+        <div className="max-w-4xl mx-auto">
+          <div className="inline-flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-1 text-xs font-black text-[#117b59] mb-3 shadow-2xs">
+            <Shield size={14} className="text-[#117b59]" />
+            <span>{localize(settings.pageTitle, settings.translations.pageTitle)}</span>
           </div>
-
-          <aside data-testid="coordinator-welcome-guide" className="srma-welcome-card mb-6 rounded-2xl border border-[#d8eee7] bg-[#f3fbf8] p-5 text-right">
-            <p className="text-sm font-black text-[#117b59]">{localize("مرحباً بك، منسق الأبحاث 👋", "Welcome, research coordinator 👋")}</p>
-            <h2 className="mt-1 text-lg font-black text-[#172238]">{localize("دليلك السريع لاستخدام البوابة", "Your quick guide to the portal")}</h2>
-            <ol className="mt-3 space-y-2 text-xs leading-6 text-slate-600">
-              <li><strong>1.</strong> {localize("أدخل رمز الدخول للوصول إلى لوحة المنسق.", "Enter your access code to sign in.")}</li>
-              <li><strong>2.</strong> {localize("استخدم القائمة لاستعراض الفرص وتسجيل الطلاب.", "Use the menu to view opportunities and register students.")}</li>
-              <li><strong>3.</strong> {localize("راجع طلابك وتابع حالة تسجيلاتهم.", "Review your students and follow their registration status.")}</li>
-            </ol>
-          </aside>
-          <div className="page-enter rounded-2xl border border-slate-200/80 bg-white p-8 text-center shadow-[0_16px_30px_rgba(17,38,59,0.12)]">
-            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#e7f3ef]">
-              <Shield size={27} className="text-[#117b59]" strokeWidth={2.2} />
-            </div>
-            <h1 className="mb-2 text-xl font-black text-[#172238]">{localize(settings.loginTitle, settings.translations.loginTitle)}</h1>
-            <p className="mb-7 text-sm text-slate-500">{localize(settings.loginDescription, settings.translations.loginDescription)}</p>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <input type="text" name="username" autoComplete="username" tabIndex={-1} aria-hidden="true" className="absolute h-0 w-0 opacity-0 pointer-events-none" />
-              <div>
-                <label htmlFor="coordinator-password" className="mb-2 block text-right text-sm font-semibold text-[#263447]">{localize(settings.codeLabel, settings.translations.codeLabel)}</label>
-                <input
-                  id="coordinator-password"
-                  data-testid="input-coordinator-password"
-                  type="password"
-                  required
-                  autoComplete="current-password"
-                  placeholder={localize(settings.codePlaceholder, settings.translations.codePlaceholder)}
-                  value={password}
-                  onChange={(e) => { setPassword(e.target.value); setError(""); }}
-                  className={`w-full rounded-xl border bg-white px-5 py-3.5 text-right text-sm outline-none transition-colors ${error ? "border-red-300 focus:ring-2 focus:ring-red-200" : "border-slate-200 focus:border-[#117b59] focus:ring-2 focus:ring-[#117b59]/20"}`}
-                />
-              </div>
-              {error && <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-right text-sm text-red-500">{error}</p>}
-              <button data-testid="button-coordinator-login" type="submit" disabled={loggingIn} className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#117b59] py-3.5 text-base font-bold text-white shadow-[0_8px_18px_rgba(17,123,89,0.18)] transition-colors hover:bg-[#0c6549] disabled:cursor-wait disabled:opacity-70">
-                {loggingIn ? <><Loader2 size={18} className="animate-spin" /> {language === "en" ? "Verifying..." : "جارٍ التحقق..."}</> : localize(settings.loginLabel, settings.translations.loginLabel)}
-              </button>
-            </form>
-
-            <div className="mt-5 border-t border-slate-100 pt-5">
-              <p className="text-sm text-slate-500">
-                {localize(settings.registrationPrefix, settings.translations.registrationPrefix)}{" "}
-                <button type="button" onClick={() => setRequestOpen(true)} data-testid="link-coordinator-help" className="font-bold text-[#117b59] hover:underline">
-                  {localize(settings.registrationLabel, settings.translations.registrationLabel)}
-                </button>
-              </p>
-            </div>
-          </div>
-          <p className="mt-6 text-center text-xs text-slate-400">{localize(settings.footnote, settings.translations.footnote)}</p>
+          <h1 className="text-2xl sm:text-4xl font-black text-slate-900 tracking-tight leading-snug">
+            {localize("بوابة منسقي الأبحاث والبرامج الأكاديمية", "Academic Research Coordinators Portal")}
+          </h1>
+          <p className="mt-2 text-sm sm:text-base text-slate-600 max-w-2xl mx-auto font-medium leading-relaxed">
+            {localize(
+              "المنصة المعتمدة لتنسيق الفرص البحثية، إدارة تسجيل الطلاب والمشاركين، ومتابعة المستحقات والاعتمادات الرسمية بكل شفافية وسرعة.",
+              "The accredited platform to coordinate research opportunities, manage student registrations, and track official dues and accreditations transparently."
+            )}
+          </p>
         </div>
+      </section>
+
+      {/* Main Workspace Area */}
+      <main className="max-w-5xl mx-auto px-4 py-8 sm:py-12">
+        <div className="grid gap-8 lg:grid-cols-12 items-start">
+          {/* Guide & Value Card (lg:col-span-7) */}
+          <div className="lg:col-span-7 space-y-6">
+            <aside data-testid="coordinator-welcome-guide" className="rounded-3xl border border-emerald-100 bg-white p-6 sm:p-8 shadow-xs text-start space-y-5">
+              <div className="flex items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                <div>
+                  <p className="text-xs font-black text-[#117b59] tracking-wider uppercase">{localize("دليل منسق الأبحاث", "Coordinator Guide")}</p>
+                  <h2 className="text-xl font-black text-slate-900 mt-1">{localize("رحلة عمل المنسق في 3 خطوات بسيطة", "Coordinator Workflow in 3 Simple Steps")}</h2>
+                </div>
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-[#117b59] border border-emerald-100">
+                  <GraduationCap size={24} />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-slate-50 border border-slate-100 hover:border-emerald-200 transition-colors">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-[#117b59] text-white font-black text-xs">1</span>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900">{localize("تسجيل الدخول واستعراض الفرص", "Sign in & Browse Opportunities")}</h3>
+                    <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">{localize("أدخل رمزك المعتمد لاستعراض المقاعد المتبقية لكل تخصص والأسعار المعتمدة.", "Enter your code to browse remaining seats per specialty and approved pricing.")}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-slate-50 border border-slate-100 hover:border-emerald-200 transition-colors">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-[#0C3156] text-white font-black text-xs">2</span>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900">{localize("تسجيل الطلاب وحجز المقاعد", "Register Students & Reserve Seats")}</h3>
+                    <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">{localize("سجل بيانات طلابك مباشرة، واختر دور الكاتب الأول أو المشارك بسهولة فائقة.", "Submit student details directly and select First Author or Co-Author roles seamlessly.")}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3.5 p-3.5 rounded-2xl bg-slate-50 border border-slate-100 hover:border-emerald-200 transition-colors">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-amber-600 text-white font-black text-xs">3</span>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-900">{localize("متابعة الدفعات والمستحقات والشهادات", "Track Payments, Dues & Certificates")}</h3>
+                    <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">{localize("راقب حالة سداد الطلاب، عمولاتك المستحقة، وتحميل تقارير الإنجاز لحظياً.", "Monitor payment status, commission payouts, and download progress reports instantly.")}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Direct Support channel for coordinators */}
+              <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
+                <span className="text-xs font-bold text-slate-500">{localize("تحتاج مساعدة أو استفسار بخصوص رمز المنسق؟", "Need assistance with your coordinator code?")}</span>
+                <button
+                  type="button"
+                  onClick={() => setRequestOpen(true)}
+                  className="inline-flex items-center gap-1.5 text-xs font-black text-[#117b59] hover:underline"
+                >
+                  <MessageCircle size={14} />
+                  <span>{localize("تواصل مع إدارة المنسقين", "Contact Coordinators Admin")}</span>
+                </button>
+              </div>
+            </aside>
+          </div>
+
+          {/* Login Card (lg:col-span-5) */}
+          <div className="lg:col-span-5">
+            <div className="rounded-3xl border border-slate-200 bg-white p-7 sm:p-8 shadow-sm space-y-5 text-center">
+              <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e7f3ef] border border-emerald-100 shadow-2xs">
+                <Shield size={28} className="text-[#117b59]" strokeWidth={2.2} />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-slate-900">{localize(settings.loginTitle, settings.translations.loginTitle)}</h2>
+                <p className="mt-1.5 text-xs text-slate-500 leading-relaxed">{localize(settings.loginDescription, settings.translations.loginDescription)}</p>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4 pt-1">
+                <input type="text" name="username" autoComplete="username" tabIndex={-1} aria-hidden="true" className="absolute h-0 w-0 opacity-0 pointer-events-none" />
+                <div className="text-start">
+                  <label htmlFor="coordinator-password" className="mb-1.5 block text-xs font-black text-slate-700">
+                    {localize(settings.codeLabel, settings.translations.codeLabel)}
+                  </label>
+                  <input
+                    id="coordinator-password"
+                    data-testid="input-coordinator-password"
+                    type="password"
+                    required
+                    autoComplete="current-password"
+                    placeholder={localize(settings.codePlaceholder, settings.translations.codePlaceholder)}
+                    value={password}
+                    onChange={(e) => { setPassword(e.target.value); setError(""); }}
+                    className={`w-full rounded-xl border bg-slate-50 px-4 py-3 text-sm font-bold text-slate-900 outline-none transition-all ${
+                      error
+                        ? "border-red-300 focus:bg-white focus:ring-2 focus:ring-red-200"
+                        : "border-slate-200 focus:border-[#117b59] focus:bg-white focus:ring-2 focus:ring-[#117b59]/15"
+                    }`}
+                  />
+                </div>
+                {error && (
+                  <p className="rounded-xl border border-red-200 bg-red-50 p-2.5 text-right text-xs font-bold text-red-600 animate-in fade-in">
+                    {error}
+                  </p>
+                )}
+                <button
+                  data-testid="button-coordinator-login"
+                  type="submit"
+                  disabled={loggingIn}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#117b59] py-3.5 text-sm font-black text-white shadow-sm transition-all hover:bg-[#0c6549] disabled:cursor-wait disabled:opacity-70"
+                >
+                  {loggingIn ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      <span>{language === "en" ? "Verifying..." : "جارٍ التحقق..."}</span>
+                    </>
+                  ) : (
+                    <span>{localize(settings.loginLabel, settings.translations.loginLabel)}</span>
+                  )}
+                </button>
+              </form>
+
+              <div className="pt-4 border-t border-slate-100">
+                <p className="text-xs text-slate-500">
+                  {localize(settings.registrationPrefix, settings.translations.registrationPrefix)}{" "}
+                  <button
+                    type="button"
+                    onClick={() => setRequestOpen(true)}
+                    data-testid="link-coordinator-help"
+                    className="font-black text-[#117b59] hover:underline"
+                  >
+                    {localize(settings.registrationLabel, settings.translations.registrationLabel)}
+                  </button>
+                </p>
+              </div>
+            </div>
+
+            <p className="mt-4 text-center text-xs text-slate-400">
+              {localize(settings.footnote, settings.translations.footnote)}
+            </p>
+          </div>
+        </div>
+
+        {/* 3 Value Pillars */}
+        <section className="mt-12 pt-8 border-t border-slate-200 grid gap-4 sm:grid-cols-3">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-5 text-start space-y-2 shadow-2xs">
+            <span className="text-2xl">⚡</span>
+            <h3 className="text-sm font-black text-slate-900">{localize("حجز وتسجيل فوري", "Instant Seat Reservations")}</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">{localize("تحديث فوري لعدد المقاعد المتاحة مع تثبيت مقاعد الطلاب تلقائياً فور الإرسال.", "Real-time updates on seat availability with automatic seat reservation upon submission.")}</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-5 text-start space-y-2 shadow-2xs">
+            <span className="text-2xl">💳</span>
+            <h3 className="text-sm font-black text-slate-900">{localize("شفافية المستحقات المالية", "Financial Transparency")}</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">{localize("لوحة تفصيلية توضح كل دفعة، تاريخ السداد، وقيمة العمولات المعتمدة لك.", "Detailed panel showing every payment, transaction date, and approved commissions.")}</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-5 text-start space-y-2 shadow-2xs">
+            <span className="text-2xl">📑</span>
+            <h3 className="text-sm font-black text-slate-900">{localize("تقارير وكشوفات رسمية", "Official Reports & Records")}</h3>
+            <p className="text-xs text-slate-600 leading-relaxed">{localize("تصدير وطباعة كشوفات بأسماء الطلاب وتخصصاتهم وحالات النشر بكل سهولة.", "Export and print rosters of student names, specialties, and publication statuses easily.")}</p>
+          </div>
+        </section>
       </main>
       <Footer />
       <FloatingButtons
