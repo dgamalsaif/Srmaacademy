@@ -54,13 +54,14 @@ const EMPTY_FORM: Omit<ResearchOpportunity, "id" | "createdAt"> = {
 
 type FormData = Omit<ResearchOpportunity, "id" | "createdAt">;
 
-function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, settings }: { initial: FormData; onSave: (data: FormData, imageToken: string | null) => void; onClose: () => void; isEdit: boolean; requiredFields: OpportunityFieldId[]; settings: SiteContentSettings; }) {
+function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, settings }: { initial: FormData; onSave: (data: FormData, imageToken: string | null) => Promise<{ error?: string } | void> | void; onClose: () => void; isEdit: boolean; requiredFields: OpportunityFieldId[]; settings: SiteContentSettings; }) {
   const [form, setForm] = useState<FormData>({ ...initial, benefits: [...(initial.benefits || ["", "", ""])] });
   const [indexedStr, setIndexedStr] = useState((initial.indexedIn || []).join("، "));
   const [benefitsArr, setBenefitsArr] = useState<string[]>(initial.benefits?.length ? [...initial.benefits] : ["", "", ""]);
   const [formError, setFormError] = useState("");
   const [imageToken, setImageToken] = useState<string | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const isCompletedResearch = form.category === "completed";
   const completedStatus = ["seats_full", "ethics_approved", "submitted", "under_review", "accepted", "published"].includes(form.status) ? form.status : "seats_full";
   const isRequired = (field: OpportunityFieldId) => requiredFields.includes(field);
@@ -81,7 +82,7 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, s
     setIndexedStr(indexed.join("، "));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (imageUploading) {
       setFormError("انتظر حتى يكتمل رفع الصورة قبل حفظ الفرصة.");
@@ -118,7 +119,17 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, s
       return;
     }
     setFormError("");
-    onSave(nextForm, imageToken);
+    setSubmitting(true);
+    try {
+      const res = await onSave(nextForm, imageToken);
+      if (res && typeof res === "object" && res.error) {
+        setFormError(res.error);
+        setSubmitting(false);
+      }
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : "حدث خطأ غير متوقع أثناء الحفظ.");
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -302,11 +313,18 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, s
 
           {formError && <p className="rounded-xl bg-red-50 px-4 py-3 text-center text-sm font-bold text-red-600">{formError}</p>}
           <div className="flex gap-3 pt-4 border-t border-slate-100">
-            <button type="button" onClick={onClose} className="flex-1 border border-slate-200 text-slate-600 font-bold py-3.5 rounded-2xl hover:bg-slate-50 transition-colors text-sm shadow-sm">
+            <button type="button" onClick={onClose} disabled={submitting} className="flex-1 border border-slate-200 text-slate-600 font-bold py-3.5 rounded-2xl hover:bg-slate-50 transition-colors text-sm shadow-sm disabled:opacity-50">
               إلغاء
             </button>
-            <button type="submit" className="flex-1 bg-[#117b59] text-white font-bold py-3.5 rounded-2xl hover:bg-[#0c6549] transition-colors text-sm shadow-sm">
-               {isEdit ? "حفظ التعديلات" : (isCompletedResearch ? "إضافة الدراسة" : "إضافة الفرصة")}
+            <button type="submit" disabled={submitting || imageUploading} className="flex-1 flex items-center justify-center gap-2 bg-[#117b59] text-white font-bold py-3.5 rounded-2xl hover:bg-[#0c6549] transition-colors text-sm shadow-sm disabled:opacity-60">
+              {submitting ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  <span>جارٍ الحفظ...</span>
+                </>
+              ) : (
+                <span>{isEdit ? "حفظ التعديلات" : (isCompletedResearch ? "إضافة الدراسة" : "إضافة الفرصة")}</span>
+              )}
             </button>
           </div>
         </form>
@@ -315,7 +333,21 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, s
   );
 }
 
-function DeleteConfirmModal({ research, onConfirm, onClose }: { research: ResearchOpportunity; onConfirm: () => void; onClose: () => void }) {
+function DeleteConfirmModal({ research, onConfirm, onClose }: { research: ResearchOpportunity; onConfirm: () => Promise<void> | void; onClose: () => void }) {
+  const [deleting, setDeleting] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleConfirm = async () => {
+    setDeleting(true);
+    setError("");
+    try {
+      await onConfirm();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "تعذر حذف الفرصة البحثية.");
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
@@ -326,12 +358,20 @@ function DeleteConfirmModal({ research, onConfirm, onClose }: { research: Resear
         <h3 className="text-xl font-black text-slate-800 text-center mb-2">حذف الفرصة البحثية</h3>
         <p className="text-slate-500 text-sm text-center mb-6">هل أنت متأكد من حذف هذه الفرصة؟ لا يمكن التراجع عن هذا الإجراء.</p>
         <p className="text-xs text-slate-700 font-bold bg-slate-50 border border-slate-100 rounded-xl p-4 mb-6 line-clamp-2 text-center" dir="ltr">{research.titleEn || research.title}</p>
+        {error && <p className="mb-4 rounded-xl bg-red-50 p-3 text-center text-xs font-bold text-red-600">{error}</p>}
         <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 border border-slate-200 text-slate-600 font-bold py-3 rounded-2xl hover:bg-slate-50 transition-colors text-sm shadow-sm">
+          <button onClick={onClose} disabled={deleting} className="flex-1 border border-slate-200 text-slate-600 font-bold py-3 rounded-2xl hover:bg-slate-50 transition-colors text-sm shadow-sm disabled:opacity-50">
             إلغاء
           </button>
-          <button onClick={onConfirm} className="flex-1 bg-red-500 text-white font-bold py-3 rounded-2xl hover:bg-red-600 transition-colors text-sm shadow-sm">
-            حذف نهائياً
+          <button onClick={handleConfirm} disabled={deleting} className="flex-1 flex items-center justify-center gap-2 bg-red-500 text-white font-bold py-3 rounded-2xl hover:bg-red-600 transition-colors text-sm shadow-sm disabled:opacity-60">
+            {deleting ? (
+              <>
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                <span>جارٍ الحذف...</span>
+              </>
+            ) : (
+              <span>حذف نهائياً</span>
+            )}
           </button>
         </div>
       </div>
@@ -784,37 +824,52 @@ export default function AdminDashboard() {
     ...(typeof imageToken === "string" ? { imageToken } : {}),
   });
 
-  const handleAdd = async (form: FormData, imageToken: string | null) => {
-    const response = await fetch("/api/programs", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(toPayload(form, imageToken)),
-    });
-    const saved = await response.json() as ResearchOpportunity;
-    if (!response.ok) return;
-    setResearch((items) => [saved, ...items]);
-    setFormOpen(false);
+  const handleAdd = async (form: FormData, imageToken: string | null): Promise<{ error?: string } | void> => {
+    try {
+      const response = await fetch("/api/programs", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(toPayload(form, imageToken)),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return { error: data.error || "تعذر إضافة الفرصة البحثية." };
+      }
+      setResearch((items) => [data as ResearchOpportunity, ...items]);
+      setFormOpen(false);
+    } catch {
+      return { error: "تعذر الاتصال بالخادم. يرجى المحاولة لاحقاً." };
+    }
   };
 
-  const handleEdit = async (form: FormData, imageToken: string | null) => {
+  const handleEdit = async (form: FormData, imageToken: string | null): Promise<{ error?: string } | void> => {
     if (!editItem) return;
-    const response = await fetch(`/api/programs/${editItem.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(toPayload(form, imageToken)),
-    });
-    const saved = await response.json() as ResearchOpportunity;
-    if (response.ok) setResearch((items) => items.map((item) => item.id === saved.id ? saved : item));
-    setEditItem(null);
+    try {
+      const response = await fetch(`/api/programs/${editItem.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(toPayload(form, imageToken)),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        return { error: data.error || "تعذر تعديل الفرصة البحثية." };
+      }
+      setResearch((items) => items.map((item) => item.id === (data as ResearchOpportunity).id ? (data as ResearchOpportunity) : item));
+      setEditItem(null);
+    } catch {
+      return { error: "تعذر الاتصال بالخادم. يرجى المحاولة لاحقاً." };
+    }
   };
 
   const handleDelete = async () => {
     if (!deleteItem) return;
     const response = await fetch(`/api/programs/${deleteItem.id}`, { method: "DELETE" });
-    if (response.ok) {
-      setResearch((items) => items.filter((item) => item.id !== deleteItem.id));
-      setDeleteItem(null);
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || "تعذر حذف الفرصة البحثية.");
     }
+    setResearch((items) => items.filter((item) => item.id !== deleteItem.id));
+    setDeleteItem(null);
   };
 
   const toggleSelect = (id: number) => {
@@ -1067,7 +1122,7 @@ export default function AdminDashboard() {
         <div className="flex items-center gap-4">
            <img src={SRMA_LOGO} alt="" className="h-12 w-12 rounded-2xl border border-emerald-100 object-cover shadow-sm" />
            <div className="text-right">
-             <h1 className="text-2xl font-black text-slate-800">لوحة تحكم المنسق</h1>
+             <h1 className="text-2xl font-black text-slate-800">{role === "owner" ? "لوحة الإدارة والتحكم" : "لوحة تحكم المنسق"}</h1>
               <p className="text-sm text-slate-500 mt-1 font-medium">أهلاً بك، {accountName || (role === "owner" ? "المدير العام" : "منسق البرامج")}</p>
            </div>
         </div>

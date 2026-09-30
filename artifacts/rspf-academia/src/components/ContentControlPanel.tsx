@@ -133,20 +133,217 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                 {settings.brand.appIconUrl && <img src={settings.brand.appIconUrl} alt="معاينة أيقونة التطبيق" className="mt-3 h-14 w-14 rounded-2xl border border-slate-200 object-cover" />}
               </div>
               <ColorField label="لون التطبيق عند التشغيل" value={settings.brand.appThemeColor} onChange={(v) => updateBrand("appThemeColor", v)} />
-              <TextField label="رقم الهاتف للاتصال" value={settings.brand.phone} onChange={(v) => updateBrand("phone", v)} />
-              <TextField label="رقم واتساب مع رمز الدولة" value={settings.brand.whatsapp} onChange={(v) => updateBrand("whatsapp", v)} />
-              <TextField label="رقم واتساب للمشاركين" value={settings.brand.participantWhatsapp} onChange={(v) => updateBrand("participantWhatsapp", v)} />
-              <TextField label="رقم واتساب للمنسقين وطلبات الاعتماد" value={settings.brand.coordinatorWhatsapp} onChange={(v) => updateBrand("coordinatorWhatsapp", v)} />
-              <TextField label="رابط قناة واتساب" value={settings.brand.whatsappChannelUrl} onChange={(v) => updateBrand("whatsappChannelUrl", v)} />
-              <TextField label="البريد الإلكتروني" value={settings.brand.email} onChange={(v) => updateBrand("email", v)} />
-              <TextField label="رابط أو معرف تيليجرام" value={settings.brand.telegramUsername} onChange={(v) => updateBrand("telegramUsername", v)} />
-              <TextField label="رابط أو معرف إنستجرام" value={settings.brand.instagramUsername} onChange={(v) => updateBrand("instagramUsername", v)} />
-              <TextField label="رابط أو معرف منصة X" value={settings.brand.xUsername} onChange={(v) => updateBrand("xUsername", v)} />
-              <TextField label="رابط أو معرف لينكد إن" value={settings.brand.linkedinUsername} onChange={(v) => updateBrand("linkedinUsername", v)} />
-              <TextField label="رابط فيسبوك الكامل" value={settings.brand.facebookUrl} onChange={(v) => updateBrand("facebookUrl", v)} />
-              <TextField label="رابط تيك توك الكامل" value={settings.brand.tiktokUrl} onChange={(v) => updateBrand("tiktokUrl", v)} />
-              <TextField label="رابط يوتيوب الكامل" value={settings.brand.youtubeUrl} onChange={(v) => updateBrand("youtubeUrl", v)} />
-              <TextField label="رابط سناب شات الكامل" value={settings.brand.snapchatUrl} onChange={(v) => updateBrand("snapchatUrl", v)} />
+
+              {/* PRIMARY OFFICIAL CONTACT CHANNELS */}
+              <div className="md:col-span-2 rounded-2xl border-2 border-emerald-500/40 bg-gradient-to-br from-emerald-50/70 via-white to-teal-50/40 p-5 space-y-4 shadow-sm">
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-emerald-100 pb-3">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#117b59] text-white shadow-xs">
+                      <Phone size={20} />
+                    </span>
+                    <div>
+                      <h3 className="font-black text-slate-900 text-base">بيانات التواصل الرسمية الأساسية (الهاتف، الواتساب، البريد، وتيليجرام)</h3>
+                      <p className="text-xs text-slate-600 mt-0.5">يمكنك تعديل وإضافة وحفظ أي رقم أو بريد أو معرف تيليجرام من هنا مباشرة؛ وستنعكس فوراً في كامل صفحات المنصة والأزرار.</p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-black text-emerald-800 bg-emerald-100/80 px-3 py-1.5 rounded-xl border border-emerald-200">
+                    تعديل وحفظ مباشر بنقرة واحدة
+                  </span>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {/* 1. Phone */}
+                  <div className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-2 shadow-2xs hover:border-emerald-300 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-1.5 text-xs font-black text-slate-800">
+                        <Phone size={15} className="text-[#117b59]" />
+                        رقم الهاتف للاتصال المباشر
+                      </label>
+                      <span className="text-[10px] font-bold text-slate-400">مكالمات هاتفية</span>
+                    </div>
+                    <input
+                      type="text"
+                      dir="ltr"
+                      value={settings.brand.phone || ""}
+                      onChange={(e) => updateBrand("phone", e.target.value)}
+                      placeholder="+966562159258"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-800 text-left outline-none focus:border-[#117b59] focus:bg-white focus:ring-2 focus:ring-[#117b59]/10"
+                    />
+                    <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100">
+                      <span className="text-slate-500 font-medium truncate">
+                        الرابط: <code className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-mono">tel:{settings.brand.phone || "+966562159258"}</code>
+                      </span>
+                      {settings.brand.phone && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateBrand("contactUsValue", settings.brand.phone);
+                            updateBrand("opportunityContactPhone", settings.brand.phone);
+                          }}
+                          className="shrink-0 text-[10px] font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200"
+                          title="نسخ هذا الرقم إلى أزرار الاستفسار وتواصل معنا"
+                        >
+                          مزامنة للأزرار
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 2. WhatsApp */}
+                  <div className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-2 shadow-2xs hover:border-emerald-300 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-1.5 text-xs font-black text-slate-800">
+                        <MessageCircle size={15} className="text-emerald-600" />
+                        رقم الواتساب الرئيسي
+                      </label>
+                      <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">مع رمز الدولة</span>
+                    </div>
+                    <input
+                      type="text"
+                      dir="ltr"
+                      value={settings.brand.whatsapp || ""}
+                      onChange={(e) => updateBrand("whatsapp", e.target.value)}
+                      placeholder="966562159258"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-800 text-left outline-none focus:border-[#117b59] focus:bg-white focus:ring-2 focus:ring-[#117b59]/10"
+                    />
+                    <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100">
+                      <span className="text-slate-500 font-medium truncate">
+                        الرابط: <code className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-mono">wa.me/{settings.brand.whatsapp || "966562159258"}</code>
+                      </span>
+                      {settings.brand.whatsapp && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateBrand("contactUsValue", settings.brand.whatsapp);
+                            updateBrand("opportunityContactWhatsapp", settings.brand.whatsapp);
+                            updateBrand("opportunityInquiryValue", settings.brand.whatsapp);
+                          }}
+                          className="shrink-0 text-[10px] font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-2 py-0.5 rounded border border-emerald-200"
+                          title="مزامنة هذا الرقم لجميع أزرار الواتساب"
+                        >
+                          مزامنة للأزرار
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 3. Email */}
+                  <div className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-2 shadow-2xs hover:border-amber-300 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-1.5 text-xs font-black text-slate-800">
+                        <Mail size={15} className="text-amber-600" />
+                        البريد الإلكتروني الرسمي
+                      </label>
+                      <span className="text-[10px] font-bold text-slate-400">إيميل رسمي</span>
+                    </div>
+                    <input
+                      type="email"
+                      dir="ltr"
+                      value={settings.brand.email || ""}
+                      onChange={(e) => updateBrand("email", e.target.value)}
+                      placeholder="srmaacademy@gmail.com"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-800 text-left outline-none focus:border-amber-500 focus:bg-white focus:ring-2 focus:ring-amber-500/10"
+                    />
+                    <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100">
+                      <span className="text-slate-500 font-medium truncate">
+                        الرابط: <code className="text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded font-mono">mailto:{settings.brand.email || "srmaacademy@gmail.com"}</code>
+                      </span>
+                      {settings.brand.email && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateBrand("opportunityContactEmail", settings.brand.email);
+                            if (settings.brand.contactUsType === "email") updateBrand("contactUsValue", settings.brand.email);
+                          }}
+                          className="shrink-0 text-[10px] font-bold text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-2 py-0.5 rounded border border-amber-200"
+                          title="مزامنة هذا البريد لجميع أزرار الإيميل"
+                        >
+                          مزامنة للأزرار
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 4. Telegram */}
+                  <div className="rounded-xl border border-slate-200 bg-white p-3.5 space-y-2 shadow-2xs hover:border-sky-300 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-1.5 text-xs font-black text-slate-800">
+                        <Send size={15} className="text-sky-600" />
+                        معرف أو رقم تيليجرام
+                      </label>
+                      <span className="text-[10px] font-bold text-sky-600 bg-sky-50 px-2 py-0.5 rounded">معرف @ أو رقم دولي</span>
+                    </div>
+                    <input
+                      type="text"
+                      dir="ltr"
+                      value={settings.brand.telegramUsername || ""}
+                      onChange={(e) => updateBrand("telegramUsername", e.target.value)}
+                      placeholder="@SRMAAcademy أو +966562159258"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-800 text-left outline-none focus:border-sky-500 focus:bg-white focus:ring-2 focus:ring-sky-500/10"
+                    />
+                    <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100">
+                      {(() => {
+                        const raw = (settings.brand.telegramUsername || "").trim();
+                        const isPhone = /^\+?\d{8,15}$/.test(raw.replace(/\s+/g, "")) || /^05\d{8}$/.test(raw.replace(/\s+/g, ""));
+                        const isUrl = raw.startsWith("http");
+                        const clean = raw.replace(/^@/, "").replace(/^https?:\/\/t\.me\//, "");
+                        return (
+                          <span className="text-slate-500 font-medium truncate">
+                            {isUrl ? (
+                              <span className="text-sky-700 font-bold">رابط مباشر: <code className="font-mono text-[10px]">{raw}</code></span>
+                            ) : isPhone ? (
+                              <span className="text-emerald-700 font-bold">رقم هاتف: <code className="font-mono text-[10px]">tg://resolve?phone=...</code></span>
+                            ) : (
+                              <span className="text-sky-700 font-bold">معرف: <code className="font-mono text-[10px]">t.me/{clean || "SRMAAcademy"}</code></span>
+                            )}
+                          </span>
+                        );
+                      })()}
+                      {settings.brand.telegramUsername && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            updateBrand("opportunityContactTelegram", settings.brand.telegramUsername);
+                            updateBrand("opportunityInquiryTelegram", settings.brand.telegramUsername);
+                            if (settings.brand.contactUsType === "telegram") updateBrand("contactUsValue", settings.brand.telegramUsername);
+                          }}
+                          className="shrink-0 text-[10px] font-bold text-sky-700 hover:text-sky-900 bg-sky-50 hover:bg-sky-100 px-2 py-0.5 rounded border border-sky-200"
+                          title="مزامنة معرف تيليجرام لجميع أزرار تيليجرام"
+                        >
+                          مزامنة للأزرار
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional WhatsApp numbers (Participants & Coordinators) */}
+                <div className="pt-2 border-t border-emerald-100">
+                  <p className="text-xs font-bold text-slate-700 mb-2">أرقام واتساب إضافية مخصصة (اختياري):</p>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    <TextField label="واتساب المشتركين" value={settings.brand.participantWhatsapp || ""} onChange={(v) => updateBrand("participantWhatsapp", v)} placeholder="966562159258" />
+                    <TextField label="واتساب المنسقين والاعتماد" value={settings.brand.coordinatorWhatsapp || ""} onChange={(v) => updateBrand("coordinatorWhatsapp", v)} placeholder="966562159258" />
+                    <TextField label="رابط قناة واتساب العامة" value={settings.brand.whatsappChannelUrl || ""} onChange={(v) => updateBrand("whatsappChannelUrl", v)} placeholder="https://whatsapp.com/channel/..." />
+                  </div>
+                </div>
+              </div>
+
+              {/* SOCIAL MEDIA ACCOUNTS */}
+              <div className="md:col-span-2 rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
+                <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                  <Share2 className="text-[#117b59]" size={18} />
+                  <h4 className="font-bold text-slate-800 text-sm">حسابات التواصل الاجتماعي الأخرى (إنستجرام، X، لينكد إن، فيسبوك...)</h4>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                  <TextField label="رابط أو معرف إنستجرام" value={settings.brand.instagramUsername} onChange={(v) => updateBrand("instagramUsername", v)} />
+                  <TextField label="رابط أو معرف منصة X" value={settings.brand.xUsername} onChange={(v) => updateBrand("xUsername", v)} />
+                  <TextField label="رابط أو معرف لينكد إن" value={settings.brand.linkedinUsername} onChange={(v) => updateBrand("linkedinUsername", v)} />
+                  <TextField label="رابط فيسبوك الكامل" value={settings.brand.facebookUrl} onChange={(v) => updateBrand("facebookUrl", v)} />
+                  <TextField label="رابط تيك توك الكامل" value={settings.brand.tiktokUrl} onChange={(v) => updateBrand("tiktokUrl", v)} />
+                  <TextField label="رابط يوتيوب الكامل" value={settings.brand.youtubeUrl} onChange={(v) => updateBrand("youtubeUrl", v)} />
+                  <TextField label="رابط سناب شات الكامل" value={settings.brand.snapchatUrl} onChange={(v) => updateBrand("snapchatUrl", v)} />
+                </div>
+              </div>
 
               <div className="md:col-span-2 rounded-2xl border-2 border-emerald-300 bg-emerald-50/50 p-5 space-y-4">
                 <div className="flex items-center gap-2">
@@ -165,29 +362,70 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                       <option value="whatsapp">واتساب (رقم أو رابط)</option>
                       <option value="phone">اتصال هاتفي مباشر (رقم هاتف)</option>
                       <option value="email">بريد إلكتروني (إيميل)</option>
-                      <option value="telegram">تيليجرام (اسم مستخدم أو رابط)</option>
+                      <option value="telegram">تيليجرام (اسم مستخدم أو رقم أو رابط)</option>
                       <option value="instagram">إنستجرام (اسم مستخدم أو رابط)</option>
                       <option value="custom_url">رابط ويب مخصص</option>
                     </select>
                   </div>
-                  <TextField
-                    label={
-                      settings.brand.contactUsType === "phone"
-                        ? "رقم الهاتف للاتصال"
-                        : settings.brand.contactUsType === "email"
-                        ? "البريد الإلكتروني"
-                        : settings.brand.contactUsType === "telegram"
-                        ? "اسم المستخدم في تيليجرام أو الرابط"
-                        : settings.brand.contactUsType === "instagram"
-                        ? "اسم المستخدم في إنستجرام أو الرابط"
-                        : settings.brand.contactUsType === "custom_url"
-                        ? "الرابط المخصص بالكامل"
-                        : "رقم الواتساب أو الرابط"
-                    }
-                    value={settings.brand.contactUsValue || ""}
-                    onChange={(v) => updateBrand("contactUsValue", v)}
-                    placeholder="مثال: 966562159258 أو srma@example.com أو @SRMAAcademy"
-                  />
+                  <div>
+                    <TextField
+                      label={
+                        settings.brand.contactUsType === "phone"
+                          ? "رقم الهاتف للاتصال"
+                          : settings.brand.contactUsType === "email"
+                          ? "البريد الإلكتروني"
+                          : settings.brand.contactUsType === "telegram"
+                          ? "اسم المستخدم في تيليجرام أو رقم الهاتف"
+                          : settings.brand.contactUsType === "instagram"
+                          ? "اسم المستخدم في إنستجرام أو الرابط"
+                          : settings.brand.contactUsType === "custom_url"
+                          ? "الرابط المخصص بالكامل"
+                          : "رقم الواتساب أو الرابط"
+                      }
+                      value={settings.brand.contactUsValue || ""}
+                      onChange={(v) => updateBrand("contactUsValue", v)}
+                      placeholder="مثال: 966562159258 أو srma@example.com أو @SRMAAcademy"
+                    />
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <span className="text-[10px] text-slate-500 font-semibold">تعبئة سريعة:</span>
+                      {settings.brand.contactUsType === "whatsapp" && settings.brand.whatsapp && (
+                        <button
+                          type="button"
+                          onClick={() => updateBrand("contactUsValue", settings.brand.whatsapp)}
+                          className="px-2 py-0.5 rounded text-[10px] font-bold bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-50"
+                        >
+                          واتساب الأكاديمية ({settings.brand.whatsapp})
+                        </button>
+                      )}
+                      {settings.brand.contactUsType === "phone" && (settings.brand.phone || settings.brand.whatsapp) && (
+                        <button
+                          type="button"
+                          onClick={() => updateBrand("contactUsValue", settings.brand.phone || settings.brand.whatsapp)}
+                          className="px-2 py-0.5 rounded text-[10px] font-bold bg-white border border-blue-300 text-blue-800 hover:bg-blue-50"
+                        >
+                          هاتف الأكاديمية ({settings.brand.phone || settings.brand.whatsapp})
+                        </button>
+                      )}
+                      {settings.brand.contactUsType === "email" && settings.brand.email && (
+                        <button
+                          type="button"
+                          onClick={() => updateBrand("contactUsValue", settings.brand.email)}
+                          className="px-2 py-0.5 rounded text-[10px] font-bold bg-white border border-amber-300 text-amber-800 hover:bg-amber-50"
+                        >
+                          بريد الأكاديمية ({settings.brand.email})
+                        </button>
+                      )}
+                      {settings.brand.contactUsType === "telegram" && settings.brand.telegramUsername && (
+                        <button
+                          type="button"
+                          onClick={() => updateBrand("contactUsValue", settings.brand.telegramUsername)}
+                          className="px-2 py-0.5 rounded text-[10px] font-bold bg-white border border-sky-300 text-sky-800 hover:bg-sky-50"
+                        >
+                          معرف تيليجرام (@{settings.brand.telegramUsername.replace(/^@/, "")})
+                        </button>
+                      )}
+                    </div>
+                  </div>
                   <TextField label="نص الزر بالعربية" value={settings.brand.contactUsLabelAr || "تواصل معنا"} onChange={(v) => updateBrand("contactUsLabelAr", v)} />
                   <TextField label="نص الزر بالإنجليزية" value={settings.brand.contactUsLabelEn || "Contact Us"} onChange={(v) => updateBrand("contactUsLabelEn", v)} />
                 </div>
@@ -221,7 +459,10 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
                         <button
                           type="button"
-                          onClick={() => updateBrand("opportunityInquiryChannel", "whatsapp")}
+                          onClick={() => {
+                            updateBrand("opportunityInquiryChannel", "whatsapp");
+                            updateBrand("opportunityContactType", "whatsapp");
+                          }}
                           className={`p-3 rounded-xl border-2 text-start transition-all relative flex flex-col gap-1 ${
                             (settings.brand.opportunityInquiryChannel || "whatsapp") === "whatsapp"
                               ? "border-emerald-500 bg-emerald-50/80 shadow-xs"
@@ -241,7 +482,10 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
 
                         <button
                           type="button"
-                          onClick={() => updateBrand("opportunityInquiryChannel", "email")}
+                          onClick={() => {
+                            updateBrand("opportunityInquiryChannel", "email");
+                            updateBrand("opportunityContactType", "email");
+                          }}
                           className={`p-3 rounded-xl border-2 text-start transition-all relative flex flex-col gap-1 ${
                             settings.brand.opportunityInquiryChannel === "email"
                               ? "border-amber-500 bg-amber-50/80 shadow-xs"
@@ -261,7 +505,10 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
 
                         <button
                           type="button"
-                          onClick={() => updateBrand("opportunityInquiryChannel", "telegram")}
+                          onClick={() => {
+                            updateBrand("opportunityInquiryChannel", "telegram");
+                            updateBrand("opportunityContactType", "telegram");
+                          }}
                           className={`p-3 rounded-xl border-2 text-start transition-all relative flex flex-col gap-1 ${
                             settings.brand.opportunityInquiryChannel === "telegram"
                               ? "border-sky-500 bg-sky-50/80 shadow-xs"
@@ -281,7 +528,10 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
 
                         <button
                           type="button"
-                          onClick={() => updateBrand("opportunityInquiryChannel", "phone")}
+                          onClick={() => {
+                            updateBrand("opportunityInquiryChannel", "phone");
+                            updateBrand("opportunityContactType", "phone");
+                          }}
                           className={`p-3 rounded-xl border-2 text-start transition-all relative flex flex-col gap-1 ${
                             settings.brand.opportunityInquiryChannel === "phone"
                               ? "border-blue-500 bg-blue-50/80 shadow-xs"
@@ -301,7 +551,10 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
 
                         <button
                           type="button"
-                          onClick={() => updateBrand("opportunityInquiryChannel", "custom_url")}
+                          onClick={() => {
+                            updateBrand("opportunityInquiryChannel", "custom_url");
+                            updateBrand("opportunityContactType", "custom_url");
+                          }}
                           className={`p-3 rounded-xl border-2 text-start transition-all relative flex flex-col gap-1 ${
                             settings.brand.opportunityInquiryChannel === "custom_url"
                               ? "border-purple-500 bg-purple-50/80 shadow-xs"
@@ -321,89 +574,289 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                       </div>
                     </div>
 
-                    <div className="bg-white rounded-xl p-4 border border-slate-200 space-y-3">
+                    <div className="bg-white rounded-xl p-4 border border-slate-200 space-y-4">
                       {(settings.brand.opportunityInquiryChannel || "whatsapp") === "whatsapp" && (
-                        <div>
+                        <div className="space-y-2">
                           <TextField
                             label="رقم الواتساب للاستفسارات عن الفرص"
-                            value={settings.brand.opportunityInquiryValue || settings.brand.opportunityContactWhatsapp || settings.brand.whatsapp || ""}
+                            value={settings.brand.opportunityInquiryWhatsapp ?? settings.brand.opportunityContactWhatsapp ?? ""}
                             onChange={(v) => {
-                              updateBrand("opportunityInquiryValue", v);
+                              updateBrand("opportunityInquiryWhatsapp", v);
                               updateBrand("opportunityContactWhatsapp", v);
                             }}
-                            placeholder="مثال: 966562159258 (أو اتركه فارغاً لاستخدام رقم الواتساب العام)"
+                            placeholder="مثال: 966562159258 أو 0562159258"
+                            dir="ltr"
                           />
-                          <p className="text-[11px] text-slate-500 mt-1">يفتح تطبيق الواتساب مباشرة فور النقر، مع رسالة تلقائية تتضمن اسم الفرصة البحثية.</p>
+                          <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                            <span className="text-[11px] text-slate-500 font-semibold">تعبئة سريعة:</span>
+                            {settings.brand.whatsapp && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  updateBrand("opportunityInquiryWhatsapp", settings.brand.whatsapp);
+                                  updateBrand("opportunityContactWhatsapp", settings.brand.whatsapp);
+                                }}
+                                className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors border border-emerald-200"
+                              >
+                                رقم واتساب العام ({settings.brand.whatsapp})
+                              </button>
+                            )}
+                            {settings.brand.participantWhatsapp && settings.brand.participantWhatsapp !== settings.brand.whatsapp && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  updateBrand("opportunityInquiryWhatsapp", settings.brand.participantWhatsapp);
+                                  updateBrand("opportunityContactWhatsapp", settings.brand.participantWhatsapp);
+                                }}
+                                className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-50 text-slate-700 hover:bg-slate-100 transition-colors border border-slate-200"
+                              >
+                                واتساب المشاركين ({settings.brand.participantWhatsapp})
+                              </button>
+                            )}
+                          </div>
+                          <div className="rounded-lg bg-emerald-50/70 border border-emerald-200/80 p-2.5 text-[11px] text-emerald-900 space-y-1">
+                            <p className="font-bold flex items-center gap-1">
+                              <span>✓</span>
+                              <span>يفتح محادثة فورية في تطبيق الواتساب محملة باسم الفرصة البحثية تلقائياً.</span>
+                            </p>
+                            <p className="text-[10px] text-emerald-700 font-mono dir-ltr truncate text-left">
+                              https://wa.me/{(settings.brand.opportunityInquiryWhatsapp || settings.brand.whatsapp || "966562159258").replace(/[^\d+]/g, "").replace(/^\+/, "")}?text=...
+                            </p>
+                          </div>
                         </div>
                       )}
 
-                      {settings.brand.opportunityInquiryChannel === "email" && (
-                        <div>
-                          <TextField
-                            label="البريد الإلكتروني المخصص للاستفسارات"
-                            value={settings.brand.opportunityInquiryValue || settings.brand.opportunityContactEmail || settings.brand.email || ""}
-                            onChange={(v) => {
-                              updateBrand("opportunityInquiryValue", v);
-                              updateBrand("opportunityContactEmail", v);
-                            }}
-                            placeholder="مثال: srmaacademy@gmail.com"
-                          />
-                          <p className="text-[11px] text-slate-500 mt-1">يفتح عميل البريد الإلكتروني مع إدراج عنوان الفرصة واسمها في الموضوع والمحتوى تلقائياً.</p>
-                        </div>
-                      )}
+                      {settings.brand.opportunityInquiryChannel === "email" && (() => {
+                        const currentEmail = (settings.brand.opportunityInquiryEmail || settings.brand.opportunityContactEmail || settings.brand.email || "srmaacademy@gmail.com").trim();
+                        const testSub = "استفسار بخصوص الفرصة البحثية: فرصة تجريبية";
+                        const testBody = (settings.brand.opportunityInquiryMessageAr || "مرحباً، أود الاستفسار والتسجيل بخصوص الفرصة البحثية: {title}").replace(/{title}/g, "فرصة تجريبية");
+                        const testMailto = `mailto:${currentEmail}?subject=${encodeURIComponent(testSub)}&body=${encodeURIComponent(testBody)}`;
 
-                      {settings.brand.opportunityInquiryChannel === "telegram" && (
-                        <div>
-                          <TextField
-                            label="اسم مستخدم تيليجرام (Username)"
-                            value={settings.brand.opportunityInquiryValue || settings.brand.opportunityContactTelegram || settings.brand.telegramUsername || ""}
-                            onChange={(v) => {
-                              updateBrand("opportunityInquiryValue", v);
-                              updateBrand("opportunityContactTelegram", v);
-                            }}
-                            placeholder="مثال: SRMAAcademy (بدون @)"
-                          />
-                          <p className="text-[11px] text-slate-500 mt-1">يوجه الزائر مباشرة لمحادثة الحساب على تيليجرام مع رسالة استفسار باسم الفرصة.</p>
-                        </div>
-                      )}
+                        return (
+                          <div className="space-y-3">
+                            <TextField
+                              label="البريد الإلكتروني المخصص للاستفسارات عن الفرص"
+                              value={settings.brand.opportunityInquiryEmail ?? ""}
+                              onChange={(v) => {
+                                updateBrand("opportunityInquiryEmail", v);
+                                if (!settings.brand.opportunityContactEmail) {
+                                  updateBrand("opportunityContactEmail", v);
+                                }
+                              }}
+                              placeholder={settings.brand.email || "srmaacademy@gmail.com"}
+                              dir="ltr"
+                            />
+                            <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                              <span className="text-[11px] text-slate-500 font-semibold">تعبئة سريعة:</span>
+                              {settings.brand.email && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    updateBrand("opportunityInquiryEmail", settings.brand.email);
+                                  }}
+                                  className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors border border-amber-200"
+                                >
+                                  بريد الأكاديمية العام ({settings.brand.email})
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  updateBrand("opportunityInquiryEmail", "srmaacademy@gmail.com");
+                                }}
+                                className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-50 text-slate-700 hover:bg-slate-100 transition-colors border border-slate-200"
+                              >
+                                البريد الافتراضي (srmaacademy@gmail.com)
+                              </button>
+                            </div>
+
+                            <div className="rounded-xl border border-amber-200 bg-amber-50/70 p-3 text-xs space-y-2 text-amber-950">
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold flex items-center gap-1.5 text-amber-900">
+                                  ✉️ تم تفعيل البريد الإلكتروني للاستفسارات
+                                </span>
+                                <a
+                                  href={testMailto}
+                                  className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-600 text-white hover:bg-amber-700 transition shadow-xs flex items-center gap-1"
+                                >
+                                  <Mail size={12} /> اختبار فتح الإيميل الآن
+                                </a>
+                              </div>
+                              <p className="text-[11px] text-amber-800 leading-relaxed">
+                                يفتح برنامج البريد للزائر مع تعبئة خانة «إلى» بعنوان البريد المحدد، وخانة «الموضوع» بعنوان الفرصة، وخانة «المحتوى» بنص الرسالة المحدد أدناه.
+                              </p>
+                              <div className="pt-1 border-t border-amber-200/60 flex items-center justify-between gap-2">
+                                <span className="text-[10px] text-amber-700 font-semibold shrink-0">البريد المستلم:</span>
+                                <span className="text-[10px] font-mono text-amber-900 bg-white px-2 py-0.5 rounded border border-amber-200 truncate dir-ltr text-left flex-1">
+                                  {currentEmail}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {settings.brand.opportunityInquiryChannel === "telegram" && (() => {
+                        const tgVal = (settings.brand.opportunityInquiryTelegram ?? settings.brand.opportunityContactTelegram ?? "").trim();
+                        const isUrl = tgVal.startsWith("http");
+                        const clean = tgVal.replace(/^@/, "").replace(/^https?:\/\/t\.me\//, "").replace(/\/$/, "");
+                        const isPhone = /^\+?\d{8,15}$/.test(clean.replace(/\s+/g, "")) || (/^05\d{8}$/.test(clean) && clean.length === 10);
+                        let cleanDigits = clean.replace(/[^\d]/g, "");
+                        if (cleanDigits.startsWith("05") && cleanDigits.length === 10) cleanDigits = "966" + cleanDigits.substring(1);
+                        const finalLink = isUrl
+                          ? tgVal
+                          : isPhone
+                          ? `tg://resolve?phone=${cleanDigits}`
+                          : `https://t.me/${clean || "SRMAAcademy"}?text=...`;
+
+                        return (
+                          <div className="space-y-3">
+                            <TextField
+                              label="معرف تيليجرام (Username) أو رقم الهاتف أو رابط مباشر"
+                              value={tgVal}
+                              onChange={(v) => {
+                                updateBrand("opportunityInquiryTelegram", v);
+                                updateBrand("opportunityContactTelegram", v);
+                              }}
+                              placeholder="مثال: SRMAAcademy أو +966562159258"
+                              dir="ltr"
+                            />
+
+                            <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                              <span className="text-[11px] text-slate-500 font-semibold">تعبئة سريعة:</span>
+                              {settings.brand.telegramUsername && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    updateBrand("opportunityInquiryTelegram", settings.brand.telegramUsername);
+                                    updateBrand("opportunityContactTelegram", settings.brand.telegramUsername);
+                                  }}
+                                  className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-sky-50 text-sky-700 hover:bg-sky-100 transition-colors border border-sky-200"
+                                >
+                                  معرف تيليجرام العام (@{settings.brand.telegramUsername.replace(/^@/, "")})
+                                </button>
+                              )}
+                              {(settings.brand.phone || settings.brand.whatsapp) && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const ph = settings.brand.phone || settings.brand.whatsapp;
+                                    updateBrand("opportunityInquiryTelegram", ph);
+                                    updateBrand("opportunityContactTelegram", ph);
+                                  }}
+                                  className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-50 text-slate-700 hover:bg-slate-100 transition-colors border border-slate-200"
+                                >
+                                  استخدام الهاتف ({settings.brand.phone || settings.brand.whatsapp})
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Smart Detection & Protocol Explanation */}
+                            <div className="rounded-xl border border-sky-200 bg-sky-50/70 p-3 text-xs space-y-2 text-sky-950">
+                              <div className="flex items-center justify-between">
+                                <span className="font-bold flex items-center gap-1.5 text-sky-900">
+                                  {isPhone ? "📞 تم التعرف عليه كرقم هاتف" : isUrl ? "🔗 تم التعرف عليه كرابط مباشر" : "👤 تم التعرف عليه كاسم مستخدم (معرف)"}
+                                </span>
+                                <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-white border border-sky-300 text-sky-700 font-mono">
+                                  {isPhone ? "Direct Telegram App Protocol" : isUrl ? "Direct URL" : "Web & App Supported"}
+                                </span>
+                              </div>
+
+                              <p className="text-[11px] text-sky-800 leading-relaxed">
+                                {isPhone ? (
+                                  <>
+                                    <strong>طريقة عمل رقم الهاتف:</strong> يتم فتح تطبيق تيليجرام مباشرة عبر بروتوكول <code className="bg-white px-1 rounded text-sky-900 font-mono">tg://resolve?phone=</code> لتجنب صفحة البحث أو روابط الدعوة غير الصالحة.
+                                  </>
+                                ) : isUrl ? (
+                                  <>
+                                    <strong>الرابط المباشر:</strong> يتم فتح الرابط المحدد مباشرة في نافذة جديدة.
+                                  </>
+                                ) : (
+                                  <>
+                                    <strong>اسم المستخدم (الموصى به في تيليجرام):</strong> يفتح الحساب مباشرة في الويب وتطبيق تيليجرام مع إرفاق رسالة الاستفسار المحددة تلقائياً.
+                                  </>
+                                )}
+                              </p>
+
+                              <div className="pt-1 border-t border-sky-200/60 flex items-center justify-between gap-2">
+                                <span className="text-[10px] text-sky-700 font-semibold shrink-0">الرابط الناتج للزائر:</span>
+                                <span className="text-[10px] font-mono text-sky-900 bg-white px-2 py-0.5 rounded border border-sky-200 truncate dir-ltr text-left flex-1">
+                                  {finalLink}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
 
                       {settings.brand.opportunityInquiryChannel === "phone" && (
-                        <div>
+                        <div className="space-y-2">
                           <TextField
                             label="رقم الهاتف للاتصال الهاتفي المباشر"
-                            value={settings.brand.opportunityInquiryValue || settings.brand.opportunityContactPhone || settings.brand.phone || ""}
+                            value={settings.brand.opportunityInquiryPhone ?? settings.brand.opportunityContactPhone ?? ""}
                             onChange={(v) => {
-                              updateBrand("opportunityInquiryValue", v);
+                              updateBrand("opportunityInquiryPhone", v);
                               updateBrand("opportunityContactPhone", v);
                             }}
                             placeholder="مثال: +966562159258"
+                            dir="ltr"
                           />
-                          <p className="text-[11px] text-slate-500 mt-1">يقوم بإجراء اتصال هاتفي مباشر على هذا الرقم عند نقر الزائر.</p>
+                          <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                            <span className="text-[11px] text-slate-500 font-semibold">تعبئة سريعة:</span>
+                            {(settings.brand.phone || settings.brand.whatsapp) && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const ph = settings.brand.phone || settings.brand.whatsapp;
+                                  updateBrand("opportunityInquiryPhone", ph);
+                                  updateBrand("opportunityContactPhone", ph);
+                                }}
+                                className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors border border-blue-200"
+                              >
+                                هاتف الأكاديمية ({settings.brand.phone || settings.brand.whatsapp})
+                              </button>
+                            )}
+                          </div>
+                          <div className="rounded-lg bg-blue-50/70 border border-blue-200/80 p-2.5 text-[11px] text-blue-900 space-y-1">
+                            <p className="font-bold flex items-center gap-1">
+                              <span>✓</span>
+                              <span>يقوم بإجراء اتصال هاتفي صوتي مباشر على هذا الرقم عند نقر الزائر.</span>
+                            </p>
+                            <p className="text-[10px] text-blue-700 font-mono dir-ltr truncate text-left">
+                              tel:{(settings.brand.opportunityInquiryPhone || settings.brand.phone || "+966562159258").replace(/[^\d+]/g, "")}
+                            </p>
+                          </div>
                         </div>
                       )}
 
                       {settings.brand.opportunityInquiryChannel === "custom_url" && (
-                        <div>
+                        <div className="space-y-2">
                           <TextField
                             label="الرابط المخصص بالكامل (URL)"
-                            value={settings.brand.opportunityInquiryValue || ""}
-                            onChange={(v) => updateBrand("opportunityInquiryValue", v)}
+                            value={settings.brand.opportunityInquiryCustomUrl ?? settings.brand.opportunityInquiryValue ?? ""}
+                            onChange={(v) => {
+                              updateBrand("opportunityInquiryCustomUrl", v);
+                              updateBrand("opportunityInquiryValue", v);
+                            }}
                             placeholder="مثال: https://wa.me/966562159258 أو https://forms.gle/..."
+                            dir="ltr"
                           />
-                          <p className="text-[11px] text-slate-500 mt-1">يفتح الرابط الخارجي أو نموذج الاستفسار المحدد في نافذة جديدة.</p>
+                          <div className="rounded-lg bg-purple-50/70 border border-purple-200/80 p-2.5 text-[11px] text-purple-900">
+                            <p className="font-bold">يفتح الرابط الخارجي أو نموذج الاستفسار المحدد في نافذة جديدة.</p>
+                          </div>
                         </div>
                       )}
 
                       <div className="grid gap-3 sm:grid-cols-2 pt-1">
                         <TextField
                           label="نص الزر بالعربية (أسفل سجل الآن)"
-                          value={settings.brand.opportunityInquiryLabelAr || "تواصل معنا للاستفسار 💬"}
+                          value={settings.brand.opportunityInquiryLabelAr ?? ""}
                           onChange={(v) => updateBrand("opportunityInquiryLabelAr", v)}
                           placeholder="تواصل معنا للاستفسار 💬"
                         />
                         <TextField
                           label="نص الزر بالإنجليزية"
-                          value={settings.brand.opportunityInquiryLabelEn || "Contact us for inquiries 💬"}
+                          value={settings.brand.opportunityInquiryLabelEn ?? ""}
                           onChange={(v) => updateBrand("opportunityInquiryLabelEn", v)}
                           placeholder="Contact us for inquiries 💬"
                         />
@@ -413,13 +866,13 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                         <div className="grid gap-3 sm:grid-cols-2 pt-2 border-t border-slate-100">
                           <TextField
                             label="قالب رسالة الاستفسار بالعربية ({title} = اسم الفرصة)"
-                            value={settings.brand.opportunityInquiryMessageAr || "مرحباً، أود الاستفسار والتسجيل بخصوص الفرصة البحثية: {title}"}
+                            value={settings.brand.opportunityInquiryMessageAr ?? ""}
                             onChange={(v) => updateBrand("opportunityInquiryMessageAr", v)}
                             placeholder="مرحباً، أود الاستفسار والتسجيل بخصوص الفرصة البحثية: {title}"
                           />
                           <TextField
                             label="قالب رسالة الاستفسار بالإنجليزية"
-                            value={settings.brand.opportunityInquiryMessageEn || "Hello, I would like to inquire about the research opportunity: {title}"}
+                            value={settings.brand.opportunityInquiryMessageEn ?? ""}
                             onChange={(v) => updateBrand("opportunityInquiryMessageEn", v)}
                             placeholder="Hello, I would like to inquire about the research opportunity: {title}"
                           />
@@ -553,30 +1006,46 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                         onChange={(v) => updateBrand("opportunityContactLabelEn", v)}
                         placeholder="Contact us about this opportunity"
                       />
-                      <TextField
-                        label="رقم واتساب المخصص للفرص (فارغ = استخدام واتساب العام)"
-                        value={settings.brand.opportunityContactWhatsapp || ""}
-                        onChange={(v) => updateBrand("opportunityContactWhatsapp", v)}
-                        placeholder={settings.brand.whatsapp || "966562159258"}
-                      />
-                      <TextField
-                        label="معرف تيليجرام المخصص (فارغ = استخدام معرف تيليجرام العام)"
-                        value={settings.brand.opportunityContactTelegram || ""}
-                        onChange={(v) => updateBrand("opportunityContactTelegram", v)}
-                        placeholder={settings.brand.telegramUsername || "SRMAAcademy"}
-                      />
-                      <TextField
-                        label="البريد الإلكتروني المخصص (فارغ = استخدام البريد العام)"
-                        value={settings.brand.opportunityContactEmail || ""}
-                        onChange={(v) => updateBrand("opportunityContactEmail", v)}
-                        placeholder={settings.brand.email || "srmaacademy@gmail.com"}
-                      />
-                      <TextField
-                        label="رقم الهاتف المخصص للاتصال (فارغ = استخدام هاتف الأكاديمية)"
-                        value={settings.brand.opportunityContactPhone || ""}
-                        onChange={(v) => updateBrand("opportunityContactPhone", v)}
-                        placeholder={settings.brand.phone || "966562159258"}
-                      />
+
+                      <div className="space-y-1">
+                        <TextField
+                          label="رقم واتساب المخصص للفرص (فارغ = استخدام واتساب العام)"
+                          value={settings.brand.opportunityContactWhatsapp || ""}
+                          onChange={(v) => updateBrand("opportunityContactWhatsapp", v)}
+                          placeholder={settings.brand.whatsapp || "966562159258"}
+                        />
+                        <p className="text-[10px] text-slate-500">يفتح تطبيق واتساب برسالة محملة باسم الفرصة.</p>
+                      </div>
+
+                      <div className="space-y-1">
+                        <TextField
+                          label="معرف أو رقم تيليجرام (فارغ = استخدام معرف تيليجرام العام)"
+                          value={settings.brand.opportunityContactTelegram || ""}
+                          onChange={(v) => updateBrand("opportunityContactTelegram", v)}
+                          placeholder={settings.brand.telegramUsername || "SRMAAcademy أو +966562159258"}
+                        />
+                        <p className="text-[10px] text-slate-500">يقبل اسم مستخدم (مثل SRMAAcademy) أو رقم هاتف دولي (يفتح تطبيق تيليجرام مباشرة).</p>
+                      </div>
+
+                      <div className="space-y-1">
+                        <TextField
+                          label="البريد الإلكتروني المخصص (فارغ = استخدام البريد العام)"
+                          value={settings.brand.opportunityContactEmail || ""}
+                          onChange={(v) => updateBrand("opportunityContactEmail", v)}
+                          placeholder={settings.brand.email || "srmaacademy@gmail.com"}
+                        />
+                        <p className="text-[10px] text-slate-500">يفتح تطبيق البريد برسالة معنونة باسم الفرصة.</p>
+                      </div>
+
+                      <div className="space-y-1">
+                        <TextField
+                          label="رقم الهاتف المخصص للاتصال (فارغ = استخدام هاتف الأكاديمية)"
+                          value={settings.brand.opportunityContactPhone || ""}
+                          onChange={(v) => updateBrand("opportunityContactPhone", v)}
+                          placeholder={settings.brand.phone || "966562159258"}
+                        />
+                        <p className="text-[10px] text-slate-500">يقوم بإجراء مكالمة هاتفية مباشرة فور النقر.</p>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -969,8 +1438,34 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
 function Panel({ title, icon: Icon, children }: { title: string; icon: typeof Palette; children: React.ReactNode }) {
   return <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><div className="mb-6 flex items-center gap-3"><div className="rounded-2xl bg-[#e6f5ef] p-3 text-[#117b59]"><Icon size={21} /></div><h2 className="text-lg font-black text-slate-800">{title}</h2></div>{children}</div>;
 }
-function TextField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
-  return <div><label className="mb-2 block text-xs font-bold text-slate-500">{label}</label><input value={value} onChange={(event) => onChange(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium outline-none focus:border-[#117b59]" /></div>;
+function TextField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  dir,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  dir?: string;
+  type?: string;
+}) {
+  return (
+    <div>
+      <label className="mb-2 block text-xs font-bold text-slate-700">{label}</label>
+      <input
+        type={type}
+        dir={dir}
+        value={value ?? ""}
+        placeholder={placeholder}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-medium text-slate-800 outline-none transition-colors placeholder:text-slate-400 focus:border-[#117b59] focus:ring-1 focus:ring-[#117b59]"
+      />
+    </div>
+  );
 }
 function TextArea({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return <div><label className="mb-2 block text-xs font-bold text-slate-500">{label}</label><textarea rows={4} value={value} onChange={(event) => onChange(event.target.value)} className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium outline-none focus:border-[#117b59]" /></div>;

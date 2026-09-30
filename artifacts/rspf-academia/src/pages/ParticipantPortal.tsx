@@ -381,8 +381,8 @@ export default function ParticipantPortal() {
                             return (
                               <a
                                 href={inquiry.href}
-                                target={inquiry.isExternal ? "_blank" : undefined}
-                                rel={inquiry.isExternal ? "noopener noreferrer" : undefined}
+                                target={inquiry.isExternal && inquiry.channel !== "email" && inquiry.channel !== "phone" ? "_blank" : undefined}
+                                rel={inquiry.isExternal && inquiry.channel !== "email" && inquiry.channel !== "phone" ? "noopener noreferrer" : undefined}
                                 data-testid={`button-contact-${opp.id}`}
                                 className={`w-full font-bold py-2.5 rounded-xl text-xs text-center transition-all flex items-center justify-center gap-2 shadow-2xs ${
                                   inquiry.channel === "whatsapp"

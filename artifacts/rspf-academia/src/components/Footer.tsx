@@ -18,7 +18,19 @@ export default function Footer() {
   const { data: settings } = useSiteContentSettings();
   const brand = settings?.brand;
   const siteName = language === "ar" ? brand?.siteNameAr : brand?.siteNameEn;
-  const telegramUrl = socialUrl(brand?.telegramUsername, "https://t.me/");
+  const rawTg = (brand?.telegramUsername || "").trim();
+  const telegramUrl = (() => {
+    if (!rawTg) return "";
+    if (rawTg.startsWith("http")) return rawTg;
+    const clean = rawTg.replace(/^@/, "").replace(/^https?:\/\/t\.me\//, "").replace(/\/$/, "");
+    const isPhone = /^\+?\d{8,15}$/.test(clean.replace(/\s+/g, "")) || (/^05\d{8}$/.test(clean) && clean.length === 10);
+    if (isPhone) {
+      let digits = clean.replace(/[^\d]/g, "");
+      if (digits.startsWith("05") && digits.length === 10) digits = "966" + digits.substring(1);
+      return `tg://resolve?phone=${digits}`;
+    }
+    return `https://t.me/${clean}`;
+  })();
   const instagramUrl = socialUrl(brand?.instagramUsername, "https://instagram.com/");
   const xUrl = socialUrl(brand?.xUsername, "https://x.com/");
   const linkedinUrl = socialUrl(brand?.linkedinUsername, "https://www.linkedin.com/in/");
@@ -33,14 +45,26 @@ export default function Footer() {
   const contactHref = (() => {
     if (!contactType || !contactValue) return "";
     switch (contactType) {
-      case "whatsapp":
-        return `https://wa.me/${contactValue.replace(/^\+/, "")}`;
-      case "telegram":
-        return contactValue.startsWith("https://") ? contactValue : `https://t.me/${contactValue.replace(/^@/, "")}`;
+      case "whatsapp": {
+        let clean = contactValue.replace(/[^\d+]/g, "").replace(/^\+/, "");
+        if (clean.startsWith("05") && clean.length === 10) clean = "966" + clean.substring(1);
+        return `https://wa.me/${clean || "966562159258"}`;
+      }
+      case "telegram": {
+        if (contactValue.startsWith("http")) return contactValue;
+        const clean = contactValue.replace(/^@/, "").replace(/^https?:\/\/t\.me\//, "").replace(/\/$/, "");
+        const isPhone = /^\+?\d{8,15}$/.test(clean.replace(/\s+/g, "")) || (/^05\d{8}$/.test(clean) && clean.length === 10);
+        if (isPhone) {
+          let digits = clean.replace(/[^\d]/g, "");
+          if (digits.startsWith("05") && digits.length === 10) digits = "966" + digits.substring(1);
+          return `tg://resolve?phone=${digits}`;
+        }
+        return `https://t.me/${clean}`;
+      }
       case "email":
         return `mailto:${contactValue}`;
       case "phone":
-        return `tel:${contactValue}`;
+        return `tel:${contactValue.replace(/[^\d+]/g, "")}`;
       case "custom_url":
         return contactValue;
       default:

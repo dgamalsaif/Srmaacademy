@@ -24,7 +24,19 @@ export default function FloatingButtons({
     : audience === "coordinator"
       ? brand.coordinatorWhatsapp || brand.whatsapp
       : brand.whatsapp;
-  const telegram = brand.telegramUsername.startsWith("http") ? brand.telegramUsername : `https://t.me/${brand.telegramUsername}`;
+  const rawTg = (brand.telegramUsername || "").trim();
+  const telegram = (() => {
+    if (!rawTg) return "";
+    if (rawTg.startsWith("http")) return rawTg;
+    const clean = rawTg.replace(/^@/, "").replace(/^https?:\/\/t\.me\//, "").replace(/\/$/, "");
+    const isPhone = /^\+?\d{8,15}$/.test(clean.replace(/\s+/g, "")) || (/^05\d{8}$/.test(clean) && clean.length === 10);
+    if (isPhone) {
+      let digits = clean.replace(/[^\d]/g, "");
+      if (digits.startsWith("05") && digits.length === 10) digits = "966" + digits.substring(1);
+      return `tg://resolve?phone=${digits}`;
+    }
+    return `https://t.me/${clean}`;
+  })();
   const links: Record<SocialIconId, string> = {
     whatsapp: whatsapp ? `https://wa.me/${whatsapp.replace(/\D/g, "")}` : "",
     telegram: brand.telegramUsername ? telegram : "",

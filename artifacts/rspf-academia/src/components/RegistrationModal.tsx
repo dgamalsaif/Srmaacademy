@@ -140,11 +140,15 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
       if (generatedUrl && fAuto && fType !== "none") {
         window.setTimeout(() => {
           try {
-            const link = document.createElement("a");
-            link.href = generatedUrl;
-            link.target = "_blank";
-            link.rel = "noopener noreferrer";
-            link.click();
+            if (fType === "email") {
+              window.location.href = generatedUrl;
+            } else {
+              const link = document.createElement("a");
+              link.href = generatedUrl;
+              link.target = "_blank";
+              link.rel = "noopener noreferrer";
+              link.click();
+            }
           } catch {
             // Screen provides direct button fallback
           }
@@ -185,8 +189,8 @@ export default function RegistrationModal({ isOpen, onClose, researchTitle, rese
             {forwardUrl && forwardType !== "none" && (
               <a
                 href={forwardUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+                target={forwardType === "email" ? undefined : "_blank"}
+                rel={forwardType === "email" ? undefined : "noopener noreferrer"}
                 className="mx-auto mt-5 flex w-full max-w-sm items-center justify-center gap-2 rounded-xl bg-[#117b59] px-5 py-3.5 text-sm font-black text-white shadow-md transition hover:bg-[#0c6549]"
               >
                 {forwardType === "email" ? <Mail size={18} /> : forwardType === "telegram" ? <Send size={18} /> : <MessageCircle size={18} />}

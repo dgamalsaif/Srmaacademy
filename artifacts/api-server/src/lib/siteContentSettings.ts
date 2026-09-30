@@ -87,6 +87,9 @@ export interface BrandContactSettings {
 
   // New: Direct Contact under Opportunity Register Option
   opportunityContactEnabled: boolean;
+  opportunityContactChannels: ("whatsapp" | "telegram" | "email" | "phone")[];
+  opportunityContactLabelAr: string;
+  opportunityContactLabelEn: string;
   opportunityContactTitleAr: string;
   opportunityContactTitleEn: string;
   opportunityContactSubtitleAr: string;
@@ -104,6 +107,11 @@ export interface BrandContactSettings {
   opportunityInquiryEnabled: boolean;
   opportunityInquiryChannel: "whatsapp" | "email" | "telegram" | "phone" | "custom_url";
   opportunityInquiryValue: string;
+  opportunityInquiryWhatsapp: string;
+  opportunityInquiryTelegram: string;
+  opportunityInquiryEmail: string;
+  opportunityInquiryPhone: string;
+  opportunityInquiryCustomUrl: string;
   opportunityInquiryLabelAr: string;
   opportunityInquiryLabelEn: string;
   opportunityInquiryMessageAr: string;
@@ -215,12 +223,12 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
     appShortName: "SRMA",
     appIconUrl: "/srma-logo.jpg",
     appThemeColor: "#0d765c",
-    phone: "",
+    phone: "+966562159258",
     whatsapp: "966562159258",
     participantWhatsapp: "966562159258",
     coordinatorWhatsapp: "966562159258",
     whatsappChannelUrl: "",
-    email: "",
+    email: "srmaacademy@gmail.com",
     telegramUsername: "SRMAAcademy",
     instagramUsername: "",
     xUsername: "",
@@ -248,6 +256,9 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
     coordinatorAutoRedirect: false,
     coordinatorCustomMessage: "",
     opportunityContactEnabled: true,
+    opportunityContactChannels: ["whatsapp", "telegram", "email", "phone"],
+    opportunityContactLabelAr: "تواصل معنا بخصوص هذه الفرصة",
+    opportunityContactLabelEn: "Contact us about this opportunity",
     opportunityContactTitleAr: "تواصل معنا للاستفسار عن هذه الفرصة",
     opportunityContactTitleEn: "Contact us to inquire about this opportunity",
     opportunityContactSubtitleAr: "فريق الأكاديمية متواجد لمساعدتك عبر القنوات التالية:",
@@ -263,6 +274,11 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
     opportunityInquiryEnabled: true,
     opportunityInquiryChannel: "whatsapp",
     opportunityInquiryValue: "966562159258",
+    opportunityInquiryWhatsapp: "966562159258",
+    opportunityInquiryTelegram: "SRMAAcademy",
+    opportunityInquiryEmail: "srmaacademy@gmail.com",
+    opportunityInquiryPhone: "+966562159258",
+    opportunityInquiryCustomUrl: "",
     opportunityInquiryLabelAr: "تواصل معنا للاستفسار 💬",
     opportunityInquiryLabelEn: "Contact us for inquiries 💬",
     opportunityInquiryMessageAr: "مرحباً، أود الاستفسار والتسجيل بخصوص الفرصة البحثية: {title}",
@@ -472,24 +488,50 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
       contactUsType: (["whatsapp", "phone", "email", "telegram", "instagram", "custom_url"] as ContactUsType[]).includes(brandInput.contactUsType as ContactUsType)
         ? (brandInput.contactUsType as ContactUsType)
         : DEFAULT_SITE_CONTENT_SETTINGS.brand.contactUsType,
-      contactUsValue: brandText("contactUsValue", 500) || globalWhatsapp,
+      contactUsValue: (() => {
+        const val = brandText("contactUsValue", 500);
+        const type = brandInput.contactUsType as ContactUsType;
+        if (type === "email") {
+          return val.includes("@") ? val : (brandText("email", 254) || "srmaacademy@gmail.com");
+        }
+        return val || globalWhatsapp;
+      })(),
       contactUsLabelAr: brandText("contactUsLabelAr", 80) || DEFAULT_SITE_CONTENT_SETTINGS.brand.contactUsLabelAr,
       contactUsLabelEn: brandText("contactUsLabelEn", 80) || DEFAULT_SITE_CONTENT_SETTINGS.brand.contactUsLabelEn,
       participantForwardType: (["whatsapp", "whatsapp_direct_url", "email", "telegram", "messenger", "instagram", "custom_url", "none"] as ForwardingType[]).includes(brandInput.participantForwardType as ForwardingType)
         ? (brandInput.participantForwardType as ForwardingType)
         : DEFAULT_SITE_CONTENT_SETTINGS.brand.participantForwardType,
-      participantForwardTarget: brandText("participantForwardTarget", 500) || audienceWhatsapp("participantWhatsapp"),
+      participantForwardTarget: (() => {
+        const target = brandText("participantForwardTarget", 500);
+        const fType = brandInput.participantForwardType as ForwardingType;
+        if (fType === "email") {
+          return target.includes("@") ? target : (brandText("email", 254) || "srmaacademy@gmail.com");
+        }
+        return target || audienceWhatsapp("participantWhatsapp");
+      })(),
       participantAutoRedirect: typeof brandInput.participantAutoRedirect === "boolean" ? brandInput.participantAutoRedirect : DEFAULT_SITE_CONTENT_SETTINGS.brand.participantAutoRedirect,
       participantCustomMessage: brandText("participantCustomMessage", 1000),
       coordinatorForwardType: (["whatsapp", "whatsapp_direct_url", "email", "telegram", "messenger", "instagram", "custom_url", "none"] as ForwardingType[]).includes(brandInput.coordinatorForwardType as ForwardingType)
         ? (brandInput.coordinatorForwardType as ForwardingType)
         : DEFAULT_SITE_CONTENT_SETTINGS.brand.coordinatorForwardType,
-      coordinatorForwardTarget: brandText("coordinatorForwardTarget", 500) || audienceWhatsapp("coordinatorWhatsapp"),
+      coordinatorForwardTarget: (() => {
+        const target = brandText("coordinatorForwardTarget", 500);
+        const fType = brandInput.coordinatorForwardType as ForwardingType;
+        if (fType === "email") {
+          return target.includes("@") ? target : (brandText("email", 254) || "srmaacademy@gmail.com");
+        }
+        return target || audienceWhatsapp("coordinatorWhatsapp");
+      })(),
       coordinatorAutoRedirect: typeof brandInput.coordinatorAutoRedirect === "boolean" ? brandInput.coordinatorAutoRedirect : DEFAULT_SITE_CONTENT_SETTINGS.brand.coordinatorAutoRedirect,
       coordinatorCustomMessage: brandText("coordinatorCustomMessage", 1000),
       opportunityContactEnabled: typeof brandInput.opportunityContactEnabled === "boolean" ? brandInput.opportunityContactEnabled : DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactEnabled,
-      opportunityContactTitleAr: brandText("opportunityContactTitleAr", 120) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactTitleAr,
-      opportunityContactTitleEn: brandText("opportunityContactTitleEn", 120) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactTitleEn,
+      opportunityContactChannels: Array.isArray(brandInput.opportunityContactChannels)
+        ? (brandInput.opportunityContactChannels as any[]).filter((c) => ["whatsapp", "telegram", "email", "phone"].includes(c))
+        : DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactChannels,
+      opportunityContactLabelAr: brandText("opportunityContactLabelAr", 120) || brandText("opportunityContactTitleAr", 120) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactLabelAr,
+      opportunityContactLabelEn: brandText("opportunityContactLabelEn", 120) || brandText("opportunityContactTitleEn", 120) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactLabelEn,
+      opportunityContactTitleAr: brandText("opportunityContactTitleAr", 120) || brandText("opportunityContactLabelAr", 120) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactTitleAr,
+      opportunityContactTitleEn: brandText("opportunityContactTitleEn", 120) || brandText("opportunityContactLabelEn", 120) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactTitleEn,
       opportunityContactSubtitleAr: brandText("opportunityContactSubtitleAr", 300) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactSubtitleAr,
       opportunityContactSubtitleEn: brandText("opportunityContactSubtitleEn", 300) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactSubtitleEn,
       opportunityContactShowEmail: typeof brandInput.opportunityContactShowEmail === "boolean" ? brandInput.opportunityContactShowEmail : DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactShowEmail,
@@ -502,7 +544,12 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
       opportunityContactWhatsapp: (brandText("opportunityContactWhatsapp", 40) || globalWhatsapp || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactWhatsapp).replace(/[^\d+]/g, ""),
       opportunityInquiryEnabled: typeof brandInput.opportunityInquiryEnabled === "boolean" ? brandInput.opportunityInquiryEnabled : (typeof brandInput.opportunityContactEnabled === "boolean" ? brandInput.opportunityContactEnabled : DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryEnabled),
       opportunityInquiryChannel: (["whatsapp", "email", "telegram", "phone", "custom_url"] as const).includes(brandInput.opportunityInquiryChannel as any) ? (brandInput.opportunityInquiryChannel as any) : DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryChannel,
-      opportunityInquiryValue: brandText("opportunityInquiryValue", 200) || brandText("opportunityContactWhatsapp", 200) || globalWhatsapp || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryValue,
+      opportunityInquiryValue: brandText("opportunityInquiryValue", 500) || brandText("opportunityContactWhatsapp", 200) || globalWhatsapp || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryValue,
+      opportunityInquiryWhatsapp: (brandText("opportunityInquiryWhatsapp", 40) || brandText("opportunityContactWhatsapp", 40) || globalWhatsapp || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryWhatsapp).replace(/[^\d+]/g, ""),
+      opportunityInquiryTelegram: (brandText("opportunityInquiryTelegram", 100) || brandText("opportunityContactTelegram", 100) || brandText("telegramUsername", 100) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryTelegram).replace(/^@/, "").replace(/^https?:\/\/t\.me\//, ""),
+      opportunityInquiryEmail: brandText("opportunityInquiryEmail", 254) || brandText("opportunityContactEmail", 254) || brandText("email", 254) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryEmail,
+      opportunityInquiryPhone: (brandText("opportunityInquiryPhone", 40) || brandText("opportunityContactPhone", 40) || brandText("phone", 40) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryPhone).replace(/[^\d+]/g, ""),
+      opportunityInquiryCustomUrl: safeUrl(brandText("opportunityInquiryCustomUrl", 1000), ""),
       opportunityInquiryLabelAr: brandText("opportunityInquiryLabelAr", 100) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryLabelAr,
       opportunityInquiryLabelEn: brandText("opportunityInquiryLabelEn", 100) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryLabelEn,
       opportunityInquiryMessageAr: brandText("opportunityInquiryMessageAr", 500) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryMessageAr,

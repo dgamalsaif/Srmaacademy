@@ -74,6 +74,11 @@ export interface BrandContactSettings {
   opportunityInquiryEnabled?: boolean;
   opportunityInquiryChannel?: OpportunityInquiryChannel;
   opportunityInquiryValue?: string;
+  opportunityInquiryWhatsapp?: string;
+  opportunityInquiryTelegram?: string;
+  opportunityInquiryEmail?: string;
+  opportunityInquiryPhone?: string;
+  opportunityInquiryCustomUrl?: string;
   opportunityInquiryLabelAr?: string;
   opportunityInquiryLabelEn?: string;
   opportunityInquiryMessageAr?: string;
@@ -222,7 +227,7 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
   brand: {
     siteNameAr: "أكاديمية SRMA للأبحاث", siteNameEn: "SRMA Research Academy", logoUrl: "/srma-logo.jpg",
     appNameAr: "أكاديمية SRMA للأبحاث", appNameEn: "SRMA Research Academy", appShortName: "SRMA", appIconUrl: "/srma-logo.jpg", appThemeColor: "#0d765c",
-    phone: "", whatsapp: "966562159258", participantWhatsapp: "966562159258", coordinatorWhatsapp: "966562159258", whatsappChannelUrl: "", email: "", telegramUsername: "SRMAAcademy", instagramUsername: "", xUsername: "", linkedinUsername: "",
+    phone: "+966562159258", whatsapp: "966562159258", participantWhatsapp: "966562159258", coordinatorWhatsapp: "966562159258", whatsappChannelUrl: "", email: "srmaacademy@gmail.com", telegramUsername: "SRMAAcademy", instagramUsername: "", xUsername: "", linkedinUsername: "",
     facebookUrl: "", tiktokUrl: "", youtubeUrl: "", snapchatUrl: "",
     publicSocialIcons: ["whatsapp", "telegram"], participantSocialIcons: ["whatsapp", "telegram"], coordinatorSocialIcons: ["whatsapp", "telegram"],
     publicIconPosition: "bottom-left", participantIconPosition: "bottom-left", coordinatorIconPosition: "bottom-left",
@@ -251,6 +256,11 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
     opportunityInquiryEnabled: true,
     opportunityInquiryChannel: "whatsapp",
     opportunityInquiryValue: "966562159258",
+    opportunityInquiryWhatsapp: "966562159258",
+    opportunityInquiryTelegram: "SRMAAcademy",
+    opportunityInquiryEmail: "srmaacademy@gmail.com",
+    opportunityInquiryPhone: "+966562159258",
+    opportunityInquiryCustomUrl: "",
     opportunityInquiryLabelAr: "تواصل معنا للاستفسار 💬",
     opportunityInquiryLabelEn: "Contact us for inquiries 💬",
     opportunityInquiryMessageAr: "مرحباً، أود الاستفسار والتسجيل بخصوص الفرصة البحثية: {title}",
@@ -279,13 +289,25 @@ export function getContactUsHref(brand?: BrandContactSettings): { href: string; 
       return { href: `tel:${val.replace(/[^\d+]/g, "")}`, isExternal: false, labelAr, labelEn };
     case "email":
       return { href: `mailto:${val}`, isExternal: false, labelAr, labelEn };
-    case "telegram":
+    case "telegram": {
+      const raw = val.trim();
+      if (raw.startsWith("http")) {
+        return { href: raw, isExternal: true, labelAr, labelEn };
+      }
+      const clean = raw.replace(/^@/, "").replace(/^https?:\/\/t\.me\//, "").replace(/\/$/, "");
+      const isPhone = /^\+?\d{8,15}$/.test(clean.replace(/\s+/g, "")) || (/^05\d{8}$/.test(clean) && clean.length === 10);
+      if (isPhone) {
+        let digits = clean.replace(/[^\d]/g, "");
+        if (digits.startsWith("05") && digits.length === 10) digits = "966" + digits.substring(1);
+        return { href: `tg://resolve?phone=${digits}`, isExternal: true, labelAr, labelEn };
+      }
       return {
-        href: val.startsWith("http") ? val : `https://t.me/${val.replace(/^@/, "")}`,
+        href: `https://t.me/${clean}`,
         isExternal: true,
         labelAr,
         labelEn,
       };
+    }
     case "instagram":
       return {
         href: val.startsWith("http") ? val : `https://instagram.com/${val.replace(/^@/, "")}`,
@@ -353,22 +375,51 @@ export function getOpportunityContactLinks(
     } else if (channel === "telegram") {
       const tg = (b.opportunityContactTelegram || b.telegramUsername || "SRMAAcademy").trim();
       if (tg) {
-        const clean = tg.replace(/^@/, "").replace(/^https?:\/\/t\.me\//, "");
+        const isUrl = tg.startsWith("http");
+        const clean = tg.replace(/^@/, "").replace(/^https?:\/\/t\.me\//, "").replace(/\/$/, "");
+        const isPhone = /^\+?\d{8,15}$/.test(clean.replace(/\s+/g, "")) || (/^05\d{8}$/.test(clean) && clean.length === 10);
+        let href = "";
+        let displayVal = `@${clean}`;
+        if (isUrl) {
+          href = tg;
+          displayVal = "Telegram";
+        } else if (isPhone) {
+          let cleanDigits = clean.replace(/[^\d]/g, "");
+          if (cleanDigits.startsWith("05") && cleanDigits.length === 10) {
+            cleanDigits = "966" + cleanDigits.substring(1);
+          }
+          href = `tg://resolve?phone=${cleanDigits}`;
+          displayVal = `+${cleanDigits}`;
+        } else {
+          href = `https://t.me/${clean}?text=${encodeURIComponent(whatsappMsg)}`;
+          displayVal = `@${clean}`;
+        }
         links.push({
           id: "telegram",
-          href: `https://t.me/${clean}`,
+          href,
           isExternal: true,
           labelAr: "تيليجرام",
           labelEn: "Telegram",
-          displayValue: `@${clean}`,
+          displayValue: displayVal,
         });
       }
     } else if (channel === "email") {
-      const mail = (b.opportunityContactEmail || b.email || "srmaacademy@gmail.com").trim();
+      const mail = (
+        b.opportunityContactEmail ||
+        b.opportunityInquiryEmail ||
+        (b.contactUsType === "email" && b.contactUsValue && b.contactUsValue.includes("@") ? b.contactUsValue : "") ||
+        b.email ||
+        "srmaacademy@gmail.com"
+      ).trim();
+      const customArMsg = b.opportunityInquiryMessageAr || "مرحباً، أود الاستفسار والتسجيل بخصوص الفرصة البحثية: {title}";
+      const customEnMsg = b.opportunityInquiryMessageEn || "Hello, I would like to inquire about the research opportunity: {title}";
+      const rawInquiryMsg = language === "en" ? customEnMsg : customArMsg;
+      const emailBody = rawInquiryMsg.replace(/{title}/g, titleText).replace(/{name}/g, titleText);
+
       if (mail) {
         links.push({
           id: "email",
-          href: `mailto:${mail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(whatsappMsg)}`,
+          href: `mailto:${mail}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`,
           isExternal: false,
           labelAr: "البريد الإلكتروني",
           labelEn: "Email",
@@ -414,18 +465,11 @@ export function getOpportunityInquiryLink(
   }
 
   // Determine channel (whatsapp / email / telegram / phone / custom_url)
-  let channel: OpportunityInquiryChannel = "whatsapp";
-  if (b.opportunityInquiryChannel === "email" || b.opportunityContactType === "email") {
-    channel = "email";
-  } else if (b.opportunityInquiryChannel === "telegram" || b.opportunityContactType === "telegram") {
-    channel = "telegram";
-  } else if (b.opportunityInquiryChannel === "phone" || b.opportunityContactType === "phone") {
-    channel = "phone";
-  } else if (b.opportunityInquiryChannel === "custom_url" || b.opportunityContactType === "custom_url") {
-    channel = "custom_url";
-  } else {
-    channel = "whatsapp";
-  }
+  // opportunityInquiryChannel takes primary precedence
+  const channel: OpportunityInquiryChannel =
+    b.opportunityInquiryChannel ||
+    (b.opportunityContactType as OpportunityInquiryChannel) ||
+    "whatsapp";
 
   const titleText = opportunityTitle ? `"${opportunityTitle}"` : "";
   const defaultArMsg = b.opportunityInquiryMessageAr || "مرحباً، أود الاستفسار والتسجيل بخصوص الفرصة البحثية: {title}";
@@ -437,8 +481,18 @@ export function getOpportunityInquiryLink(
   const labelEn = b.opportunityInquiryLabelEn || b.opportunityContactLabelEn || "Contact us for inquiries 💬";
 
   if (channel === "whatsapp") {
-    const rawVal = (b.opportunityInquiryValue || b.opportunityContactWhatsapp || b.opportunityContactValue || b.participantWhatsapp || b.whatsapp || "966562159258").trim();
-    const cleanNum = rawVal.replace(/[^\d+]/g, "").replace(/^\+/, "");
+    const rawVal = (
+      b.opportunityInquiryWhatsapp ||
+      b.opportunityContactWhatsapp ||
+      b.opportunityInquiryValue ||
+      b.participantWhatsapp ||
+      b.whatsapp ||
+      "966562159258"
+    ).trim();
+    let cleanNum = rawVal.replace(/[^\d+]/g, "").replace(/^\+/, "");
+    if (cleanNum.startsWith("05") && cleanNum.length === 10) {
+      cleanNum = "966" + cleanNum.substring(1);
+    }
     return {
       channel: "whatsapp",
       href: `https://wa.me/${cleanNum}?text=${encodeURIComponent(message)}`,
@@ -450,7 +504,13 @@ export function getOpportunityInquiryLink(
   }
 
   if (channel === "email") {
-    const emailVal = (b.opportunityInquiryValue || b.opportunityContactEmail || (b.contactUsType === "email" ? b.contactUsValue : "") || b.email || "srmaacademy@gmail.com").trim();
+    const emailVal = (
+      b.opportunityInquiryEmail ||
+      b.opportunityContactEmail ||
+      (b.contactUsType === "email" && b.contactUsValue && b.contactUsValue.includes("@") ? b.contactUsValue : "") ||
+      b.email ||
+      "srmaacademy@gmail.com"
+    ).trim();
     const subject = language === "en"
       ? `Inquiry regarding research opportunity: ${opportunityTitle || ""}`
       : `استفسار بخصوص الفرصة البحثية: ${opportunityTitle || ""}`;
@@ -465,20 +525,53 @@ export function getOpportunityInquiryLink(
   }
 
   if (channel === "telegram") {
-    const tgVal = (b.opportunityInquiryValue || b.opportunityContactTelegram || b.telegramUsername || "SRMAAcademy").trim();
-    const cleanUsername = tgVal.replace(/^@/, "").replace(/^https?:\/\/t\.me\//, "");
+    const rawTg = (
+      b.opportunityInquiryTelegram ||
+      b.opportunityContactTelegram ||
+      b.telegramUsername ||
+      b.opportunityInquiryValue ||
+      "SRMAAcademy"
+    ).trim();
+
+    const isUrl = rawTg.startsWith("http");
+    const cleanUsername = rawTg.replace(/^@/, "").replace(/^https?:\/\/t\.me\//, "").replace(/\/$/, "");
+    const isPhoneNumber = /^\+?\d{8,15}$/.test(cleanUsername.replace(/\s+/g, "")) || (/^05\d{8}$/.test(cleanUsername) && cleanUsername.length === 10);
+
+    let href = "";
+    let displayValue = `@${cleanUsername}`;
+
+    if (isUrl) {
+      href = rawTg;
+      displayValue = "Telegram";
+    } else if (isPhoneNumber) {
+      let cleanDigits = cleanUsername.replace(/[^\d]/g, "");
+      if (cleanDigits.startsWith("05") && cleanDigits.length === 10) {
+        cleanDigits = "966" + cleanDigits.substring(1);
+      }
+      href = `tg://resolve?phone=${cleanDigits}`;
+      displayValue = `+${cleanDigits}`;
+    } else {
+      href = `https://t.me/${cleanUsername}?text=${encodeURIComponent(message)}`;
+      displayValue = `@${cleanUsername}`;
+    }
+
     return {
       channel: "telegram",
-      href: `https://t.me/${cleanUsername}?text=${encodeURIComponent(message)}`,
+      href,
       isExternal: true,
-      labelAr,
-      labelEn,
-      displayValue: `@${cleanUsername}`,
+      labelAr: b.opportunityInquiryLabelAr || "تواصل معنا للاستفسار 💬",
+      labelEn: b.opportunityInquiryLabelEn || "Contact us for inquiries 💬",
+      displayValue,
     };
   }
 
   if (channel === "phone") {
-    const phoneVal = (b.opportunityInquiryValue || b.opportunityContactPhone || b.phone || "966562159258").trim();
+    const phoneVal = (
+      b.opportunityInquiryPhone ||
+      b.opportunityContactPhone ||
+      b.phone ||
+      "966562159258"
+    ).trim();
     const cleanPhone = phoneVal.replace(/[^\d+]/g, "");
     return {
       channel: "phone",
@@ -491,7 +584,12 @@ export function getOpportunityInquiryLink(
   }
 
   if (channel === "custom_url") {
-    const urlVal = (b.opportunityInquiryValue || b.contactUsValue || "").trim();
+    const urlVal = (
+      b.opportunityInquiryCustomUrl ||
+      b.opportunityInquiryValue ||
+      b.contactUsValue ||
+      ""
+    ).trim();
     return {
       channel: "custom_url",
       href: urlVal.startsWith("http") ? urlVal : `https://${urlVal}`,
@@ -557,12 +655,20 @@ export function buildForwardingUrl({
       return `https://wa.me/${target.replace(/[^\d+]/g, "")}?text=${encoded}`;
     }
     case "email": {
+      const emailTarget = (target && target.includes("@") ? target : "srmaacademy@gmail.com").trim();
       const subject = encodeURIComponent(language === "en" ? `Registration: ${researchTitle}` : `تسجيل جديد: ${researchTitle}`);
-      return `mailto:${target}?subject=${subject}&body=${encoded}`;
+      return `mailto:${emailTarget}?subject=${subject}&body=${encoded}`;
     }
     case "telegram": {
-      const username = target.replace(/^@/, "").replace(/^https?:\/\/t\.me\//, "");
-      return `https://t.me/${username}`;
+      if (target.startsWith("http")) return target;
+      const clean = target.replace(/^@/, "").replace(/^https?:\/\/t\.me\//, "");
+      const isPhone = /^\+?\d{8,15}$/.test(clean.replace(/\s+/g, "")) || (/^05\d{8}$/.test(clean) && clean.length === 10);
+      if (isPhone) {
+        let digits = clean.replace(/[^\d]/g, "");
+        if (digits.startsWith("05") && digits.length === 10) digits = "966" + digits.substring(1);
+        return `tg://resolve?phone=${digits}`;
+      }
+      return `https://t.me/${clean}`;
     }
     case "messenger": {
       const user = target.replace(/^https?:\/\/m\.me\//, "");
