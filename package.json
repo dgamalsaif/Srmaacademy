@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "private": true,
+  "packageManager": "pnpm@10.6.5",
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
@@ -12,6 +13,7 @@
     "build:all": "npm --workspaces --if-present run build",
     "typecheck:libs": "tsc --build",
     "typecheck": "npm run typecheck:libs",
+    "test": "npm run typecheck",
     "lint": "tsc --build"
   },
   "dependencies": {

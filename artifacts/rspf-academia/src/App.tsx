@@ -38,6 +38,7 @@ const clerkPubKey =
   configuredClerkKey ||
   "pk_test_Y2xlcmsuZXhhbXBsZS5jb20k";
 const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
+const clerkFapi = (import.meta as any).env.VITE_CLERK_FAPI?.trim();
 
 const clerkAppearance = {
   theme: shadcn,
@@ -102,7 +103,14 @@ function Router() {
 
 function App() {
   return (
-    <ClerkProvider publishableKey={clerkPubKey} proxyUrl={clerkProxyUrl} appearance={clerkAppearance} signInUrl={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`}>
+    <ClerkProvider
+      publishableKey={clerkPubKey}
+      proxyUrl={clerkProxyUrl}
+      domain={clerkFapi || undefined}
+      appearance={clerkAppearance}
+      signInUrl={`${basePath}/sign-in`}
+      signUpUrl={`${basePath}/sign-up`}
+    >
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
           <LanguageProvider>

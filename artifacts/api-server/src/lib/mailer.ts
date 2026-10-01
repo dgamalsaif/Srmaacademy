@@ -1,8 +1,8 @@
 import nodemailer from "nodemailer";
 import { logger } from "./logger";
 
-const NOTIFY_EMAIL = process.env["ADMIN_NOTIFICATION_EMAIL"] || "170610009@su.edu.ye";
-const FROM_EMAIL = process.env["SMTP_FROM"] || "noreply@srma-research-academy.com";
+const NOTIFY_EMAIL = process.env["ADMIN_NOTIFICATION_EMAIL"]?.trim() || "";
+const FROM_EMAIL = process.env["SMTP_FROM"]?.trim() || "noreply@srma-research-academy.com";
 
 function createTransport() {
   if (process.env["SMTP_HOST"]) {
@@ -96,16 +96,20 @@ export async function sendRegistrationEmail(data: {
 
   let adminSent = false;
   let studentSent = false;
-  try {
-    await transport.sendMail({
-      from: FROM_EMAIL,
-      to: NOTIFY_EMAIL,
-      subject: `[SRMA Research Academy] تسجيل جديد — ${data.fullName} — ${data.researchTitle.substring(0, 50)}`,
-      html,
-    });
-    adminSent = true;
-  } catch (err) {
-    logger.warn({ err }, "Failed to send admin registration email");
+  if (NOTIFY_EMAIL) {
+    try {
+      await transport.sendMail({
+        from: FROM_EMAIL,
+        to: NOTIFY_EMAIL,
+        subject: `[SRMA Research Academy] تسجيل جديد — ${data.fullName} — ${data.researchTitle.substring(0, 50)}`,
+        html,
+      });
+      adminSent = true;
+    } catch (err) {
+      logger.warn({ err }, "Failed to send admin registration email");
+    }
+  } else {
+    logger.info("ADMIN_NOTIFICATION_EMAIL not set — skipping admin notification");
   }
 
   try {
@@ -165,6 +169,11 @@ export async function sendServiceRequestEmail(data: {
       </div>
     </div>
   `;
+
+  if (!NOTIFY_EMAIL) {
+    logger.info("ADMIN_NOTIFICATION_EMAIL not set — skipping service request admin email");
+    return;
+  }
 
   try {
     await transport.sendMail({

@@ -1,5 +1,6 @@
 import express, { type Express } from "express";
 import cookieParser from "cookie-parser";
+import cors from "cors";
 import pinoHttp from "pino-http";
 import { clerkMiddleware } from "@clerk/express";
 import { publishableKeyFromHost } from "@clerk/shared/keys";
@@ -9,6 +10,23 @@ import { CLERK_PROXY_PATH, clerkProxyMiddleware, getClerkProxyHost } from "./mid
 
 const app: Express = express();
 app.disable("x-powered-by");
+
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
+  : null;
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || !allowedOrigins || allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
+    credentials: true,
+  }),
+);
 
 app.use(
   pinoHttp({
@@ -51,5 +69,15 @@ if (process.env.CLERK_SECRET_KEY) {
 }
 
 app.use("/api", router);
+
+// Centralized safe error middleware
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  logger.error({ err: err?.message || err }, "Unhandled server error");
+  if (res.headersSent) return;
+  const isProd = process.env.NODE_ENV === "production";
+  res.status(err?.status || err?.statusCode || 500).json({
+    error: isProd ? "Internal Server Error" : (err?.message || "Internal Server Error"),
+  });
+});
 
 export default app;

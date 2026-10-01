@@ -298,6 +298,7 @@ function createInMemoryDb() {
   return mockDb;
 }
 
+const isProduction = process.env.NODE_ENV === "production";
 let activePool: any = null;
 let postgresDb: any = null;
 const inMemoryDb: any = createInMemoryDb();
@@ -307,24 +308,79 @@ if (process.env.DATABASE_URL) {
   try {
     const rawUrl = process.env.DATABASE_URL.trim().split(" ")[0];
     const parsed = new URL(rawUrl);
+    const safeHost = parsed.hostname;
     // Render internal hostnames like "dpg-xxxx" cannot be resolved outside Render's private network
-    if (!parsed.hostname.includes(".") && parsed.hostname !== "localhost") {
-      console.warn(`[DB] Hostname "${parsed.hostname}" is an internal cluster address not resolvable in this container. Using resilient in-memory database.`);
+    if (!safeHost.includes(".") && safeHost !== "localhost") {
+      if (isProduction) {
+        console.error(`[FATAL] Hostname "${safeHost}" is an internal cluster address not resolvable in production container.`);
+        throw new Error("Invalid production DATABASE_URL hostname");
+      }
+      console.warn(`[DB] Hostname "${safeHost}" is an internal cluster address not resolvable in this container. Using resilient in-memory database.`);
       useInMemory = true;
     } else {
-      activePool = new Pool({ connectionString: rawUrl, connectionTimeoutMillis: 3000 });
+      activePool = new Pool({
+        connectionString: rawUrl,
+        connectionTimeoutMillis: 5000,
+        idleTimeoutMillis: 30000,
+      });
+
+      activePool.on("error", (err: any) => {
+        console.error("[DB] Unexpected idle PostgreSQL client error on pool:", err.message);
+      });
+
       postgresDb = drizzle(activePool, { schema });
-      activePool.query("SELECT 1").catch((err: any) => {
-        console.warn("[DB] PostgreSQL connection check failed, switching to resilient in-memory database:", err.message);
-        useInMemory = true;
+
+      activePool.query("SELECT 1 AS database_ready").catch((err: any) => {
+        if (isProduction) {
+          console.error(`[FATAL] PostgreSQL connection verification failed in production on host "${safeHost}":`, err.message);
+        } else {
+          console.warn("[DB] PostgreSQL connection check failed, switching to resilient in-memory database:", err.message);
+          useInMemory = true;
+        }
       });
     }
-  } catch (err) {
-    console.warn("[DB] Failed to initialize Postgres connection pool:", err);
+  } catch (err: any) {
+    if (isProduction) {
+      console.error("[FATAL] Failed to initialize Postgres connection pool in production:", err.message);
+      throw err;
+    }
+    console.warn("[DB] Failed to initialize Postgres connection pool:", err.message);
     useInMemory = true;
   }
 } else {
+  if (isProduction) {
+    console.error("[FATAL] DATABASE_URL is strictly required in production mode. Startup aborted.");
+    throw new Error("DATABASE_URL is required in production");
+  }
   useInMemory = true;
+}
+
+// Graceful pool closure on process termination
+let isTerminating = false;
+const handleProcessShutdown = async () => {
+  if (isTerminating || !activePool) return;
+  isTerminating = true;
+  try {
+    await activePool.end();
+  } catch {}
+};
+process.once("SIGTERM", handleProcessShutdown);
+process.once("SIGINT", handleProcessShutdown);
+
+export async function checkDatabaseReadiness(): Promise<{ ready: boolean; host: string }> {
+  if (!activePool) {
+    return { ready: !isProduction && useInMemory, host: useInMemory ? "in-memory-mock" : "disconnected" };
+  }
+  try {
+    await activePool.query("SELECT 1 AS database_ready");
+    let safeHost = "unknown";
+    try {
+      safeHost = new URL(process.env.DATABASE_URL || "").hostname;
+    } catch {}
+    return { ready: true, host: safeHost };
+  } catch {
+    return { ready: false, host: "connection-error" };
+  }
 }
 
 export const pool = activePool;
@@ -345,8 +401,8 @@ export const db: any = new Proxy({}, {
             const msg = String(err.message || "");
             const code = err.code || "";
             const isConnErr = code === "EAI_AGAIN" || code === "ENOTFOUND" || code === "ECONNREFUSED" || code === "ETIMEDOUT" || msg.includes("Failed query") || msg.includes("getaddrinfo");
-            if (isConnErr) {
-              console.warn("[DB] PostgreSQL call failed with connection error, falling back to in-memory store:", msg);
+            if (isConnErr && !isProduction) {
+              console.warn("[DB] PostgreSQL call failed with connection error, falling back to in-memory store in development:", msg);
               useInMemory = true;
               return inMemoryDb[prop](...args);
             }
@@ -355,9 +411,12 @@ export const db: any = new Proxy({}, {
         }
         return result;
       } catch (err: any) {
-        console.warn("[DB] Sync error on PostgreSQL call, falling back to in-memory store:", err.message);
-        useInMemory = true;
-        return inMemoryDb[prop](...args);
+        if (!isProduction) {
+          console.warn("[DB] Sync error on PostgreSQL call, falling back to in-memory store in development:", err.message);
+          useInMemory = true;
+          return inMemoryDb[prop](...args);
+        }
+        throw err;
       }
     };
   }
