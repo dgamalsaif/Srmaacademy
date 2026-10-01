@@ -82,11 +82,24 @@ export default function ResearchImagePicker({ initialImageUrl = "", onImageToken
         </div>
         <label className={`shrink-0 cursor-pointer rounded-xl bg-[#117b59] px-4 py-2.5 text-xs font-black text-white transition hover:bg-[#0c6549] ${uploading ? "pointer-events-none opacity-60" : ""}`}>
           {uploading ? <span className="flex items-center gap-2"><Loader2 size={15} className="animate-spin" /> جارٍ الرفع...</span> : <span className="flex items-center gap-2"><ImagePlus size={15} /> {previewUrl ? "استبدال الصورة" : "اختيار صورة"}</span>}
-          <input data-testid="input-research-image" className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" disabled={uploading} onChange={(event) => {
-            const [file] = Array.from(event.target.files || []);
-            if (file) void uploadImage(file);
-            event.currentTarget.value = "";
-          }} />
+          <input
+            data-testid="input-research-image"
+            className="sr-only"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+            disabled={uploading}
+            onChange={(event) => {
+              const fileInput = event.currentTarget;
+              const [file] = Array.from(fileInput.files || []);
+              if (file) {
+                void uploadImage(file).finally(() => {
+                  try {
+                    fileInput.value = "";
+                  } catch {}
+                });
+              }
+            }}
+          />
         </label>
       </div>
 
@@ -105,53 +118,113 @@ export default function ResearchImagePicker({ initialImageUrl = "", onImageToken
   );
 }
 
-async function createWatermarkedImage(file: File) {
-  const source = await loadImage(file);
-  const maxDimension = 1600;
-  const scale = Math.min(1, maxDimension / Math.max(source.width, source.height));
-  const width = Math.max(1, Math.round(source.width * scale));
-  const height = Math.max(1, Math.round(source.height * scale));
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const context = canvas.getContext("2d");
-  if (!context) throw new Error("تعذر تجهيز الصورة.");
-
-  context.drawImage(source, 0, 0, width, height);
-  context.save();
-  context.translate(width / 2, height / 2);
-  context.rotate(-Math.PI / 7);
-  context.fillStyle = "rgba(255, 255, 255, 0.35)";
-  context.textAlign = "center";
-  context.textBaseline = "middle";
-  context.font = `800 ${Math.max(18, Math.round(width * 0.04))}px Arial, sans-serif`;
-  const watermark = "SRMA  •  srmaacademy.com";
-  const horizontalGap = Math.max(170, Math.round(width * 0.44));
-  const verticalGap = Math.max(78, Math.round(height * 0.3));
-  for (let y = -height; y <= height; y += verticalGap) {
-    for (let x = -width; x <= width; x += horizontalGap) {
-      context.fillText(watermark, x, y);
-    }
-  }
-  context.restore();
-
-  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
-  if (!blob) throw new Error("تعذر إنشاء نسخة الحماية من الصورة.");
-  return new File([blob], `srma-opportunity-${Date.now()}.jpg`, { type: "image/jpeg" });
+interface DrawableSource {
+  drawable: CanvasImageSource;
+  width: number;
+  height: number;
+  cleanup?: () => void;
 }
 
-function loadImage(file: File) {
-  return new Promise<HTMLImageElement>((resolve, reject) => {
-    // FileReader is more reliable than blob URLs in some mobile browsers and
-    // embedded webviews used by photo pickers.
+async function loadDrawableSource(file: File): Promise<DrawableSource> {
+  // Strategy 1: createImageBitmap (fastest, most robust against file lock/memory pressure)
+  if (typeof createImageBitmap === "function") {
+    try {
+      const bitmap = await createImageBitmap(file);
+      return {
+        drawable: bitmap,
+        width: bitmap.width,
+        height: bitmap.height,
+        cleanup: () => {
+          try {
+            bitmap.close();
+          } catch {}
+        },
+      };
+    } catch {}
+  }
+
+  // Strategy 2: URL.createObjectURL (standard native DOM decoding)
+  if (typeof URL !== "undefined" && typeof URL.createObjectURL === "function") {
+    try {
+      const objectUrl = URL.createObjectURL(file);
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const image = new Image();
+        image.onload = () => resolve(image);
+        image.onerror = () => reject(new Error("object_url_decode_failed"));
+        image.src = objectUrl;
+      });
+      return {
+        drawable: img,
+        width: img.naturalWidth || img.width,
+        height: img.naturalHeight || img.height,
+        cleanup: () => {
+          try {
+            URL.revokeObjectURL(objectUrl);
+          } catch {}
+        },
+      };
+    } catch {}
+  }
+
+  // Strategy 3: FileReader (fallback for older environments)
+  return new Promise<DrawableSource>((resolve, reject) => {
     const reader = new FileReader();
-    const image = new Image();
-    reader.onerror = () => reject(new Error("تعذر قراءة ملف الصورة. أعد اختيار الملف وحاول مرة أخرى."));
+    reader.onerror = () => {
+      reject(new Error("تعذر قراءة ملف الصورة من جهازك. تأكد من أن الملف سليم وبصيغة JPG أو PNG أو WebP وحاول مجدداً."));
+    };
     reader.onload = () => {
-      image.onload = () => resolve(image);
-      image.onerror = () => reject(new Error("لم يتمكن المتصفح من فك ترميز الصورة. احفظها بصيغة JPG أو PNG أو WebP ثم حاول مجدداً."));
+      const image = new Image();
+      image.onload = () => {
+        resolve({
+          drawable: image,
+          width: image.naturalWidth || image.width,
+          height: image.naturalHeight || image.height,
+        });
+      };
+      image.onerror = () => {
+        reject(new Error("لم يتمكن المتصفح من فك ترميز الصورة. احفظها بصيغة JPG أو PNG أو WebP ثم حاول مجدداً."));
+      };
       image.src = String(reader.result);
     };
     reader.readAsDataURL(file);
   });
+}
+
+async function createWatermarkedImage(file: File) {
+  const source = await loadDrawableSource(file);
+  try {
+    const maxDimension = 1600;
+    const scale = Math.min(1, maxDimension / Math.max(source.width, source.height));
+    const width = Math.max(1, Math.round(source.width * scale));
+    const height = Math.max(1, Math.round(source.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("تعذر تجهيز الصورة.");
+
+    context.drawImage(source.drawable, 0, 0, width, height);
+    context.save();
+    context.translate(width / 2, height / 2);
+    context.rotate(-Math.PI / 7);
+    context.fillStyle = "rgba(255, 255, 255, 0.35)";
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.font = `800 ${Math.max(18, Math.round(width * 0.04))}px Arial, sans-serif`;
+    const watermark = "SRMA  •  srmaacademy.com";
+    const horizontalGap = Math.max(170, Math.round(width * 0.44));
+    const verticalGap = Math.max(78, Math.round(height * 0.3));
+    for (let y = -height; y <= height; y += verticalGap) {
+      for (let x = -width; x <= width; x += horizontalGap) {
+        context.fillText(watermark, x, y);
+      }
+    }
+    context.restore();
+
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
+    if (!blob) throw new Error("تعذر إنشاء نسخة الحماية من الصورة.");
+    return new File([blob], `srma-opportunity-${Date.now()}.jpg`, { type: "image/jpeg" });
+  } finally {
+    source.cleanup?.();
+  }
 }
