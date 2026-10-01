@@ -14,6 +14,21 @@ const isProd = process.env.NODE_ENV === "production";
 // Mount the API application (handles /api routes and middlewares)
 app.use(apiApp);
 
+// Social media crawlers & bot interception (WhatsApp, Telegram, Twitterbot, LinkedIn, Facebook, Slack, Discord, etc.)
+const BOT_USER_AGENTS = /bot|crawl|spider|whatsapp|telegram|facebookexternalhit|facebot|twitterbot|linkedin|slack|discord|pinterest|skype|applebot|curl|wget|meta-externalagent/i;
+
+app.get(["/research/:id", "/share/research/:id"], (req, res, next) => {
+  const userAgent = req.get("user-agent") || "";
+  const isBot = BOT_USER_AGENTS.test(userAgent) || req.query.crawler === "1" || req.query.preview === "1";
+  const isSharePath = req.path.startsWith("/share/research/");
+
+  if (isBot || isSharePath) {
+    req.url = `/api/programs/${req.params.id}/share${req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : ""}`;
+    return apiApp(req, res, next);
+  }
+  return next();
+});
+
 if (!isProd) {
   const { createServer: createViteServer } = await import("vite");
   const vite = await createViteServer({

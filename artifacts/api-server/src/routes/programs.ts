@@ -1,4 +1,7 @@
 import { raw, Router, type Request } from "express";
+import path from "node:path";
+import { readFile } from "node:fs/promises";
+import sharp from "sharp";
 import { db, insertResearchProgramSchema, programCatalogBootstrapTable, registrationsTable, researchProgramsTable } from "@workspace/db";
 import { desc, eq, sql } from "drizzle-orm";
 import { readSession, requireOwner } from "../middlewares/coordinatorAuth";
@@ -197,46 +200,86 @@ router.get("/programs/:id/image", async (req, res) => {
   const id = Number(req.params["id"]);
   const [program] = await db.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, id)).limit(1);
   const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session)) || Boolean(await getManagedOwner(req));
-  if (!program || !program.imagePath || (!isStaff && !isPublicProgram(program))) {
+  if (!program || (!isStaff && !isPublicProgram(program))) {
     res.status(404).end();
     return;
   }
 
-  try {
-    const result = await getResearchImageBytes(program.imagePath);
-    if (!result) {
-      // Fallback to presigned URL if available
-      try {
-        const imageUrl = await getResearchImageUrl(program.imagePath);
-        const imageResponse = await fetch(imageUrl, { signal: AbortSignal.timeout(30_000) });
-        if (imageResponse.ok) {
-          const contentType = imageResponse.headers.get("content-type")?.split(";")[0].trim().toLowerCase() || "image/jpeg";
-          const imageBytes = Buffer.from(await imageResponse.arrayBuffer());
-          res.setHeader("Cache-Control", "private, no-store, max-age=0, must-revalidate");
-          res.setHeader("Content-Type", contentType);
-          res.setHeader("Content-Disposition", 'inline; filename="srma-research-image"');
-          res.status(200).send(imageBytes);
-          return;
-        }
-      } catch {}
-      res.status(404).end();
-      return;
-    }
+  // 1. Try uploaded image from storage if path exists
+  if (program.imagePath) {
+    try {
+      const result = await getResearchImageBytes(program.imagePath);
+      if (result && result.data && result.data.length > 0) {
+        res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+        res.setHeader("Content-Disposition", 'inline; filename="srma-research-image"');
+        res.setHeader("Content-Type", result.contentType || "image/jpeg");
+        res.setHeader("Content-Length", String(result.data.length));
+        res.setHeader("X-Content-Type-Options", "nosniff");
+        res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.status(200).send(result.data);
+        return;
+      }
 
-    res.setHeader("Cache-Control", "private, no-store, max-age=0, must-revalidate");
-    res.setHeader("Pragma", "no-cache");
-    res.setHeader("Expires", "0");
-    res.setHeader("Content-Disposition", 'inline; filename="srma-research-image"');
-    res.setHeader("Content-Type", result.contentType);
-    res.setHeader("Content-Length", String(result.data.length));
-    res.setHeader("X-Content-Type-Options", "nosniff");
-    res.setHeader("Referrer-Policy", "same-origin");
-    res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
-    res.status(200).send(result.data);
-  } catch (error) {
-    req.log.error({ err: error, programId: id }, "Failed to serve research image");
-    res.status(404).end();
+      // Presigned URL fallback
+      const imageUrl = await getResearchImageUrl(program.imagePath);
+      const imageResponse = await fetch(imageUrl, { signal: AbortSignal.timeout(30_000) });
+      if (imageResponse.ok) {
+        const contentType = imageResponse.headers.get("content-type")?.split(";")[0].trim().toLowerCase() || "image/jpeg";
+        const imageBytes = Buffer.from(await imageResponse.arrayBuffer());
+        res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+        res.setHeader("Content-Type", contentType);
+        res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.setHeader("Content-Disposition", 'inline; filename="srma-research-image"');
+        res.status(200).send(imageBytes);
+        return;
+      }
+    } catch (imgErr) {
+      req.log.warn({ err: imgErr, programId: id }, "Failed retrieving stored image bytes, falling back to dynamic card");
+    }
   }
+
+  // 2. Generate a high-resolution 1200x630 social card PNG using sharp
+  try {
+    const cardSvg = buildOpportunitySocialCardSvg(program);
+    const pngBuffer = await sharp(Buffer.from(cardSvg))
+      .resize(1200, 630, { fit: "cover" })
+      .png({ quality: 90 })
+      .toBuffer();
+
+    res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+    res.setHeader("Content-Type", "image/png");
+    res.setHeader("Content-Length", String(pngBuffer.length));
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Content-Disposition", 'inline; filename="srma-opportunity-preview.png"');
+    res.status(200).send(pngBuffer);
+    return;
+  } catch (cardErr) {
+    req.log.warn({ err: cardErr, programId: id }, "Failed generating PNG card via sharp, falling back to brand logo");
+  }
+
+  // 3. Fallback to brand logo JPG
+  try {
+    const logoCandidates = [
+      path.resolve(process.cwd(), "artifacts/rspf-academia/public/srma-logo.jpg"),
+      path.resolve(process.cwd(), "artifacts/rspf-academia/srma-logo.jpg"),
+    ];
+    for (const logoPath of logoCandidates) {
+      try {
+        const logoData = await readFile(logoPath);
+        res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+        res.setHeader("Content-Type", "image/jpeg");
+        res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.status(200).send(logoData);
+        return;
+      } catch {}
+    }
+  } catch {}
+
+  res.status(404).end();
 });
 
 router.get("/programs/:id/poster.svg", async (req, res) => {
@@ -249,6 +292,8 @@ router.get("/programs/:id/poster.svg", async (req, res) => {
   }
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+  res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Content-Disposition", "inline; filename=\"research-opportunity-poster.svg\"");
   res.type("image/svg+xml").send(buildOpportunityPoster(program));
 });
@@ -258,41 +303,85 @@ router.get("/programs/:id/share", async (req, res) => {
   const [program] = await db.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, id)).limit(1);
   const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session)) || Boolean(await getManagedOwner(req));
   if (!program || (!isStaff && !isPublicProgram(program))) {
-    res.status(404).type("html").send("<!doctype html><title>Not found</title>");
+    res.status(404).type("html").send("<!doctype html><html lang=\"ar\" dir=\"rtl\"><head><meta charset=\"utf-8\"><title>الفرصة غير متوفرة</title></head><body><p>عذراً، هذه الفرصة البحثية غير موجودة أو مغلقة.</p></body></html>");
     return;
   }
 
   const origin = requestOrigin(req);
   const english = req.query.lang === "en";
   const destination = `${origin}/research/${program.id}${english ? "?lang=en" : ""}`;
-  const title = (english ? program.titleEn : program.titleAr) || program.titleEn || program.titleAr || "Research opportunity from SRMA";
-  const specialty = (english ? program.specialtyEn : program.specialtyAr) || program.specialtyEn || program.specialtyAr;
-  const description = (english ? program.descriptionEn : program.descriptionAr) || program.descriptionEn || program.descriptionAr || "Discover a new research opportunity from SRMA Research Academy.";
-  const image = program.imagePath ? `${origin}/api/programs/${program.id}/image` : `${origin}/srma-logo.jpg`;
+  const title = (english ? program.titleEn : program.titleAr) || program.titleEn || program.titleAr || "فرصة بحثية طبية | SRMA";
+  const specialty = (english ? program.specialtyEn : program.specialtyAr) || program.specialtyEn || program.specialtyAr || "";
+  const rawDescription = (english ? program.descriptionEn : program.descriptionAr) || program.descriptionEn || program.descriptionAr || "";
+  
+  const siteSettings = await getSiteContentSettings().catch(() => null);
+  const siteName = english
+    ? siteSettings?.brand?.siteNameEn || "SRMA Research Academy"
+    : siteSettings?.brand?.siteNameAr || "أكاديمية SRMA للأبحاث والنشر العلمي";
 
-  res.setHeader("Cache-Control", "no-store");
+  const journal = program.journalTarget ? (english ? `Journal: ${program.journalTarget}` : `المجلة: ${program.journalTarget}`) : "";
+  const seatsInfo = english
+    ? `${program.seatsLeft} of ${program.totalSeats} seats available`
+    : `المقاعد المتاحة: ${program.seatsLeft} من أصل ${program.totalSeats}`;
+  
+  const metaDesc = [
+    specialty ? `[${specialty}]` : "",
+    rawDescription ? rawDescription.slice(0, 120) : (english ? "Medical research opportunity for physicians and board applicants." : "فرصة بحثية ونشر علمي طبي للأطباء والريزيدنت لدعم البورد والزمالات."),
+    journal,
+    seatsInfo,
+    english ? "Click to view full details and register." : "انقر لمعاينة التفاصيل والتسجيل مباشرة."
+  ].filter(Boolean).join(" • ");
+
+  const image = `${origin}/api/programs/${program.id}/image`;
+
+  res.setHeader("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
   res.type("html").send(`<!doctype html>
 <html lang="${english ? "en" : "ar"}" dir="${english ? "ltr" : "rtl"}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>${escapeHtml(title)}${specialty ? ` | ${escapeHtml(specialty)}` : ""} | SRMA Research Academy</title>
-  <meta name="description" content="${escapeHtml(`${specialty ? `${specialty} — ` : ""}${description}`.slice(0, 180))}">
+  <title>${escapeHtml(title)}${specialty ? ` | ${escapeHtml(specialty)}` : ""} | ${escapeHtml(siteName)}</title>
+  <meta name="description" content="${escapeHtml(metaDesc)}">
   <link rel="canonical" href="${escapeHtml(destination)}">
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="SRMA Research Academy">
+
+  <!-- OpenGraph / Facebook / WhatsApp / Telegram / LinkedIn -->
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="${escapeHtml(siteName)}">
   <meta property="og:locale" content="${english ? "en_US" : "ar_SA"}">
-  <meta property="og:title" content="${escapeHtml(`${title}${specialty ? ` | ${specialty}` : ""}`)}">
-  <meta property="og:description" content="${escapeHtml(`${specialty ? `${specialty} — ` : ""}${description}`.slice(0, 180))}">
   <meta property="og:url" content="${escapeHtml(destination)}">
+  <meta property="og:title" content="${escapeHtml(title)}">
+  <meta property="og:description" content="${escapeHtml(metaDesc)}">
   <meta property="og:image" content="${escapeHtml(image)}">
+  <meta property="og:image:secure_url" content="${escapeHtml(image)}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="${escapeHtml(title)}">
+  <meta property="og:image:type" content="image/jpeg">
+
+  <!-- Twitter / X Cards -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${escapeHtml(`${title}${specialty ? ` | ${specialty}` : ""}`)}">
-  <meta name="twitter:description" content="${escapeHtml(`${specialty ? `${specialty} — ` : ""}${description}`.slice(0, 180))}">
+  <meta name="twitter:url" content="${escapeHtml(destination)}">
+  <meta name="twitter:title" content="${escapeHtml(title)}">
+  <meta name="twitter:description" content="${escapeHtml(metaDesc)}">
   <meta name="twitter:image" content="${escapeHtml(image)}">
+  <meta name="twitter:image:alt" content="${escapeHtml(title)}">
+
+  <!-- Instant Redirection for Humans Clicking the Card -->
   <meta http-equiv="refresh" content="0;url=${escapeHtml(destination)}">
+  <script>window.location.replace(${JSON.stringify(destination)});</script>
 </head>
-<body><p>جارٍ فتح الفرصة… <a href="${escapeHtml(destination)}">اضغط هنا إن لم يتم التحويل</a></p></body>
+<body style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f8fafc;color:#0f2744;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;text-align:center;">
+  <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:20px;padding:32px;max-width:520px;box-shadow:0 10px 25px -5px rgba(0,0,0,0.08);">
+    <div style="display:inline-block;padding:4px 12px;background:#ecfdf5;color:#047857;border-radius:999px;font-size:12px;font-weight:700;margin-bottom:12px;">
+      ${escapeHtml(specialty || (english ? "Research Opportunity" : "فرصة بحثية"))}
+    </div>
+    <h1 style="margin:0 0 12px 0;font-size:18px;font-weight:800;color:#0f2744;line-height:1.4;">${escapeHtml(title)}</h1>
+    <p style="margin:0 0 24px 0;color:#64748b;font-size:14px;line-height:1.6;">${english ? "Redirecting you to the research opportunity on the website..." : "جارٍ توجيهك إلى تفاصيل الفرصة البحثية على الموقع..."}</p>
+    <a href="${escapeHtml(destination)}" style="display:inline-block;background:#0c3156;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 28px;border-radius:12px;font-size:14px;box-shadow:0 4px 12px rgba(12,49,86,0.25);">
+      ${english ? "Open Opportunity on Website 🔗" : "فتح الفرصة على الموقع 🔗"}
+    </a>
+  </div>
+</body>
 </html>`);
 });
 
@@ -656,10 +745,59 @@ function splitPosterText(value: string, maxLength: number, maxLines: number) {
   return lines;
 }
 
+function buildOpportunitySocialCardSvg(program: typeof researchProgramsTable.$inferSelect) {
+  const title = program.titleEn || program.titleAr || "Research Opportunity";
+  const specialty = program.specialtyAr || program.specialtyEn || "أكاديمية SRMA للأبحاث";
+  const journal = program.journalTarget || "Scopus / PubMed Q1 & Q2";
+  const titleLines = splitPosterText(title, 44, 3);
+  const titleSvg = titleLines.map((line, index) => `<text x="80" y="${280 + index * 52}" fill="#ffffff" font-family="'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="34" font-weight="800">${escapeXml(line)}</text>`).join("");
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="${escapeXml(title)}">
+    <defs>
+      <linearGradient id="cardBg" x1="0" y1="0" x2="1" y2="1">
+        <stop stop-color="#041624"/>
+        <stop offset=".45" stop-color="#092842"/>
+        <stop offset="1" stop-color="#0f3c5f"/>
+      </linearGradient>
+      <radialGradient id="cardGlow" cx="80%" cy="20%" r="60%">
+        <stop stop-color="#10b981" stop-opacity=".35"/>
+        <stop offset="1" stop-color="#10b981" stop-opacity="0"/>
+      </radialGradient>
+      <pattern id="cardGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#34d399" stroke-opacity=".08" stroke-width="1"/>
+      </pattern>
+    </defs>
+    <rect width="1200" height="630" fill="url(#cardBg)"/>
+    <rect width="1200" height="630" fill="url(#cardGrid)"/>
+    <rect width="1200" height="630" fill="url(#cardGlow)"/>
+    <circle cx="1020" cy="240" r="170" fill="none" stroke="#34d399" stroke-opacity=".2" stroke-width="2"/>
+    <circle cx="1020" cy="240" r="110" fill="none" stroke="#34d399" stroke-opacity=".15" stroke-width="2"/>
+
+    <rect x="80" y="55" width="340" height="44" rx="12" fill="#047857" fill-opacity=".9"/>
+    <text x="100" y="84" fill="#ffffff" font-family="'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="800" letter-spacing="1">SRMA RESEARCH ACADEMY</text>
+
+    <rect x="80" y="125" width="380" height="40" rx="20" fill="#10b981" fill-opacity=".2" stroke="#34d399" stroke-width="1.5"/>
+    <text x="105" y="151" fill="#a7f3d0" font-family="'Segoe UI', Roboto, sans-serif" font-size="18" font-weight="700">${escapeXml(specialty)}</text>
+
+    ${titleSvg}
+
+    <rect x="80" y="470" width="1040" height="95" rx="16" fill="#072033" stroke="#34d399" stroke-opacity=".35" stroke-width="1.5"/>
+    <text x="115" y="515" fill="#94a3b8" font-family="'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="600">المجلة المستهدفة / الفهرسة</text>
+    <text x="115" y="545" fill="#f8fafc" font-family="'Segoe UI', Roboto, sans-serif" font-size="19" font-weight="700">${escapeXml(journal)}</text>
+
+    <text x="760" y="515" fill="#94a3b8" font-family="'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="600">المقاعد المتاحة</text>
+    <text x="760" y="547" fill="#34d399" font-family="'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="800">${program.seatsLeft} من ${program.totalSeats} متاح للتسجيل</text>
+
+    <text x="80" y="598" fill="#64748b" font-family="'Segoe UI', Roboto, sans-serif" font-size="14">srmaacademy.com • المنصة المعتمدة لدعم الأبحاث والنشر العلمي الطبي للأطباء</text>
+  </svg>`;
+}
+
 function requestOrigin(req: Request) {
+  const forwardedHost = req.get("x-forwarded-host")?.split(",")[0]?.trim();
+  const host = forwardedHost || req.get("host") || "srmaacademy.com";
   const forwardedProtocol = req.get("x-forwarded-proto")?.split(",")[0]?.trim();
   const protocol = forwardedProtocol || req.protocol || "https";
-  return `${protocol}://${req.get("host")}`;
+  return `${protocol}://${host}`;
 }
 
 function escapeHtml(value: string) {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ChevronDown, ChevronUp, Lock, Flame, ChevronLeft, ChevronRight, MessageCircle, ExternalLink, Send, Phone, LayoutGrid, SlidersHorizontal, Copy, Mail } from "lucide-react";
+import { ChevronDown, ChevronUp, Lock, Flame, ChevronLeft, ChevronRight, MessageCircle, ExternalLink, Send, Phone, LayoutGrid, SlidersHorizontal, Copy, Mail, Check } from "lucide-react";
 import { Link } from "wouter";
 import { ResearchOpportunity } from "@/lib/researchData";
 import RegistrationModal from "@/components/RegistrationModal";
@@ -23,6 +23,23 @@ export default function ParticipantPortal() {
   const [activeTab, setActiveTab] = useState(0);
   const [expandedCards, setExpandedCards] = useState<number[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [copiedOppId, setCopiedOppId] = useState<number | null>(null);
+
+  const handleCopyOppLink = (oppId: number) => {
+    const url = `${window.location.origin}/research/${oppId}`;
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(url);
+    } else {
+      const input = document.createElement("input");
+      input.value = url;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      document.body.removeChild(input);
+    }
+    setCopiedOppId(oppId);
+    setTimeout(() => setCopiedOppId(null), 2500);
+  };
   const [selectedResearch, setSelectedResearch] = useState<ResearchOpportunity | null>(null);
   const [opportunities, setOpportunities] = useState<ResearchOpportunity[]>([]);
   const { currency, setCurrency } = useCurrency();
@@ -473,14 +490,24 @@ export default function ParticipantPortal() {
                           <button
                             type="button"
                             data-testid={`button-copy-link-${opp.id}`}
-                            className="w-full text-xs text-slate-500 hover:text-slate-800 hover:bg-slate-100/70 py-2 rounded-xl transition-colors flex items-center justify-center gap-1.5 font-medium border border-transparent hover:border-slate-200"
-                            onClick={() => {
-                              navigator.clipboard.writeText(window.location.origin + `/research/${opp.id}`);
-                              alert(localize("تم نسخ رابط الفرصة بنجاح 🔗", "Opportunity link copied successfully 🔗"));
-                            }}
+                            className={`w-full text-xs py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 font-medium border ${
+                              copiedOppId === opp.id
+                                ? "bg-emerald-50 text-emerald-800 border-emerald-300 font-bold"
+                                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 border-slate-200/60"
+                            }`}
+                            onClick={() => handleCopyOppLink(opp.id)}
                           >
-                            <Copy size={13} className="text-slate-400" />
-                            <span>{localize("نسخ رابط الفرصة 🔗", "Copy opportunity link 🔗")}</span>
+                            {copiedOppId === opp.id ? (
+                              <>
+                                <Check size={13} className="text-emerald-600" />
+                                <span>{localize("تم نسخ الرابط ومعاينة الصورة جاهزة ✓", "Link copied! Image preview ready ✓")}</span>
+                              </>
+                            ) : (
+                              <>
+                                <Copy size={13} className="text-slate-400" />
+                                <span>{localize("نسخ رابط الفرصة 🔗", "Copy opportunity link 🔗")}</span>
+                              </>
+                            )}
                           </button>
                         </div>
                       </div>

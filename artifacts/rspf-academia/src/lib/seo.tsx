@@ -94,11 +94,12 @@ export function buildPublicUrl(pathname: string, language: SiteLanguage) {
   return `${SITE_URL}${path}?lang=${language}`;
 }
 
-export function PageSeo({ pathname, language, title, description, jsonLd, noIndex = false }: {
+export function PageSeo({ pathname, language, title, description, image, jsonLd, noIndex = false }: {
   pathname: string;
   language: SiteLanguage;
   title?: string;
   description?: string;
+  image?: string;
   jsonLd?: Record<string, unknown> | Array<Record<string, unknown>>;
   noIndex?: boolean;
 }) {
@@ -113,6 +114,7 @@ export function PageSeo({ pathname, language, title, description, jsonLd, noInde
     const canonical = buildPublicUrl(pathname, language);
     const configuredLogo = settings?.brand.logoUrl || "/srma-logo.jpg";
     const logo = configuredLogo.startsWith("https://") ? configuredLogo : `${SITE_URL}${configuredLogo}`;
+    const socialImage = image ? (image.startsWith("http") ? image : `${SITE_URL}${image.startsWith("/") ? "" : "/"}${image}`) : logo;
 
     document.title = pageTitle;
     setMeta('meta[name="description"]', "name", pageDescription);
@@ -120,9 +122,15 @@ export function PageSeo({ pathname, language, title, description, jsonLd, noInde
     setMeta('meta[property="og:title"]', "property", pageTitle);
     setMeta('meta[property="og:description"]', "property", pageDescription);
     setMeta('meta[property="og:url"]', "property", canonical);
+    setMeta('meta[property="og:image"]', "property", socialImage);
+    setMeta('meta[property="og:image:secure_url"]', "property", socialImage);
+    setMeta('meta[property="og:image:width"]', "property", "1200");
+    setMeta('meta[property="og:image:height"]', "property", "630");
     setMeta('meta[property="og:locale"]', "property", language === "ar" ? "ar_SA" : "en_US");
+    setMeta('meta[name="twitter:card"]', "name", "summary_large_image");
     setMeta('meta[name="twitter:title"]', "name", pageTitle);
     setMeta('meta[name="twitter:description"]', "name", pageDescription);
+    setMeta('meta[name="twitter:image"]', "name", socialImage);
     setLink("canonical", canonical);
     setLink("alternate", buildPublicUrl(pathname, "ar"), "ar");
     setLink("alternate", buildPublicUrl(pathname, "en"), "en");

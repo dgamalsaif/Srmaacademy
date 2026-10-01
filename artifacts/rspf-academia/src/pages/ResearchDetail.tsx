@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "wouter";
-import { ChevronLeft, Users, Clock, BookOpen, CheckCircle2, ArrowLeft, ExternalLink, MessageCircle, Send, Mail, Phone, Copy, Lock, ShieldCheck } from "lucide-react";
+import { ChevronLeft, Users, Clock, BookOpen, CheckCircle2, ArrowLeft, ExternalLink, MessageCircle, Send, Mail, Phone, Copy, Lock, ShieldCheck, Share2, Check } from "lucide-react";
 import { ResearchOpportunity } from "@/lib/researchData";
 import RegistrationModal from "@/components/RegistrationModal";
 import { DEFAULT_SITE_CONTENT_SETTINGS, SiteContentSettings, getContactUsHref, getOpportunityContactLinks, getOpportunityInquiryLink } from "@/lib/siteContentSettings";
@@ -9,6 +9,7 @@ import OpportunityPrice from "@/components/OpportunityPrice";
 import { OpportunityCurrency, RESEARCH_STATUS_LABELS, useCurrency } from "@/lib/opportunityPricing";
 import { useLanguage } from "@/lib/i18n";
 import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
+import { useToast } from "@/hooks/use-toast";
 import { PageSeo } from "@/lib/seo";
 import { ProtectedResearchWatermark, AntiCaptureResearchTitle } from "@/components/ResearchProtection";
 
@@ -18,8 +19,10 @@ export default function ResearchDetail() {
   const [research, setResearch] = useState<ResearchOpportunity | null>(null);
   const [allResearch, setAllResearch] = useState<ResearchOpportunity[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
   const { currency, setCurrency } = useCurrency();
   const { data: contentSettings = DEFAULT_SITE_CONTENT_SETTINGS } = useSiteContentSettings();
+  const { toast } = useToast();
 
   const loadResearch = () => {
     fetch("/api/programs", { cache: "no-store" })
@@ -69,10 +72,60 @@ export default function ResearchDetail() {
   const description = localize(research.descriptionAr, research.descriptionEn, research.description);
   const contentFlow = direction === "rtl" ? "flex-row-reverse" : "flex-row";
   const siteName = language === "ar" ? contentSettings.brand.siteNameAr : contentSettings.brand.siteNameEn;
+  const oppImageUrl = `${window.location.origin}/api/programs/${research.id}/image`;
+
+  const handleCopyLink = async () => {
+    const url = `${window.location.origin}/research/${research.id}`;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const input = document.createElement("input");
+        input.value = url;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand("copy");
+        document.body.removeChild(input);
+      }
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 3000);
+      toast({
+        title: localize("تم نسخ رابط الفرصة بنجاح 🔗", "Opportunity link copied successfully 🔗"),
+        description: localize(
+          "عند مشاركة الرابط في تيليجرام أو واتساب أو وسائل التواصل، ستظهر صورة وبيانات الفرصة كمعاينة بطاقة مباشرة مع زر للانتقال للموقع.",
+          "When sharing on Telegram, WhatsApp, or social media, the opportunity image and card preview will appear automatically."
+        ),
+      });
+    } catch {
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 3000);
+    }
+  };
+
+  const handleShareLink = async () => {
+    const url = `${window.location.origin}/research/${research.id}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title,
+          text: `${title}\n${specialty ? `${specialty} — ` : ""}${description.slice(0, 100)}...`,
+          url,
+        });
+        return;
+      } catch {}
+    }
+    handleCopyLink();
+  };
 
   return (
     <>
-      <PageSeo pathname={`/research/${research.id}`} language={language} title={`${title} | ${siteName}`} description={description} />
+      <PageSeo
+        pathname={`/research/${research.id}`}
+        language={language}
+        title={`${title} | ${siteName}`}
+        description={description}
+        image={oppImageUrl}
+      />
       <div className="min-h-screen bg-white" dir={direction}>
       {/* BREADCRUMB */}
       <div className="bg-slate-50 border-b border-slate-200 px-4 py-3">
@@ -145,7 +198,18 @@ export default function ResearchDetail() {
                   titleClassName="mb-1 text-left text-xl font-black leading-snug sm:text-2xl select-none text-white"
                 />
               </div>
-              <p className="text-blue-200 text-sm relative z-10">{localize("تاريخ الإضافة:", "Date added:")} {research.createdAt}</p>
+              <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-white/15 relative z-10">
+                <p className="text-blue-200 text-xs">{localize("تاريخ الإضافة:", "Date added:")} {research.createdAt}</p>
+                <button
+                  type="button"
+                  onClick={handleShareLink}
+                  data-testid="button-detail-header-share"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 text-white text-xs font-bold transition-colors"
+                >
+                  {copiedLink ? <Check size={13} className="text-emerald-300" /> : <Share2 size={13} />}
+                  <span>{copiedLink ? localize("تم النسخ ✓", "Copied ✓") : localize("مشاركة الفرصة 🔗", "Share opportunity 🔗")}</span>
+                </button>
+              </div>
             </div>
             <OpportunityMedia research={research} className="aspect-[4/3] min-h-[240px]" />
 
@@ -376,14 +440,24 @@ export default function ResearchDetail() {
                     <button
                       type="button"
                       data-testid="button-detail-copy-link"
-                      onClick={() => {
-                        navigator.clipboard.writeText(window.location.href);
-                        alert(localize("تم نسخ رابط الفرصة بنجاح 🔗", "Opportunity link copied successfully 🔗"));
-                      }}
-                      className="w-full text-xs text-slate-500 hover:text-slate-800 hover:bg-slate-50 py-2 rounded-xl transition-colors flex items-center justify-center gap-1.5 font-medium mt-1.5 border border-slate-200"
+                      onClick={handleCopyLink}
+                      className={`w-full text-xs py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 font-bold mt-2 border ${
+                        copiedLink
+                          ? "bg-emerald-50 text-emerald-800 border-emerald-300 shadow-sm"
+                          : "text-slate-700 bg-slate-50 hover:text-slate-900 hover:bg-slate-100 border-slate-200"
+                      }`}
                     >
-                      <Copy size={13} className="text-slate-400" />
-                      <span>{localize("نسخ رابط الفرصة 🔗", "Copy opportunity link 🔗")}</span>
+                      {copiedLink ? (
+                        <>
+                          <Check size={14} className="text-emerald-600" />
+                          <span>{localize("تم نسخ الرابط ومعاينة الصورة جاهزة ✓", "Link copied! Image preview ready ✓")}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy size={13} className="text-slate-500" />
+                          <span>{localize("نسخ رابط الفرصة للمشاركة 🔗", "Copy opportunity link to share 🔗")}</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 );
