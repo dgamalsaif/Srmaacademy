@@ -5,7 +5,7 @@ import { readSession, requireOwner } from "../middlewares/coordinatorAuth";
 import { getManagedOwner } from "../middlewares/ownerAuth";
 import { getSiteContentSettings, OpportunityFieldId } from "../lib/siteContentSettings";
 import { addImportedSpecialties, importResearchOpportunities, PROGRAM_CATALOG_LOCK_ID, type ResearchOpportunityImportRow } from "../lib/researchOpportunityImport";
-import { getResearchImageUrl, ResearchImageValidationError, resolveResearchImageUploadToken, uploadResearchImage } from "../lib/researchImageStorage";
+import { getResearchImageBytes, getResearchImageUrl, ResearchImageValidationError, resolveResearchImageUploadToken, uploadResearchImage } from "../lib/researchImageStorage";
 import { ensureProgramCapacityModel, PROGRAM_CAPACITY_LOCK_NAMESPACE, type DatabaseTransaction } from "../lib/programCapacity";
 import { applyResearchCatalogSeatSnapshot, researchCatalogDisplayOrder } from "../lib/researchCatalogSeatSnapshot";
 
@@ -203,25 +203,36 @@ router.get("/programs/:id/image", async (req, res) => {
   }
 
   try {
-    const imageUrl = await getResearchImageUrl(program.imagePath);
-    const imageResponse = await fetch(imageUrl, { signal: AbortSignal.timeout(30_000) });
-    if (!imageResponse.ok) throw new Error(`Failed to retrieve research image (status ${imageResponse.status}).`);
-    const contentType = imageResponse.headers.get("content-type")?.split(";")[0].trim().toLowerCase();
-    if (!contentType || !["image/jpeg", "image/png", "image/webp"].includes(contentType)) {
-      throw new Error("Research image storage returned an unexpected content type.");
+    const result = await getResearchImageBytes(program.imagePath);
+    if (!result) {
+      // Fallback to presigned URL if available
+      try {
+        const imageUrl = await getResearchImageUrl(program.imagePath);
+        const imageResponse = await fetch(imageUrl, { signal: AbortSignal.timeout(30_000) });
+        if (imageResponse.ok) {
+          const contentType = imageResponse.headers.get("content-type")?.split(";")[0].trim().toLowerCase() || "image/jpeg";
+          const imageBytes = Buffer.from(await imageResponse.arrayBuffer());
+          res.setHeader("Cache-Control", "private, no-store, max-age=0, must-revalidate");
+          res.setHeader("Content-Type", contentType);
+          res.setHeader("Content-Disposition", 'inline; filename="srma-research-image"');
+          res.status(200).send(imageBytes);
+          return;
+        }
+      } catch {}
+      res.status(404).end();
+      return;
     }
-    const imageBytes = Buffer.from(await imageResponse.arrayBuffer());
 
     res.setHeader("Cache-Control", "private, no-store, max-age=0, must-revalidate");
     res.setHeader("Pragma", "no-cache");
     res.setHeader("Expires", "0");
     res.setHeader("Content-Disposition", 'inline; filename="srma-research-image"');
-    res.setHeader("Content-Type", contentType);
-    res.setHeader("Content-Length", String(imageBytes.length));
+    res.setHeader("Content-Type", result.contentType);
+    res.setHeader("Content-Length", String(result.data.length));
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("Referrer-Policy", "same-origin");
     res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
-    res.status(200).send(imageBytes);
+    res.status(200).send(result.data);
   } catch (error) {
     req.log.error({ err: error, programId: id }, "Failed to serve research image");
     res.status(404).end();

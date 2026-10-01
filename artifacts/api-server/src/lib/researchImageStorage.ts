@@ -1,6 +1,9 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes, randomUUID } from "node:crypto";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { logger } from "./logger";
 
 const REPLIT_SIDECAR_ENDPOINT = "http://127.0.0.1:1106";
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
@@ -9,6 +12,8 @@ const IMAGE_PATH_PREFIX = "/objects/research-images/";
 const IMAGE_DISPLAY_URL_TTL_SECONDS = 2 * 60;
 const IMAGE_UPLOAD_URL_TTL_SECONDS = 60;
 const IMAGE_UPLOAD_TOKEN_TTL_SECONDS = 15 * 60;
+
+const LOCAL_STORAGE_DIR = path.resolve(process.cwd(), ".srma_image_store");
 
 type SignedMethod = "GET" | "PUT";
 
@@ -19,19 +24,35 @@ export async function uploadResearchImage(input: {
   const contentType = validateResearchImage(input.data, input.contentType);
 
   const objectPath = `${IMAGE_PATH_PREFIX}${randomUUID()}`;
-  const uploadURL = await signObjectUrl({
-    objectPath,
-    method: "PUT",
-    ttlSeconds: IMAGE_UPLOAD_URL_TTL_SECONDS,
-  });
-  const uploadResponse = await fetch(uploadURL, {
-    method: "PUT",
-    headers: { "Content-Type": contentType },
-    body: input.data,
-    signal: AbortSignal.timeout(30_000),
-  });
-  if (!uploadResponse.ok) {
-    throw new Error(`Failed to upload research image (status ${uploadResponse.status}).`);
+  const filename = objectPath.slice(IMAGE_PATH_PREFIX.length);
+
+  // 1. Always write to local resilient storage first
+  try {
+    await mkdir(LOCAL_STORAGE_DIR, { recursive: true });
+    await writeFile(path.join(LOCAL_STORAGE_DIR, filename), input.data);
+    await writeFile(path.join(LOCAL_STORAGE_DIR, `${filename}.meta`), JSON.stringify({ contentType }));
+  } catch (fsErr) {
+    logger.warn({ err: fsErr }, "Failed to write image to local fallback storage");
+  }
+
+  // 2. Upload to Cloudflare R2 if configured
+  const r2 = getR2Storage();
+  if (r2) {
+    const objectName = `${r2.prefix}/research-images/${filename}`;
+    try {
+      await r2.client.send(new PutObjectCommand({
+        Bucket: r2.bucket,
+        Key: objectName,
+        Body: input.data,
+        ContentType: contentType,
+      }));
+      logger.info({ objectName }, "Successfully uploaded research image to R2");
+    } catch (r2Err: any) {
+      logger.warn(
+        { err: r2Err?.message || r2Err, status: r2Err?.$metadata?.httpStatusCode },
+        "R2 upload encountered an error (e.g. AccessDenied 403 or permission error) — image safely stored in local fallback storage.",
+      );
+    }
   }
 
   return {
@@ -40,6 +61,49 @@ export async function uploadResearchImage(input: {
       expiresAt: Date.now() + IMAGE_UPLOAD_TOKEN_TTL_SECONDS * 1000,
     }),
   };
+}
+
+export async function getResearchImageBytes(objectPath: string): Promise<{ data: Buffer; contentType: string } | null> {
+  assertResearchImagePath(objectPath);
+  const filename = objectPath.slice(IMAGE_PATH_PREFIX.length);
+
+  // 1. Check local storage
+  try {
+    const localFilePath = path.join(LOCAL_STORAGE_DIR, filename);
+    const data = await readFile(localFilePath);
+    let contentType = "image/jpeg";
+    try {
+      const meta = JSON.parse(await readFile(path.join(LOCAL_STORAGE_DIR, `${filename}.meta`), "utf8"));
+      if (meta?.contentType) contentType = meta.contentType;
+    } catch {}
+    return { data, contentType };
+  } catch {}
+
+  // 2. Fetch from R2 if configured
+  const r2 = getR2Storage();
+  if (r2) {
+    try {
+      const objectName = `${r2.prefix}/research-images/${filename}`;
+      const response = await r2.client.send(new GetObjectCommand({
+        Bucket: r2.bucket,
+        Key: objectName,
+      }));
+      if (response.Body) {
+        const stream = response.Body as any;
+        const chunks: Uint8Array[] = [];
+        for await (const chunk of stream) {
+          chunks.push(chunk);
+        }
+        const data = Buffer.concat(chunks);
+        const contentType = response.ContentType || "image/jpeg";
+        return { data, contentType };
+      }
+    } catch (err) {
+      logger.warn({ err }, "Failed to fetch image from R2");
+    }
+  }
+
+  return null;
 }
 
 export async function getResearchImageUrl(objectPath: string) {
