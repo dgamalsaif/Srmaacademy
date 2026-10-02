@@ -19,32 +19,6 @@ const ALLOWED_IMAGE_TYPES = new Set([
 ]);
 const ALLOWED_IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 
-async function fileToBase64(file: Blob | File): Promise<string> {
-  // Method 1: ArrayBuffer (robust, ignores event loop & sandbox restrictions)
-  try {
-    const buffer = await file.arrayBuffer();
-    const bytes = new Uint8Array(buffer);
-    let binary = "";
-    const chunkSize = 16384;
-    const len = bytes.byteLength;
-    for (let i = 0; i < len; i += chunkSize) {
-      binary += String.fromCharCode(...bytes.subarray(i, Math.min(i + chunkSize, len)));
-    }
-    const mime = file.type || "image/jpeg";
-    return `data:${mime};base64,${btoa(binary)}`;
-  } catch (err) {
-    console.warn("ArrayBuffer conversion fallback to FileReader", err);
-  }
-
-  // Method 2: FileReader fallback
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(new Error("تعذر قراءة بيانات الصورة."));
-    reader.readAsDataURL(file);
-  });
-}
-
 export default function ResearchImagePicker({
   initialImageUrl = "",
   onImageTokenChange,
@@ -54,9 +28,14 @@ export default function ResearchImagePicker({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const previewObjectUrl = useRef<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => () => {
-    if (previewObjectUrl.current) URL.revokeObjectURL(previewObjectUrl.current);
+    if (previewObjectUrl.current) {
+      try {
+        URL.revokeObjectURL(previewObjectUrl.current);
+      } catch {}
+    }
   }, []);
 
   const setUploadingState = (next: boolean) => {
@@ -69,6 +48,7 @@ export default function ResearchImagePicker({
     const fileExtension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
     const mimeType = (file.type || "").toLowerCase();
 
+    // Validate type and extension
     if (
       mimeType &&
       !ALLOWED_IMAGE_TYPES.has(mimeType) &&
@@ -77,6 +57,7 @@ export default function ResearchImagePicker({
       setError("اختر صورة بصيغة JPG أو PNG أو WebP.");
       return;
     }
+
     if (file.size > MAX_IMAGE_SIZE) {
       setError("يجب ألا يتجاوز حجم الصورة 10 ميغابايت.");
       return;
@@ -84,31 +65,27 @@ export default function ResearchImagePicker({
 
     setUploadingState(true);
     try {
-      // 1. Attempt client-side watermarked copy; if decoding fails (e.g. mobile camera 48MP texture limit), upload original file directly!
-      let imageToUpload: Blob | File = file;
-      try {
-        imageToUpload = await createWatermarkedImage(file);
-      } catch (watermarkError) {
-        console.warn("Client watermark could not be generated, uploading original file directly", watermarkError);
-        imageToUpload = file;
+      // 1. Instant local preview
+      if (previewObjectUrl.current) {
+        try {
+          URL.revokeObjectURL(previewObjectUrl.current);
+        } catch {}
       }
+      previewObjectUrl.current = URL.createObjectURL(file);
+      setPreviewUrl(previewObjectUrl.current);
 
-      // 2. Convert to Base64 using resilient ArrayBuffer reader
-      const base64Data = await fileToBase64(imageToUpload);
-
-      // 3. Upload to API
+      // 2. Direct binary streaming to backend (bypasses FileReader & canvas limits completely)
       const uploadUrl = buildApiUrl("/api/program-images/upload");
+      const requestContentType = mimeType || "image/jpeg";
+
       const request = await fetch(uploadUrl, {
         method: "POST",
         credentials: "include",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": requestContentType,
           Accept: "application/json",
         },
-        body: JSON.stringify({
-          imageBase64: base64Data,
-          contentType: imageToUpload.type || file.type || "image/jpeg",
-        }),
+        body: file,
       });
 
       const responseText = await request.text();
@@ -118,7 +95,9 @@ export default function ResearchImagePicker({
       } catch {
         throw new Error(
           request.status === 413
-            ? "حجم الصورة كبير جداً."
+            ? "حجم الصورة كبير جداً (الحد الأقصى 10 ميغابايت)."
+            : request.status === 401
+            ? "انتهت صلاحية جلسة تسجيل الدخول. يرجى إعادة تسجيل الدخول أولاً."
             : "تعذر رفع الصورة من الخادم. يرجى التأكد من تسجيل الدخول وإعادة المحاولة."
         );
       }
@@ -127,30 +106,38 @@ export default function ResearchImagePicker({
         throw new Error(upload.error || "تعذر رفع الصورة.");
       }
 
-      // 4. Update preview
-      if (previewObjectUrl.current) URL.revokeObjectURL(previewObjectUrl.current);
-      try {
-        previewObjectUrl.current = URL.createObjectURL(imageToUpload);
-        setPreviewUrl(previewObjectUrl.current);
-      } catch {
-        setPreviewUrl(base64Data);
-      }
       onImageTokenChange(upload.imageToken);
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "تعذر رفع الصورة. حاول مرة أخرى.");
+      // Rollback preview if upload fails
+      if (!initialImageUrl) {
+        setPreviewUrl("");
+      }
     } finally {
       setUploadingState(false);
+      if (fileInputRef.current) {
+        try {
+          fileInputRef.current.value = "";
+        } catch {}
+      }
     }
   };
 
   const removeImage = () => {
     if (previewObjectUrl.current) {
-      URL.revokeObjectURL(previewObjectUrl.current);
+      try {
+        URL.revokeObjectURL(previewObjectUrl.current);
+      } catch {}
       previewObjectUrl.current = null;
     }
     setPreviewUrl("");
     setError("");
     onImageTokenChange("");
+    if (fileInputRef.current) {
+      try {
+        fileInputRef.current.value = "";
+      } catch {}
+    }
   };
 
   return (
@@ -162,7 +149,7 @@ export default function ResearchImagePicker({
             <ShieldCheck size={18} className="text-[#117b59]" />
           </div>
           <p className="mt-1 max-w-xl text-xs leading-5 text-slate-500">
-            تُدمج علامة SRMA المائية داخل الصورة، وتُعرض برابط محمي قصير العمر. تقلل الحماية النسخ والتنزيل المباشر، لكن لا يستطيع أي موقع منع لقطات الشاشة بشكل كامل.
+            تُعرض صورة الفرصة برابط محمي قصير العمر مع حماية من التنزيل المباشر، وتظهر في بطاقات المشاركة على شبكات التواصل.
           </p>
         </div>
         <label
@@ -180,6 +167,7 @@ export default function ResearchImagePicker({
             </span>
           )}
           <input
+            ref={fileInputRef}
             data-testid="input-research-image"
             className="sr-only"
             type="file"
@@ -189,11 +177,7 @@ export default function ResearchImagePicker({
               const fileInput = event.currentTarget;
               const [file] = Array.from(fileInput.files || []);
               if (file) {
-                void uploadImage(file).finally(() => {
-                  try {
-                    fileInput.value = "";
-                  } catch {}
-                });
+                void uploadImage(file);
               }
             }}
           />
@@ -229,117 +213,4 @@ export default function ResearchImagePicker({
       )}
     </section>
   );
-}
-
-interface DrawableSource {
-  drawable: CanvasImageSource;
-  width: number;
-  height: number;
-  cleanup?: () => void;
-}
-
-async function loadDrawableSource(file: File): Promise<DrawableSource> {
-  // Strategy 1: createImageBitmap (fastest, most robust against file lock/memory pressure)
-  if (typeof createImageBitmap === "function") {
-    try {
-      const bitmap = await createImageBitmap(file);
-      return {
-        drawable: bitmap,
-        width: bitmap.width,
-        height: bitmap.height,
-        cleanup: () => {
-          try {
-            bitmap.close();
-          } catch {}
-        },
-      };
-    } catch {}
-  }
-
-  // Strategy 2: URL.createObjectURL (standard native DOM decoding)
-  if (typeof URL !== "undefined" && typeof URL.createObjectURL === "function") {
-    try {
-      const objectUrl = URL.createObjectURL(file);
-      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-        const image = new Image();
-        image.onload = () => resolve(image);
-        image.onerror = (e) => reject(e);
-        image.src = objectUrl;
-      });
-      return {
-        drawable: img,
-        width: img.naturalWidth || img.width,
-        height: img.naturalHeight || img.height,
-        cleanup: () => {
-          try {
-            URL.revokeObjectURL(objectUrl);
-          } catch {}
-        },
-      };
-    } catch {}
-  }
-
-  // Strategy 3: ArrayBuffer -> Blob URL (reliable in iframes and strict sandboxes)
-  try {
-    const buffer = await file.arrayBuffer();
-    const blob = new Blob([buffer], { type: file.type || "image/jpeg" });
-    const blobUrl = URL.createObjectURL(blob);
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const image = new Image();
-      image.onload = () => resolve(image);
-      image.onerror = (e) => reject(e);
-      image.src = blobUrl;
-    });
-    return {
-      drawable: img,
-      width: img.naturalWidth || img.width,
-      height: img.naturalHeight || img.height,
-      cleanup: () => {
-        try {
-          URL.revokeObjectURL(blobUrl);
-        } catch {}
-      },
-    };
-  } catch {}
-
-  throw new Error("unsupported_decode");
-}
-
-async function createWatermarkedImage(file: File) {
-  const source = await loadDrawableSource(file);
-  try {
-    const maxDimension = 1600;
-    const scale = Math.min(1, maxDimension / Math.max(source.width, source.height));
-    const width = Math.max(1, Math.round(source.width * scale));
-    const height = Math.max(1, Math.round(source.height * scale));
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const context = canvas.getContext("2d");
-    if (!context) throw new Error("تعذر تجهيز لوحة الرسم.");
-
-    context.drawImage(source.drawable, 0, 0, width, height);
-    context.save();
-    context.translate(width / 2, height / 2);
-    context.rotate(-Math.PI / 7);
-    context.fillStyle = "rgba(255, 255, 255, 0.35)";
-    context.textAlign = "center";
-    context.textBaseline = "middle";
-    context.font = `800 ${Math.max(18, Math.round(width * 0.04))}px Arial, sans-serif`;
-    const watermark = "SRMA  •  srmaacademy.com";
-    const horizontalGap = Math.max(170, Math.round(width * 0.44));
-    const verticalGap = Math.max(78, Math.round(height * 0.3));
-    for (let y = -height; y <= height; y += verticalGap) {
-      for (let x = -width; x <= width; x += horizontalGap) {
-        context.fillText(watermark, x, y);
-      }
-    }
-    context.restore();
-
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
-    if (!blob) throw new Error("تعذر إنشاء نسخة الحماية من الصورة.");
-    return new File([blob], `srma-opportunity-${Date.now()}.jpg`, { type: "image/jpeg" });
-  } finally {
-    source.cleanup?.();
-  }
 }

@@ -179,7 +179,15 @@ router.get("/programs", async (req, res) => {
 });
 
 router.post("/program-images/upload", requireCoordinator, raw({
-  type: ["image/jpeg", "image/png", "image/webp", "application/octet-stream"],
+  type: [
+    "image/jpeg",
+    "image/jpg",
+    "image/pjpeg",
+    "image/png",
+    "image/x-png",
+    "image/webp",
+    "application/octet-stream",
+  ],
   limit: "10mb",
 }), async (req, res) => {
   try {
