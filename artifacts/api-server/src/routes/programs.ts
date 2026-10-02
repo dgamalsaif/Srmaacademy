@@ -267,20 +267,22 @@ router.get("/programs/:id/image", async (req, res) => {
         return;
       }
 
-      // Presigned URL fallback
+      // Presigned URL fallback (only if R2 is configured and returns a valid URL)
       try {
         const imageUrl = await getResearchImageUrl(program.imagePath);
-        const imageResponse = await fetch(imageUrl, { signal: AbortSignal.timeout(10_000) });
-        if (imageResponse.ok) {
-          const contentType = imageResponse.headers.get("content-type")?.split(";")[0].trim().toLowerCase() || "image/jpeg";
-          const imageBytes = Buffer.from(await imageResponse.arrayBuffer());
-          res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
-          res.setHeader("Content-Type", contentType);
-          res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
-          res.setHeader("Access-Control-Allow-Origin", "*");
-          res.setHeader("Content-Disposition", 'inline; filename="srma-research-image"');
-          res.status(200).send(imageBytes);
-          return;
+        if (imageUrl) {
+          const imageResponse = await fetch(imageUrl, { signal: AbortSignal.timeout(5_000) });
+          if (imageResponse.ok) {
+            const contentType = imageResponse.headers.get("content-type")?.split(";")[0].trim().toLowerCase() || "image/jpeg";
+            const imageBytes = Buffer.from(await imageResponse.arrayBuffer());
+            res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+            res.setHeader("Content-Type", contentType);
+            res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+            res.setHeader("Access-Control-Allow-Origin", "*");
+            res.setHeader("Content-Disposition", 'inline; filename="srma-research-image"');
+            res.status(200).send(imageBytes);
+            return;
+          }
         }
       } catch {}
     } catch {}

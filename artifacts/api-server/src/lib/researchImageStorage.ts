@@ -19,7 +19,10 @@ const IMAGE_DISPLAY_URL_TTL_SECONDS = 2 * 60;
 const IMAGE_UPLOAD_URL_TTL_SECONDS = 60;
 const IMAGE_UPLOAD_TOKEN_TTL_SECONDS = 24 * 60 * 60; // 24 hours to prevent expiration while editing
 
-const LOCAL_STORAGE_DIR = path.resolve(process.cwd(), ".srma_image_store");
+const LOCAL_STORAGE_DIRS = [
+  path.resolve(process.cwd(), ".srma_image_store"),
+  "/tmp/srma_image_store",
+];
 
 type SignedMethod = "GET" | "PUT";
 
@@ -32,13 +35,15 @@ export async function uploadResearchImage(input: {
   const objectPath = `${IMAGE_PATH_PREFIX}${randomUUID()}`;
   const filename = objectPath.slice(IMAGE_PATH_PREFIX.length);
 
-  // 1. Always write to local resilient storage first
-  try {
-    await mkdir(LOCAL_STORAGE_DIR, { recursive: true });
-    await writeFile(path.join(LOCAL_STORAGE_DIR, filename), input.data);
-    await writeFile(path.join(LOCAL_STORAGE_DIR, `${filename}.meta`), JSON.stringify({ contentType }));
-  } catch (fsErr) {
-    logger.warn({ err: fsErr }, "Failed to write image to local fallback storage");
+  // 1. Always write to resilient local storage directories
+  for (const dir of LOCAL_STORAGE_DIRS) {
+    try {
+      await mkdir(dir, { recursive: true });
+      await writeFile(path.join(dir, filename), input.data);
+      await writeFile(path.join(dir, `${filename}.meta`), JSON.stringify({ contentType }));
+    } catch (fsErr) {
+      logger.warn({ err: fsErr, dir }, "Failed writing to local fallback storage directory");
+    }
   }
 
   // 2. Upload to Cloudflare R2 if configured
@@ -56,7 +61,7 @@ export async function uploadResearchImage(input: {
     } catch (r2Err: any) {
       logger.warn(
         { err: r2Err?.message || r2Err, status: r2Err?.$metadata?.httpStatusCode },
-        "R2 upload encountered an error (e.g. AccessDenied 403 or permission error) — image safely stored in local fallback storage.",
+        "R2 upload encountered an error — image safely stored in local fallback storage.",
       );
     }
   }
@@ -73,17 +78,19 @@ export async function getResearchImageBytes(objectPath: string): Promise<{ data:
   assertResearchImagePath(objectPath);
   const filename = objectPath.slice(IMAGE_PATH_PREFIX.length);
 
-  // 1. Check local storage
-  try {
-    const localFilePath = path.join(LOCAL_STORAGE_DIR, filename);
-    const data = await readFile(localFilePath);
-    let contentType = "image/jpeg";
+  // 1. Check local storage directories
+  for (const dir of LOCAL_STORAGE_DIRS) {
     try {
-      const meta = JSON.parse(await readFile(path.join(LOCAL_STORAGE_DIR, `${filename}.meta`), "utf8"));
-      if (meta?.contentType) contentType = meta.contentType;
+      const localFilePath = path.join(dir, filename);
+      const data = await readFile(localFilePath);
+      let contentType = "image/jpeg";
+      try {
+        const meta = JSON.parse(await readFile(path.join(dir, `${filename}.meta`), "utf8"));
+        if (meta?.contentType) contentType = meta.contentType;
+      } catch {}
+      return { data, contentType };
     } catch {}
-    return { data, contentType };
-  } catch {}
+  }
 
   // 2. Fetch from R2 if configured
   const r2 = getR2Storage();
@@ -115,13 +122,17 @@ export async function getResearchImageBytes(objectPath: string): Promise<{ data:
   return null;
 }
 
-export async function getResearchImageUrl(objectPath: string) {
+export async function getResearchImageUrl(objectPath: string): Promise<string | null> {
   assertResearchImagePath(objectPath);
-  return signObjectUrl({
-    objectPath,
-    method: "GET",
-    ttlSeconds: IMAGE_DISPLAY_URL_TTL_SECONDS,
-  });
+  try {
+    return await signObjectUrl({
+      objectPath,
+      method: "GET",
+      ttlSeconds: IMAGE_DISPLAY_URL_TTL_SECONDS,
+    });
+  } catch {
+    return null;
+  }
 }
 
 export function resolveResearchImageUploadToken(token: unknown) {
@@ -263,7 +274,7 @@ async function signObjectUrl({
   objectPath: string;
   method: SignedMethod;
   ttlSeconds: number;
-}) {
+}): Promise<string | null> {
   const r2 = getR2Storage();
   if (r2) {
     const objectName = `${r2.prefix}/research-images/${objectPath.slice(IMAGE_PATH_PREFIX.length)}`;
@@ -273,7 +284,8 @@ async function signObjectUrl({
     return getSignedUrl(r2.client, command, { expiresIn: ttlSeconds });
   }
 
-  throw new Error("Cloudflare R2 is not configured. Serving from resilient local image storage.");
+  // When Cloudflare R2 is not configured, image bytes are served directly from local resilient storage
+  return null;
 }
 
 function getR2Storage() {

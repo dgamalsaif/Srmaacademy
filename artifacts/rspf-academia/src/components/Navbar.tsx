@@ -33,18 +33,26 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-50 bg-white shadow-md border-b border-slate-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Mobile hamburger */}
-          <button
-            data-testid="button-mobile-menu"
-            className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"
-            onClick={() => setMobileOpen(!mobileOpen)}
-          >
-            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
-          </button>
+        <div className="flex items-center justify-between h-16 gap-2 sm:gap-4">
+          {/* Zone 1: Logo & Brand (Always at reading start: Right in RTL, Left in LTR) */}
+          <Link href="/" data-testid="link-logo" className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            <img
+              src={settings?.brand.logoUrl || SRMA_LOGO}
+              alt={language === "ar" ? settings?.brand.siteNameAr : settings?.brand.siteNameEn}
+              className="h-10 w-10 sm:h-11 sm:w-11 rounded-full border border-[#0C3156]/15 object-cover shadow-sm"
+            />
+            <div className="flex flex-col">
+              <span className="max-w-36 sm:max-w-48 truncate text-base sm:text-lg md:text-xl font-black tracking-tight text-[#0C3156]">
+                {language === "ar" ? settings?.brand.siteNameAr : settings?.brand.siteNameEn || "SRMA"}
+              </span>
+              <span className="text-[10px] text-slate-500 font-medium tracking-wide truncate max-w-36 sm:max-w-48">
+                {language === "ar" ? settings?.brand.siteNameAr : settings?.brand.siteNameEn}
+              </span>
+            </div>
+          </Link>
 
-          {/* Nav links desktop */}
-          <div className="hidden md:flex items-center gap-1 flex-1 justify-center">
+          {/* Zone 2: Navigation links (Center, Desktop) */}
+          <div className="hidden md:flex items-center gap-1 justify-center flex-1">
             {navLinks.map((link) => {
               const isActive = location === link.href;
               return (
@@ -52,7 +60,7 @@ export default function Navbar() {
                   key={link.label}
                   href={link.href}
                   data-testid={`link-nav-${link.href.replace("/", "") || "home"}`}
-                  className={`px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+                  className={`px-3 lg:px-4 py-2 rounded-full text-xs lg:text-sm font-semibold transition-all whitespace-nowrap ${
                     isActive
                       ? "bg-[#0C3156] text-white shadow-sm"
                       : link.highlight
@@ -65,42 +73,48 @@ export default function Navbar() {
               );
             })}
           </div>
-          <div className="hidden lg:block">
-            <InstallAppButton className="flex items-center gap-1.5 rounded-full border border-[#117b59]/25 bg-[#f3fbf8] px-3 py-2 text-xs font-black text-[#117b59] transition hover:bg-[#e6f5ef]" />
-          </div>
-          <a
-            href={contact.href}
-            target={contact.isExternal ? "_blank" : undefined}
-            rel={contact.isExternal ? "noopener noreferrer" : undefined}
-            data-testid="link-nav-contact"
-            className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-[#117b59] px-3.5 py-2 text-xs font-black text-white shadow-sm transition hover:bg-[#0c6549]"
-          >
-            <MessageCircle size={14} />
-            {contactLabel}
-          </a>
-          <CurrencyToggle
-            currency={currency}
-            onSelect={setCurrency}
-            triggerClassName="hidden sm:inline-flex"
-          />
-          <LanguageMenu
-            language={language}
-            label={languageLabel}
-            options={languageOptions}
-            onSelect={setLanguage}
-            triggerClassName="hidden sm:inline-flex"
-          />
 
-          {/* Logo */}
-          <Link href="/" data-testid="link-logo" className="flex items-center gap-2.5 flex-shrink-0">
-            <img src={settings?.brand.logoUrl || SRMA_LOGO} alt={language === "ar" ? settings?.brand.siteNameAr : settings?.brand.siteNameEn} className="h-11 w-11 rounded-full border border-[#0C3156]/15 object-cover shadow-sm" />
-            <div className="flex flex-col items-end">
-              <div className="flex items-center gap-1.5">
-                <span className="max-w-48 truncate text-xl font-black tracking-tight text-[#0C3156]">{language === "ar" ? settings?.brand.siteNameAr : settings?.brand.siteNameEn || "SRMA"}</span>
-              </div>
-              <span className="text-[10px] text-slate-500 font-medium tracking-wide">{language === "ar" ? settings?.brand.siteNameAr : settings?.brand.siteNameEn}</span>
+          {/* Zone 3: Actions & Controls (Always at reading end: Left in RTL, Right in LTR) */}
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+            <div className="hidden lg:block">
+              <InstallAppButton className="flex items-center gap-1.5 rounded-full border border-[#117b59]/25 bg-[#f3fbf8] px-3 py-2 text-xs font-black text-[#117b59] transition hover:bg-[#e6f5ef]" />
             </div>
-          </Link>
+
+            <a
+              href={contact.href}
+              target={contact.isExternal ? "_blank" : undefined}
+              rel={contact.isExternal ? "noopener noreferrer" : undefined}
+              data-testid="link-nav-contact"
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-[#117b59] px-3.5 py-2 text-xs font-black text-white shadow-sm transition hover:bg-[#0c6549]"
+            >
+              <MessageCircle size={14} />
+              <span>{contactLabel}</span>
+            </a>
+
+            <CurrencyToggle
+              currency={currency}
+              onSelect={setCurrency}
+              triggerClassName="hidden sm:inline-flex"
+            />
+
+            <LanguageMenu
+              language={language}
+              label={languageLabel}
+              options={languageOptions}
+              onSelect={setLanguage}
+              triggerClassName="hidden sm:inline-flex"
+            />
+
+            {/* Mobile hamburger */}
+            <button
+              data-testid="button-mobile-menu"
+              className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"
+              onClick={() => setMobileOpen(!mobileOpen)}
+              aria-label="القائمة"
+            >
+              {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
+          </div>
         </div>
       </div>
 
