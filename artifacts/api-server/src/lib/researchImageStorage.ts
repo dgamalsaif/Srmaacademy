@@ -6,8 +6,15 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { logger } from "./logger";
 
 const REPLIT_SIDECAR_ENDPOINT = "http://127.0.0.1:1106";
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/jpg",
+  "image/pjpeg",
+  "image/png",
+  "image/x-png",
+  "image/webp",
+]);
 const IMAGE_PATH_PREFIX = "/objects/research-images/";
 const IMAGE_DISPLAY_URL_TTL_SECONDS = 2 * 60;
 const IMAGE_UPLOAD_URL_TTL_SECONDS = 60;
@@ -151,17 +158,61 @@ export function assertResearchImagePath(objectPath: string) {
 
 export class ResearchImageValidationError extends Error {}
 
+function detectImageMimeFromBytes(data: Buffer): string | null {
+  if (data.length >= 3 && data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff) {
+    return "image/jpeg";
+  }
+  if (
+    data.length >= 8 &&
+    data[0] === 0x89 &&
+    data[1] === 0x50 &&
+    data[2] === 0x4e &&
+    data[3] === 0x47 &&
+    data[4] === 0x0d &&
+    data[5] === 0x0a &&
+    data[6] === 0x1a &&
+    data[7] === 0x0a
+  ) {
+    return "image/png";
+  }
+  if (
+    data.length >= 12 &&
+    data.subarray(0, 4).toString("ascii") === "RIFF" &&
+    data.subarray(8, 12).toString("ascii") === "WEBP"
+  ) {
+    return "image/webp";
+  }
+  return null;
+}
+
 function validateResearchImage(data: Buffer, rawContentType: unknown) {
-  const contentType = typeof rawContentType === "string"
+  let contentType = typeof rawContentType === "string"
     ? rawContentType.split(";")[0].trim().toLowerCase()
     : "";
+
+  // Normalize common variations
+  if (contentType === "image/jpg" || contentType === "image/pjpeg") {
+    contentType = "image/jpeg";
+  } else if (contentType === "image/x-png") {
+    contentType = "image/png";
+  }
+
+  const detected = detectImageMimeFromBytes(data);
+
+  // If content-type was missing, generic (octet-stream), or incorrect, use auto-detected mime
+  if (!ALLOWED_IMAGE_TYPES.has(contentType) || !hasExpectedImageSignature(data, contentType)) {
+    if (detected) {
+      contentType = detected;
+    } else {
+      throw new ResearchImageValidationError("الصور المسموح بها هي JPG أو PNG أو WebP فقط.");
+    }
+  }
+
   const size = data.length;
   if (!Number.isInteger(size) || size < 1 || size > MAX_IMAGE_BYTES) {
-    throw new ResearchImageValidationError("يجب ألا يتجاوز حجم الصورة 5 ميغابايت.");
+    throw new ResearchImageValidationError("يجب ألا يتجاوز حجم الصورة 10 ميغابايت.");
   }
-  if (!ALLOWED_IMAGE_TYPES.has(contentType) || !hasExpectedImageSignature(data, contentType)) {
-    throw new ResearchImageValidationError("الصور المسموح بها هي JPG أو PNG أو WebP فقط.");
-  }
+
   return contentType;
 }
 

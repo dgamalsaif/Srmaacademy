@@ -8,11 +8,48 @@ interface ResearchImagePickerProps {
   onUploadingChange: (uploading: boolean) => void;
 }
 
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
-const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/jpg",
+  "image/pjpeg",
+  "image/png",
+  "image/x-png",
+  "image/webp",
+]);
 const ALLOWED_IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 
-export default function ResearchImagePicker({ initialImageUrl = "", onImageTokenChange, onUploadingChange }: ResearchImagePickerProps) {
+async function fileToBase64(file: Blob | File): Promise<string> {
+  // Method 1: ArrayBuffer (robust, ignores event loop & sandbox restrictions)
+  try {
+    const buffer = await file.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    const chunkSize = 16384;
+    const len = bytes.byteLength;
+    for (let i = 0; i < len; i += chunkSize) {
+      binary += String.fromCharCode(...bytes.subarray(i, Math.min(i + chunkSize, len)));
+    }
+    const mime = file.type || "image/jpeg";
+    return `data:${mime};base64,${btoa(binary)}`;
+  } catch (err) {
+    console.warn("ArrayBuffer conversion fallback to FileReader", err);
+  }
+
+  // Method 2: FileReader fallback
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("تعذر قراءة بيانات الصورة."));
+    reader.readAsDataURL(file);
+  });
+}
+
+export default function ResearchImagePicker({
+  initialImageUrl = "",
+  onImageTokenChange,
+  onUploadingChange,
+}: ResearchImagePickerProps) {
   const [previewUrl, setPreviewUrl] = useState(initialImageUrl);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
@@ -30,38 +67,47 @@ export default function ResearchImagePicker({ initialImageUrl = "", onImageToken
   const uploadImage = async (file: File) => {
     setError("");
     const fileExtension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
-    if (!ALLOWED_IMAGE_TYPES.has(file.type.toLowerCase()) && !ALLOWED_IMAGE_EXTENSIONS.has(fileExtension)) {
+    const mimeType = (file.type || "").toLowerCase();
+
+    if (
+      mimeType &&
+      !ALLOWED_IMAGE_TYPES.has(mimeType) &&
+      !ALLOWED_IMAGE_EXTENSIONS.has(fileExtension)
+    ) {
       setError("اختر صورة بصيغة JPG أو PNG أو WebP.");
       return;
     }
     if (file.size > MAX_IMAGE_SIZE) {
-      setError("يجب ألا يتجاوز حجم الصورة 5 ميغابايت.");
+      setError("يجب ألا يتجاوز حجم الصورة 10 ميغابايت.");
       return;
     }
 
     setUploadingState(true);
     try {
-      const protectedImage = await createWatermarkedImage(file);
+      // 1. Attempt client-side watermarked copy; if decoding fails (e.g. mobile camera 48MP texture limit), upload original file directly!
+      let imageToUpload: Blob | File = file;
+      try {
+        imageToUpload = await createWatermarkedImage(file);
+      } catch (watermarkError) {
+        console.warn("Client watermark could not be generated, uploading original file directly", watermarkError);
+        imageToUpload = file;
+      }
 
-      // Convert protected watermarked image to base64
-      const base64Data = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = () => reject(new Error("تعذر قراءة ملف الصورة."));
-        reader.readAsDataURL(protectedImage);
-      });
+      // 2. Convert to Base64 using resilient ArrayBuffer reader
+      const base64Data = await fileToBase64(imageToUpload);
 
+      // 3. Upload to API
       const uploadUrl = buildApiUrl("/api/program-images/upload");
       const request = await fetch(uploadUrl, {
         method: "POST",
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          "Accept": "application/json",
+          Accept: "application/json",
         },
         body: JSON.stringify({
           imageBase64: base64Data,
-          contentType: protectedImage.type || "image/jpeg",
+          contentType: imageToUpload.type || file.type || "image/jpeg",
         }),
       });
 
@@ -81,9 +127,14 @@ export default function ResearchImagePicker({ initialImageUrl = "", onImageToken
         throw new Error(upload.error || "تعذر رفع الصورة.");
       }
 
+      // 4. Update preview
       if (previewObjectUrl.current) URL.revokeObjectURL(previewObjectUrl.current);
-      previewObjectUrl.current = URL.createObjectURL(protectedImage);
-      setPreviewUrl(previewObjectUrl.current);
+      try {
+        previewObjectUrl.current = URL.createObjectURL(imageToUpload);
+        setPreviewUrl(previewObjectUrl.current);
+      } catch {
+        setPreviewUrl(base64Data);
+      }
       onImageTokenChange(upload.imageToken);
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : "تعذر رفع الصورة. حاول مرة أخرى.");
@@ -110,10 +161,24 @@ export default function ResearchImagePicker({ initialImageUrl = "", onImageToken
             <h3 className="font-black text-slate-800">صورة الفرصة ومعاينة المشاركة</h3>
             <ShieldCheck size={18} className="text-[#117b59]" />
           </div>
-          <p className="mt-1 max-w-xl text-xs leading-5 text-slate-500">تُدمج علامة SRMA المائية داخل الصورة، وتُعرض برابط محمي قصير العمر. تقلل الحماية النسخ والتنزيل المباشر، لكن لا يستطيع أي موقع منع لقطات الشاشة بشكل كامل.</p>
+          <p className="mt-1 max-w-xl text-xs leading-5 text-slate-500">
+            تُدمج علامة SRMA المائية داخل الصورة، وتُعرض برابط محمي قصير العمر. تقلل الحماية النسخ والتنزيل المباشر، لكن لا يستطيع أي موقع منع لقطات الشاشة بشكل كامل.
+          </p>
         </div>
-        <label className={`shrink-0 cursor-pointer rounded-xl bg-[#117b59] px-4 py-2.5 text-xs font-black text-white transition hover:bg-[#0c6549] ${uploading ? "pointer-events-none opacity-60" : ""}`}>
-          {uploading ? <span className="flex items-center gap-2"><Loader2 size={15} className="animate-spin" /> جارٍ الرفع...</span> : <span className="flex items-center gap-2"><ImagePlus size={15} /> {previewUrl ? "استبدال الصورة" : "اختيار صورة"}</span>}
+        <label
+          className={`shrink-0 cursor-pointer rounded-xl bg-[#117b59] px-4 py-2.5 text-xs font-black text-white transition hover:bg-[#0c6549] ${
+            uploading ? "pointer-events-none opacity-60" : ""
+          }`}
+        >
+          {uploading ? (
+            <span className="flex items-center gap-2">
+              <Loader2 size={15} className="animate-spin" /> جارٍ الرفع...
+            </span>
+          ) : (
+            <span className="flex items-center gap-2">
+              <ImagePlus size={15} /> {previewUrl ? "استبدال الصورة" : "اختيار صورة"}
+            </span>
+          )}
           <input
             data-testid="input-research-image"
             className="sr-only"
@@ -135,13 +200,29 @@ export default function ResearchImagePicker({ initialImageUrl = "", onImageToken
         </label>
       </div>
 
-      {error && <p role="alert" className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700">{error}</p>}
+      {error && (
+        <p role="alert" className="mt-3 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-bold text-rose-700">
+          {error}
+        </p>
+      )}
 
       {previewUrl && (
-        <div className="srma-protected-image relative mt-4 overflow-hidden rounded-xl border border-emerald-100 bg-slate-100" onContextMenu={(event) => event.preventDefault()} onDragStart={(event) => event.preventDefault()}>
+        <div
+          className="srma-protected-image relative mt-4 overflow-hidden rounded-xl border border-emerald-100 bg-slate-100"
+          onContextMenu={(event) => event.preventDefault()}
+          onDragStart={(event) => event.preventDefault()}
+        >
           <img src={previewUrl} alt="معاينة صورة الفرصة" draggable={false} className="h-48 w-full object-cover" />
-          <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/5 text-sm font-black tracking-[0.2em] text-white/85 drop-shadow">SRMA</span>
-          <button type="button" onClick={removeImage} disabled={uploading} className="absolute left-3 top-3 rounded-lg bg-white/90 p-2 text-rose-600 shadow-sm transition hover:bg-white" aria-label="حذف صورة الفرصة">
+          <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-slate-950/5 text-sm font-black tracking-[0.2em] text-white/85 drop-shadow">
+            SRMA
+          </span>
+          <button
+            type="button"
+            onClick={removeImage}
+            disabled={uploading}
+            className="absolute left-3 top-3 rounded-lg bg-white/90 p-2 text-rose-600 shadow-sm transition hover:bg-white"
+            aria-label="حذف صورة الفرصة"
+          >
             <X size={16} />
           </button>
         </div>
@@ -182,7 +263,7 @@ async function loadDrawableSource(file: File): Promise<DrawableSource> {
       const img = await new Promise<HTMLImageElement>((resolve, reject) => {
         const image = new Image();
         image.onload = () => resolve(image);
-        image.onerror = () => reject(new Error("object_url_decode_failed"));
+        image.onerror = (e) => reject(e);
         image.src = objectUrl;
       });
       return {
@@ -198,28 +279,30 @@ async function loadDrawableSource(file: File): Promise<DrawableSource> {
     } catch {}
   }
 
-  // Strategy 3: FileReader (fallback for older environments)
-  return new Promise<DrawableSource>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = () => {
-      reject(new Error("تعذر قراءة ملف الصورة من جهازك. تأكد من أن الملف سليم وبصيغة JPG أو PNG أو WebP وحاول مجدداً."));
-    };
-    reader.onload = () => {
+  // Strategy 3: ArrayBuffer -> Blob URL (reliable in iframes and strict sandboxes)
+  try {
+    const buffer = await file.arrayBuffer();
+    const blob = new Blob([buffer], { type: file.type || "image/jpeg" });
+    const blobUrl = URL.createObjectURL(blob);
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const image = new Image();
-      image.onload = () => {
-        resolve({
-          drawable: image,
-          width: image.naturalWidth || image.width,
-          height: image.naturalHeight || image.height,
-        });
-      };
-      image.onerror = () => {
-        reject(new Error("لم يتمكن المتصفح من فك ترميز الصورة. احفظها بصيغة JPG أو PNG أو WebP ثم حاول مجدداً."));
-      };
-      image.src = String(reader.result);
+      image.onload = () => resolve(image);
+      image.onerror = (e) => reject(e);
+      image.src = blobUrl;
+    });
+    return {
+      drawable: img,
+      width: img.naturalWidth || img.width,
+      height: img.naturalHeight || img.height,
+      cleanup: () => {
+        try {
+          URL.revokeObjectURL(blobUrl);
+        } catch {}
+      },
     };
-    reader.readAsDataURL(file);
-  });
+  } catch {}
+
+  throw new Error("unsupported_decode");
 }
 
 async function createWatermarkedImage(file: File) {
@@ -233,7 +316,7 @@ async function createWatermarkedImage(file: File) {
     canvas.width = width;
     canvas.height = height;
     const context = canvas.getContext("2d");
-    if (!context) throw new Error("تعذر تجهيز الصورة.");
+    if (!context) throw new Error("تعذر تجهيز لوحة الرسم.");
 
     context.drawImage(source.drawable, 0, 0, width, height);
     context.save();
