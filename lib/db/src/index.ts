@@ -318,10 +318,14 @@ if (process.env.DATABASE_URL) {
       console.warn(`[DB] Hostname "${safeHost}" is an internal cluster address not resolvable in this container. Using resilient in-memory database.`);
       useInMemory = true;
     } else {
+      const isNeon = safeHost.includes("neon.tech");
+      const isSsl = isNeon || rawUrl.includes("sslmode=require") || rawUrl.includes("ssl=true");
+
       activePool = new Pool({
         connectionString: rawUrl,
-        connectionTimeoutMillis: 5000,
+        connectionTimeoutMillis: 15000,
         idleTimeoutMillis: 30000,
+        ...(isSsl ? { ssl: { rejectUnauthorized: false } } : {}),
       });
 
       activePool.on("error", (err: any) => {
