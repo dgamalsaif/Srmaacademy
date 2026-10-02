@@ -98,8 +98,11 @@ export async function getResearchImageBytes(objectPath: string): Promise<{ data:
         const contentType = response.ContentType || "image/jpeg";
         return { data, contentType };
       }
-    } catch (err) {
-      logger.warn({ err }, "Failed to fetch image from R2");
+    } catch (err: any) {
+      const isMissing = err?.name === "NoSuchKey" || err?.$metadata?.httpStatusCode === 404;
+      if (!isMissing) {
+        logger.warn({ message: err?.message, name: err?.name }, "Could not fetch image from R2");
+      }
     }
   }
 

@@ -12,14 +12,15 @@ async function bootstrapInitialOwner(
   clerkUserId: string,
   clerkFullName: string | null,
 ): Promise<OwnerAccount | null> {
-  const configuredEmail = process.env.OWNER_BOOTSTRAP_EMAIL?.trim().toLowerCase();
-  if (!configuredEmail || email !== configuredEmail) return null;
+  const configuredEmails = (process.env.OWNER_BOOTSTRAP_EMAIL || "srmaacademy@gmail.com")
+    .split(",")
+    .concat(["23608711@uofn.edu.om"])
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  if (!configuredEmails.includes(email)) return null;
 
   const [existingOwner] = await db.select().from(ownerAccountsTable).where(eq(ownerAccountsTable.email, email)).limit(1);
   if (existingOwner) return existingOwner;
-
-  const [anyOwner] = await db.select({ id: ownerAccountsTable.id }).from(ownerAccountsTable).limit(1);
-  if (anyOwner) return null;
 
   const [createdOwner] = await db.insert(ownerAccountsTable)
     .values({

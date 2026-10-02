@@ -828,12 +828,15 @@ export default function AdminDashboard() {
     try {
       const response = await fetch("/api/programs", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify(toPayload(form, imageToken)),
       });
-      const data = await response.json();
+      const text = await response.text();
+      let data: any = {};
+      try { data = JSON.parse(text); } catch {}
       if (!response.ok) {
-        return { error: data.error || "تعذر إضافة الفرصة البحثية." };
+        return { error: data.error || (response.status === 403 ? "يلزم تسجيل الدخول بحساب مصرح له." : "تعذر إضافة الفرصة البحثية.") };
       }
       setResearch((items) => [data as ResearchOpportunity, ...items]);
       setFormOpen(false);
@@ -847,12 +850,15 @@ export default function AdminDashboard() {
     try {
       const response = await fetch(`/api/programs/${editItem.id}`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
         body: JSON.stringify(toPayload(form, imageToken)),
       });
-      const data = await response.json();
+      const text = await response.text();
+      let data: any = {};
+      try { data = JSON.parse(text); } catch {}
       if (!response.ok) {
-        return { error: data.error || "تعذر تعديل الفرصة البحثية." };
+        return { error: data.error || (response.status === 403 ? "يلزم تسجيل الدخول بحساب مصرح له." : "تعذر تعديل الفرصة البحثية.") };
       }
       setResearch((items) => items.map((item) => item.id === (data as ResearchOpportunity).id ? (data as ResearchOpportunity) : item));
       setEditItem(null);

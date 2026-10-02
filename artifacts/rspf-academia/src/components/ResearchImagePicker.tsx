@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ImagePlus, Loader2, ShieldCheck, X } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api";
 
 interface ResearchImagePickerProps {
   initialImageUrl?: string;
@@ -41,13 +42,44 @@ export default function ResearchImagePicker({ initialImageUrl = "", onImageToken
     setUploadingState(true);
     try {
       const protectedImage = await createWatermarkedImage(file);
-      const request = await fetch("/api/program-images/upload", {
-        method: "POST",
-        headers: { "Content-Type": protectedImage.type },
-        body: protectedImage,
+
+      // Convert protected watermarked image to base64
+      const base64Data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = () => reject(new Error("تعذر قراءة ملف الصورة."));
+        reader.readAsDataURL(protectedImage);
       });
-      const upload = await request.json() as { imageToken?: string; error?: string };
-      if (!request.ok || !upload.imageToken) throw new Error(upload.error || "تعذر رفع الصورة.");
+
+      const uploadUrl = API_BASE_URL ? `${API_BASE_URL}/api/program-images/upload` : "/api/program-images/upload";
+      const request = await fetch(uploadUrl, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify({
+          imageBase64: base64Data,
+          contentType: protectedImage.type || "image/jpeg",
+        }),
+      });
+
+      const responseText = await request.text();
+      let upload: { imageToken?: string; error?: string } = {};
+      try {
+        upload = JSON.parse(responseText);
+      } catch {
+        throw new Error(
+          request.status === 413
+            ? "حجم الصورة كبير جداً."
+            : "تعذر رفع الصورة من الخادم. يرجى التأكد من تسجيل الدخول وإعادة المحاولة."
+        );
+      }
+
+      if (!request.ok || !upload.imageToken) {
+        throw new Error(upload.error || "تعذر رفع الصورة.");
+      }
 
       if (previewObjectUrl.current) URL.revokeObjectURL(previewObjectUrl.current);
       previewObjectUrl.current = URL.createObjectURL(protectedImage);

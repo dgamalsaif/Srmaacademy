@@ -70,6 +70,11 @@ if (process.env.CLERK_SECRET_KEY) {
 
 app.use("/api", router);
 
+// Ensure any unmatched /api request returns JSON, never falling through to SPA HTML
+app.use("/api", (_req, res) => {
+  res.status(404).json({ error: "المسار غير موجود في الواجهة البرمجية (API endpoint not found)" });
+});
+
 // Centralized safe error middleware
 app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   logger.error({ err: err?.message || err }, "Unhandled server error");

@@ -29,27 +29,39 @@ app.get(["/research/:id", "/share/research/:id"], (req, res, next) => {
   return next();
 });
 
-if (!isProd) {
-  const { createServer: createViteServer } = await import("vite");
-  const vite = await createViteServer({
-    configFile: path.resolve(__dirname, "artifacts/rspf-academia/vite.config.ts"),
-    root: path.resolve(__dirname, "artifacts/rspf-academia"),
-    server: {
-      middlewareMode: true,
-      host: "0.0.0.0",
-    },
-    appType: "spa",
-  });
+// Guard: prevent any /api request from falling through to the frontend SPA
+app.use("/api", (_req, res) => {
+  res.status(404).json({ error: "API endpoint not found" });
+});
 
-  app.use(vite.middlewares);
-} else {
-  const distPath = path.resolve(__dirname, "artifacts/rspf-academia/dist/public");
-  app.use(express.static(distPath));
-  app.get("*", (_req, res) => {
-    res.sendFile(path.join(distPath, "index.html"));
+async function startServer() {
+  if (!isProd) {
+    const { createServer: createViteServer } = await import("vite");
+    const vite = await createViteServer({
+      configFile: path.resolve(__dirname, "artifacts/rspf-academia/vite.config.ts"),
+      root: path.resolve(__dirname, "artifacts/rspf-academia"),
+      server: {
+        middlewareMode: true,
+        host: "0.0.0.0",
+      },
+      appType: "spa",
+    });
+
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.resolve(__dirname, "artifacts/rspf-academia/dist/public");
+    app.use(express.static(distPath));
+    app.get("*", (_req, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
+    });
+  }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    logger.info({ port: PORT }, `Server running on http://0.0.0.0:${PORT}`);
   });
 }
 
-app.listen(PORT, "0.0.0.0", () => {
-  logger.info({ port: PORT }, `Server running on http://0.0.0.0:${PORT}`);
+startServer().catch((err) => {
+  logger.error({ err }, "Fatal error starting server");
+  process.exit(1);
 });

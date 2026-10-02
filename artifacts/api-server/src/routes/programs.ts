@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import sharp from "sharp";
 import { db, insertResearchProgramSchema, programCatalogBootstrapTable, registrationsTable, researchProgramsTable } from "@workspace/db";
 import { desc, eq, sql } from "drizzle-orm";
-import { readSession, requireOwner } from "../middlewares/coordinatorAuth";
+import { readSession, requireCoordinator, requireOwner } from "../middlewares/coordinatorAuth";
 import { getManagedOwner } from "../middlewares/ownerAuth";
 import { getSiteContentSettings, OpportunityFieldId } from "../lib/siteContentSettings";
 import { addImportedSpecialties, importResearchOpportunities, PROGRAM_CATALOG_LOCK_ID, type ResearchOpportunityImportRow } from "../lib/researchOpportunityImport";
@@ -173,17 +173,39 @@ router.get("/programs", async (req, res) => {
   res.json((isStaff ? rows : rows.filter(isPublicProgram)).map((row) => toClient(row, isOwner)));
 });
 
-router.post("/program-images/upload", requireOwner, raw({
-  type: ["image/jpeg", "image/png", "image/webp"],
-  limit: "5mb",
+router.post("/program-images/upload", requireCoordinator, raw({
+  type: ["image/jpeg", "image/png", "image/webp", "application/octet-stream"],
+  limit: "10mb",
 }), async (req, res) => {
   try {
-    if (!Buffer.isBuffer(req.body)) {
+    let imageBuffer: Buffer | null = null;
+    let contentType = req.get("content-type") || "image/jpeg";
+
+    if (Buffer.isBuffer(req.body) && req.body.length > 0) {
+      imageBuffer = req.body;
+    } else if (req.body && typeof req.body === "object") {
+      const b64 = (req.body as any).imageBase64 || (req.body as any).data || (req.body as any).image;
+      if (typeof b64 === "string" && b64.length > 0) {
+        const match = b64.match(/^data:([^;]+);base64,(.+)$/);
+        if (match) {
+          contentType = match[1];
+          imageBuffer = Buffer.from(match[2], "base64");
+        } else {
+          imageBuffer = Buffer.from(b64, "base64");
+        }
+        if ((req.body as any).contentType) {
+          contentType = (req.body as any).contentType;
+        }
+      }
+    }
+
+    if (!imageBuffer || imageBuffer.length === 0) {
       throw new ResearchImageValidationError("يرجى اختيار ملف صورة صالح.");
     }
+
     const upload = await uploadResearchImage({
-      data: req.body,
-      contentType: req.get("content-type"),
+      data: imageBuffer,
+      contentType,
     });
     res.status(201).json(upload);
   } catch (error) {
@@ -191,7 +213,7 @@ router.post("/program-images/upload", requireOwner, raw({
       res.status(400).json({ error: error.message });
       return;
     }
-    req.log.error({ err: error }, "Failed to create research image upload URL");
+    req.log.error({ err: error }, "Failed to upload research image");
     res.status(500).json({ error: "تعذر تجهيز رفع الصورة. حاول مرة أخرى." });
   }
 });
@@ -222,22 +244,22 @@ router.get("/programs/:id/image", async (req, res) => {
       }
 
       // Presigned URL fallback
-      const imageUrl = await getResearchImageUrl(program.imagePath);
-      const imageResponse = await fetch(imageUrl, { signal: AbortSignal.timeout(30_000) });
-      if (imageResponse.ok) {
-        const contentType = imageResponse.headers.get("content-type")?.split(";")[0].trim().toLowerCase() || "image/jpeg";
-        const imageBytes = Buffer.from(await imageResponse.arrayBuffer());
-        res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
-        res.setHeader("Content-Type", contentType);
-        res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
-        res.setHeader("Access-Control-Allow-Origin", "*");
-        res.setHeader("Content-Disposition", 'inline; filename="srma-research-image"');
-        res.status(200).send(imageBytes);
-        return;
-      }
-    } catch (imgErr) {
-      req.log.warn({ err: imgErr, programId: id }, "Failed retrieving stored image bytes, falling back to dynamic card");
-    }
+      try {
+        const imageUrl = await getResearchImageUrl(program.imagePath);
+        const imageResponse = await fetch(imageUrl, { signal: AbortSignal.timeout(10_000) });
+        if (imageResponse.ok) {
+          const contentType = imageResponse.headers.get("content-type")?.split(";")[0].trim().toLowerCase() || "image/jpeg";
+          const imageBytes = Buffer.from(await imageResponse.arrayBuffer());
+          res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
+          res.setHeader("Content-Type", contentType);
+          res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+          res.setHeader("Access-Control-Allow-Origin", "*");
+          res.setHeader("Content-Disposition", 'inline; filename="srma-research-image"');
+          res.status(200).send(imageBytes);
+          return;
+        }
+      } catch {}
+    } catch {}
   }
 
   // 2. Generate a high-resolution 1200x630 social card PNG using sharp
