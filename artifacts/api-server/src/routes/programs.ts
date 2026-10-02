@@ -167,10 +167,15 @@ router.get("/sitemap.xml", async (_req, res) => {
 
 router.get("/programs", async (req, res) => {
   res.setHeader("Cache-Control", "no-store, max-age=0");
-  const rows = await listPrograms();
-  const isOwner = Boolean(await getManagedOwner(req));
-  const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session)) || isOwner;
-  res.json((isStaff ? rows : rows.filter(isPublicProgram)).map((row) => toClient(row, isOwner)));
+  try {
+    const rows = await listPrograms();
+    const isOwner = Boolean(await getManagedOwner(req).catch(() => null));
+    const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session)) || isOwner;
+    res.json((isStaff ? rows : rows.filter(isPublicProgram)).map((row) => toClient(row, isOwner)));
+  } catch (err) {
+    req.log.error({ err }, "Failed listing programs");
+    res.status(500).json({ error: "تعذر تحميل الفرص البحثية حالياً." });
+  }
 });
 
 router.post("/program-images/upload", requireCoordinator, raw({
@@ -221,10 +226,17 @@ router.post("/program-images/upload", requireCoordinator, raw({
 router.get("/programs/:id/image", async (req, res) => {
   const id = Number(req.params["id"]);
   const [program] = await db.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, id)).limit(1);
-  const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session)) || Boolean(await getManagedOwner(req));
-  if (!program || (!isStaff && !isPublicProgram(program))) {
+  if (!program) {
     res.status(404).end();
     return;
+  }
+  const isPublic = isPublicProgram(program);
+  if (!isPublic) {
+    const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session)) || Boolean(await getManagedOwner(req).catch(() => null));
+    if (!isStaff) {
+      res.status(404).end();
+      return;
+    }
   }
 
   // 1. Try uploaded image from storage if path exists
@@ -307,12 +319,19 @@ router.get("/programs/:id/image", async (req, res) => {
 router.get("/programs/:id/poster.svg", async (req, res) => {
   const id = Number(req.params["id"]);
   const [program] = await db.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, id)).limit(1);
-  const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session)) || Boolean(await getManagedOwner(req));
-  if (!program || (!isStaff && !isPublicProgram(program))) {
+  if (!program) {
     res.status(404).end();
     return;
   }
-  res.setHeader("Cache-Control", "no-store");
+  const isPublic = isPublicProgram(program);
+  if (!isPublic) {
+    const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session)) || Boolean(await getManagedOwner(req).catch(() => null));
+    if (!isStaff) {
+      res.status(404).end();
+      return;
+    }
+  }
+  res.setHeader("Cache-Control", "public, max-age=86400, stale-while-revalidate=604800");
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -323,10 +342,17 @@ router.get("/programs/:id/poster.svg", async (req, res) => {
 router.get("/programs/:id/share", async (req, res) => {
   const id = Number(req.params["id"]);
   const [program] = await db.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, id)).limit(1);
-  const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session)) || Boolean(await getManagedOwner(req));
-  if (!program || (!isStaff && !isPublicProgram(program))) {
+  if (!program) {
     res.status(404).type("html").send("<!doctype html><html lang=\"ar\" dir=\"rtl\"><head><meta charset=\"utf-8\"><title>الفرصة غير متوفرة</title></head><body><p>عذراً، هذه الفرصة البحثية غير موجودة أو مغلقة.</p></body></html>");
     return;
+  }
+  const isPublic = isPublicProgram(program);
+  if (!isPublic) {
+    const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session)) || Boolean(await getManagedOwner(req).catch(() => null));
+    if (!isStaff) {
+      res.status(404).type("html").send("<!doctype html><html lang=\"ar\" dir=\"rtl\"><head><meta charset=\"utf-8\"><title>الفرصة غير متوفرة</title></head><body><p>عذراً، هذه الفرصة البحثية غير موجودة أو مغلقة.</p></body></html>");
+      return;
+    }
   }
 
   const origin = requestOrigin(req);

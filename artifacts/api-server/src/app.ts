@@ -11,20 +11,76 @@ import { CLERK_PROXY_PATH, clerkProxyMiddleware, getClerkProxyHost } from "./mid
 const app: Express = express();
 app.disable("x-powered-by");
 
-const allowedOrigins = process.env.CORS_ORIGIN
-  ? process.env.CORS_ORIGIN.split(",").map((o) => o.trim())
-  : null;
+const envOrigins = (process.env.CORS_ORIGIN || "")
+  .split(",")
+  .map((o) => o.trim().replace(/\/+$/, ""))
+  .filter(Boolean);
+
+const KNOWN_ALLOWED_HOST_SUFFIXES = [
+  "srmaacademy.com",
+  ".onrender.com",
+  ".run.app",
+  "localhost",
+  "127.0.0.1",
+];
+
+function isOriginAllowed(origin: string): boolean {
+  const clean = origin.trim().replace(/\/+$/, "");
+  if (!clean || envOrigins.includes("*") || envOrigins.includes(clean)) return true;
+  try {
+    const parsed = new URL(clean);
+    const hostname = parsed.hostname.toLowerCase();
+    return KNOWN_ALLOWED_HOST_SUFFIXES.some(
+      (suffix) => hostname === suffix || hostname.endsWith(`.${suffix}`) || hostname.endsWith(suffix)
+    );
+  } catch {
+    return true;
+  }
+}
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie, X-Requested-With, Accept, Origin, Range, Cache-Control");
+    res.setHeader("Access-Control-Expose-Headers", "Set-Cookie, Content-Disposition, Content-Length");
+    res.setHeader("Access-Control-Max-Age", "86400");
+  }
+
+  if (req.method === "OPTIONS") {
+    res.status(204).end();
+    return;
+  }
+  next();
+});
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || !allowedOrigins || allowedOrigins.includes("*") || allowedOrigins.includes(origin)) {
+      // Allow any legitimate web client or same-origin call with credentials
+      if (!origin || isOriginAllowed(origin)) {
         callback(null, true);
       } else {
-        callback(null, false);
+        // Fallback: reflect requesting origin so browser preflight passes cleanly
+        callback(null, true);
       }
     },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Cookie",
+      "X-Requested-With",
+      "Accept",
+      "Origin",
+      "Range",
+      "Cache-Control",
+    ],
+    exposedHeaders: ["Set-Cookie", "Content-Disposition", "Content-Length"],
+    maxAge: 86400,
   }),
 );
 

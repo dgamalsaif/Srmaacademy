@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ImagePlus, Loader2, ShieldCheck, X } from "lucide-react";
-import { API_BASE_URL } from "@/lib/api";
+import { buildApiUrl } from "@/lib/api";
 
 interface ResearchImagePickerProps {
   initialImageUrl?: string;
@@ -51,7 +51,7 @@ export default function ResearchImagePicker({ initialImageUrl = "", onImageToken
         reader.readAsDataURL(protectedImage);
       });
 
-      const uploadUrl = API_BASE_URL ? `${API_BASE_URL}/api/program-images/upload` : "/api/program-images/upload";
+      const uploadUrl = buildApiUrl("/api/program-images/upload");
       const request = await fetch(uploadUrl, {
         method: "POST",
         credentials: "include",

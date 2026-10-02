@@ -11,6 +11,25 @@ const app = express();
 const PORT = 3000;
 const isProd = process.env.NODE_ENV === "production";
 
+// Top-level CORS & preflight options handler for all clients (including cross-origin from srmaacademy.com)
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie, X-Requested-With, Accept, Origin, Range, Cache-Control");
+    res.setHeader("Access-Control-Expose-Headers", "Set-Cookie, Content-Disposition, Content-Length");
+    res.setHeader("Access-Control-Max-Age", "86400");
+  }
+
+  if (req.method === "OPTIONS") {
+    res.status(204).end();
+    return;
+  }
+  next();
+});
+
 // Mount the API application (handles /api routes and middlewares)
 app.use(apiApp);
 

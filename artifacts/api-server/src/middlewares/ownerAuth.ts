@@ -48,34 +48,41 @@ export async function getManagedOwner(req: Request): Promise<OwnerContext | null
   if (!process.env.CLERK_SECRET_KEY) {
     return null;
   }
-  let auth: { userId?: string | null } | null = null;
   try {
-    auth = getAuth(req);
-  } catch {
-    auth = (req as any).auth || null;
+    let auth: { userId?: string | null } | null = null;
+    try {
+      auth = getAuth(req);
+    } catch {
+      auth = (req as any).auth || null;
+    }
+    if (!auth?.userId) return null;
+
+    const user = await clerkClient.users.getUser(auth.userId);
+    if (!user) return null;
+    const primaryEmail = user.primaryEmailAddress;
+    if (!primaryEmail || primaryEmail.verification?.status !== "verified") return null;
+    const email = primaryEmail.emailAddress?.trim()?.toLowerCase();
+    if (!email) return null;
+
+    let owner: typeof ownerAccountsTable.$inferSelect | null =
+      (await db.select().from(ownerAccountsTable).where(eq(ownerAccountsTable.email, email)).limit(1))[0] ?? null;
+    if (!owner) {
+      owner = await bootstrapInitialOwner(email, auth.userId, user.fullName);
+    }
+    if (!owner || owner.status !== "active") return null;
+    if (owner.clerkUserId && owner.clerkUserId !== auth.userId) return null;
+
+    if (!owner.clerkUserId) {
+      await db.update(ownerAccountsTable)
+        .set({ clerkUserId: auth.userId, updatedAt: new Date() })
+        .where(eq(ownerAccountsTable.id, owner.id));
+    }
+
+    return { ...owner, clerkUserId: auth.userId };
+  } catch (error) {
+    // If Clerk API fails, token is expired, or network is down, fail safely as unauthenticated
+    return null;
   }
-  if (!auth?.userId) return null;
-
-  const user = await clerkClient.users.getUser(auth.userId);
-  const primaryEmail = user.primaryEmailAddress;
-  if (!primaryEmail || primaryEmail.verification?.status !== "verified") return null;
-  const email = primaryEmail.emailAddress.trim().toLowerCase();
-
-  let owner: typeof ownerAccountsTable.$inferSelect | null =
-    (await db.select().from(ownerAccountsTable).where(eq(ownerAccountsTable.email, email)).limit(1))[0] ?? null;
-  if (!owner) {
-    owner = await bootstrapInitialOwner(email, auth.userId, user.fullName);
-  }
-  if (!owner || owner.status !== "active") return null;
-  if (owner.clerkUserId && owner.clerkUserId !== auth.userId) return null;
-
-  if (!owner.clerkUserId) {
-    await db.update(ownerAccountsTable)
-      .set({ clerkUserId: auth.userId, updatedAt: new Date() })
-      .where(eq(ownerAccountsTable.id, owner.id));
-  }
-
-  return { ...owner, clerkUserId: auth.userId };
 }
 
 export async function requireManagedOwner(req: Request, res: Response, next: NextFunction) {
