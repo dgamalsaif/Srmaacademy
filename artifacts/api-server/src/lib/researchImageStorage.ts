@@ -5,7 +5,6 @@ import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { logger } from "./logger";
 
-const REPLIT_SIDECAR_ENDPOINT = "http://127.0.0.1:1106";
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set([
   "image/jpeg",
@@ -274,30 +273,7 @@ async function signObjectUrl({
     return getSignedUrl(r2.client, command, { expiresIn: ttlSeconds });
   }
 
-  const { bucketName, privatePrefix } = getStorageLocation();
-  const objectName = `${privatePrefix}/research-images/${objectPath.slice(IMAGE_PATH_PREFIX.length)}`;
-
-  const response = await fetch(`${REPLIT_SIDECAR_ENDPOINT}/object-storage/signed-object-url`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      bucket_name: bucketName,
-      object_name: objectName,
-      method,
-      expires_at: new Date(Date.now() + ttlSeconds * 1000).toISOString(),
-    }),
-    signal: AbortSignal.timeout(30_000),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to sign research image URL (status ${response.status}).`);
-  }
-
-  const body = await response.json() as { signed_url?: string };
-  if (!body.signed_url) {
-    throw new Error("Object storage did not return a signed URL.");
-  }
-  return body.signed_url;
+  throw new Error("Cloudflare R2 is not configured. Serving from resilient local image storage.");
 }
 
 function getR2Storage() {
@@ -320,14 +296,4 @@ function getR2Storage() {
       credentials: { accessKeyId: accessKeyId!, secretAccessKey: secretAccessKey! },
     }),
   };
-}
-
-function getStorageLocation() {
-  const raw = (process.env["PRIVATE_OBJECT_DIR"] || "").replace(/^\/+|\/+$/g, "");
-  const [bucketName, ...prefixParts] = raw.split("/");
-  if (!bucketName || prefixParts.length === 0) {
-    throw new Error("PRIVATE_OBJECT_DIR is not configured.");
-  }
-
-  return { bucketName, privatePrefix: prefixParts.join("/") };
 }

@@ -28,7 +28,7 @@ import {
   DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS,
 } from "@/lib/siteContentSettings";
 import { useLanguage } from "@/lib/i18n";
-import { useCurrency } from "@/lib/opportunityPricing";
+import { useCurrency, formatOpportunityMoney } from "@/lib/opportunityPricing";
 import { PageSeo } from "@/lib/seo";
 import { useToast } from "@/hooks/use-toast";
 
@@ -71,8 +71,9 @@ export default function OpportunitySurvey() {
 
   // Parse `rid` from query string: e.g. /survey?rid=RES-2026-128 or ?rid=128 or ?id=128
   const searchParams = new URLSearchParams(window.location.search);
-  const rawRid = searchParams.get("rid") || searchParams.get("id") || "";
-  const numericId = parseInt(rawRid.replace(/\D/g, ""), 10);
+  const rawRid = (searchParams.get("rid") || searchParams.get("id") || "").trim();
+  const matchId = rawRid.match(/(\d+)$/);
+  const numericId = matchId ? parseInt(matchId[1], 10) : parseInt(rawRid.replace(/\D/g, ""), 10);
 
   useEffect(() => {
     fetch("/api/site-content-settings")
@@ -389,13 +390,14 @@ export default function OpportunitySurvey() {
                   </div>
                   <div className="rounded-xl bg-white p-2.5 shadow-2xs border border-emerald-100/60">
                     <p className="text-[11px] font-bold text-slate-500">{localize("الرسوم التقديرية", "Fee")}</p>
-                    <div className="text-sm font-black text-emerald-700">
-                      <OpportunityPrice
-                        priceSar={selectedOpp.priceDiscountedSar || selectedOpp.priceOriginalSar || 1000}
-                        priceUsd={Math.round((selectedOpp.priceDiscountedSar || 1000) / 3.75)}
-                        currency={currency}
-                      />
-                    </div>
+                    <p dir="ltr" className="text-sm font-black text-emerald-700">
+                      {formatOpportunityMoney(selectedOpp.priceDiscountedSar || selectedOpp.priceOriginalSar || 1000, currency, language)}
+                    </p>
+                    {Boolean(selectedOpp.priceOriginalSar && selectedOpp.priceOriginalSar > (selectedOpp.priceDiscountedSar || 0)) && (
+                      <p dir="ltr" className="text-[10px] text-slate-400 line-through">
+                        {formatOpportunityMoney(selectedOpp.priceOriginalSar!, currency, language)}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

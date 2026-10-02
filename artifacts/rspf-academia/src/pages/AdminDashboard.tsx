@@ -1228,10 +1228,10 @@ export default function AdminDashboard() {
         </div>
 
         {/* NAVIGATION TABS (Segmented bar) */}
-        <div className="bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200 flex flex-wrap items-center gap-1.5 mb-8 shadow-2xs">
+        <div className="bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200 flex overflow-x-auto sm:flex-wrap items-center gap-1.5 mb-8 shadow-2xs scrollbar-thin">
           <button
             onClick={() => setView('programs')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
+            className={`flex shrink-0 whitespace-nowrap items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
               view === 'programs'
                 ? 'bg-[#117b59] text-white shadow-xs'
                 : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
@@ -1243,7 +1243,7 @@ export default function AdminDashboard() {
 
           <Link
             href={canManage ? "/admin/submissions" : "/coordinator/submissions"}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black text-slate-700 hover:text-slate-900 hover:bg-white/60 transition-all"
+            className="flex shrink-0 whitespace-nowrap items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black text-slate-700 hover:text-slate-900 hover:bg-white/60 transition-all"
           >
             <Users size={16} />
             <span>{canManage ? "الطلاب المسجلون" : "طلابي المسجلون"}</span>
@@ -1252,7 +1252,7 @@ export default function AdminDashboard() {
           {canManage && (
             <button
               onClick={() => setView('payments')}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
+              className={`flex shrink-0 whitespace-nowrap items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
                 view === 'payments'
                   ? 'bg-[#117b59] text-white shadow-xs'
                   : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
@@ -1265,7 +1265,7 @@ export default function AdminDashboard() {
 
           <button
             onClick={() => setView('settings')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
+            className={`flex shrink-0 whitespace-nowrap items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
               view === 'settings'
                 ? 'bg-[#117b59] text-white shadow-xs'
                 : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
@@ -1279,7 +1279,7 @@ export default function AdminDashboard() {
             <button
               onClick={() => setView('portal-settings')}
               data-testid="button-portal-settings"
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
+              className={`flex shrink-0 whitespace-nowrap items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
                 view === 'portal-settings'
                   ? 'bg-[#117b59] text-white shadow-xs'
                   : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'
@@ -1294,7 +1294,7 @@ export default function AdminDashboard() {
             <button
               onClick={() => setView('content-settings')}
               data-testid="button-content-settings"
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
+              className={`flex shrink-0 whitespace-nowrap items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
                 view === 'content-settings'
                   ? 'bg-[#117b59] text-white shadow-xs'
                   : 'text-slate-700 hover:text-slate-900 hover:bg-white/60'

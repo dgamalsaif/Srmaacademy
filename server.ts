@@ -48,6 +48,21 @@ app.get(["/research/:id", "/share/research/:id"], (req, res, next) => {
   return next();
 });
 
+app.get(["/survey", "/register"], (req, res, next) => {
+  const userAgent = req.get("user-agent") || "";
+  const isBot = BOT_USER_AGENTS.test(userAgent) || req.query.crawler === "1" || req.query.preview === "1";
+  const rawRid = String(req.query.rid || req.query.id || "").trim();
+  const matchId = rawRid.match(/(\d+)$/);
+  const numericId = matchId ? parseInt(matchId[1], 10) : parseInt(rawRid.replace(/\D/g, ""), 10);
+
+  if (isBot && Number.isInteger(numericId) && numericId > 0) {
+    (req as any).params = { id: String(numericId) };
+    req.url = `/api/programs/${numericId}/share${req.url.includes("?") ? req.url.slice(req.url.indexOf("?")) : ""}`;
+    return apiApp(req, res, next);
+  }
+  return next();
+});
+
 // Guard: prevent any /api request from falling through to the frontend SPA
 app.use("/api", (_req, res) => {
   res.status(404).json({ error: "API endpoint not found" });

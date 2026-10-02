@@ -364,10 +364,10 @@ export function AntiCaptureResearchTitle({
       setTimerRemaining(null);
       return;
     }
-    const interval = setInterval(() => {
-      setTimerRemaining((prev) => (prev && prev > 1 ? prev - 1 : null));
+    const timer = setTimeout(() => {
+      setTimerRemaining((prev) => (prev !== null ? prev - 1 : null));
     }, 1000);
-    return () => clearInterval(interval);
+    return () => clearTimeout(timer);
   }, [timerRemaining]);
 
   const handleToggle = (e: React.MouseEvent) => {

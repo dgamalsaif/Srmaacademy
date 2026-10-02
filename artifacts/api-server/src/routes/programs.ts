@@ -233,7 +233,11 @@ router.post("/program-images/upload", requireCoordinator, raw({
 
 router.get("/programs/:id/image", async (req, res) => {
   const id = Number(req.params["id"]);
-  const [program] = await db.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, id)).limit(1);
+  let [program] = await db.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, id)).limit(1);
+  if (!program) {
+    await listPrograms().catch(() => {});
+    [program] = await db.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, id)).limit(1);
+  }
   if (!program) {
     res.status(404).end();
     return;
@@ -326,7 +330,11 @@ router.get("/programs/:id/image", async (req, res) => {
 
 router.get("/programs/:id/poster.svg", async (req, res) => {
   const id = Number(req.params["id"]);
-  const [program] = await db.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, id)).limit(1);
+  let [program] = await db.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, id)).limit(1);
+  if (!program) {
+    await listPrograms().catch(() => {});
+    [program] = await db.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, id)).limit(1);
+  }
   if (!program) {
     res.status(404).end();
     return;
@@ -349,7 +357,11 @@ router.get("/programs/:id/poster.svg", async (req, res) => {
 
 router.get("/programs/:id/share", async (req, res) => {
   const id = Number(req.params["id"]);
-  const [program] = await db.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, id)).limit(1);
+  let [program] = await db.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, id)).limit(1);
+  if (!program) {
+    await listPrograms().catch(() => {});
+    [program] = await db.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, id)).limit(1);
+  }
   if (!program) {
     res.status(404).type("html").send("<!doctype html><html lang=\"ar\" dir=\"rtl\"><head><meta charset=\"utf-8\"><title>الفرصة غير متوفرة</title></head><body><p>عذراً، هذه الفرصة البحثية غير موجودة أو مغلقة.</p></body></html>");
     return;
