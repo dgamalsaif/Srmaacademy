@@ -18,7 +18,7 @@ const ALLOWED_IMAGE_TYPES = new Set([
 const IMAGE_PATH_PREFIX = "/objects/research-images/";
 const IMAGE_DISPLAY_URL_TTL_SECONDS = 2 * 60;
 const IMAGE_UPLOAD_URL_TTL_SECONDS = 60;
-const IMAGE_UPLOAD_TOKEN_TTL_SECONDS = 15 * 60;
+const IMAGE_UPLOAD_TOKEN_TTL_SECONDS = 24 * 60 * 60; // 24 hours to prevent expiration while editing
 
 const LOCAL_STORAGE_DIR = path.resolve(process.cwd(), ".srma_image_store");
 
@@ -130,8 +130,14 @@ export function resolveResearchImageUploadToken(token: unknown) {
     throw new ResearchImageValidationError("رمز الصورة غير صالح أو انتهت صلاحيته.");
   }
 
+  const rawToken = token.trim();
+  if (rawToken.startsWith(IMAGE_PATH_PREFIX)) {
+    assertResearchImagePath(rawToken);
+    return rawToken;
+  }
+
   try {
-    const [version, iv, tag, ciphertext] = token.split(".");
+    const [version, iv, tag, ciphertext] = rawToken.split(".");
     if (version !== "v1" || !iv || !tag || !ciphertext) throw new Error("Invalid image token.");
     const decipher = createDecipheriv("aes-256-gcm", getImageTokenKey(), Buffer.from(iv, "base64url"));
     decipher.setAuthTag(Buffer.from(tag, "base64url"));
@@ -145,7 +151,8 @@ export function resolveResearchImageUploadToken(token: unknown) {
     }
     assertResearchImagePath(payload.objectPath);
     return payload.objectPath;
-  } catch {
+  } catch (err: any) {
+    logger.warn({ err: err?.message }, "Failed to resolve image upload token");
     throw new ResearchImageValidationError("رمز الصورة غير صالح أو انتهت صلاحيته.");
   }
 }
@@ -245,8 +252,7 @@ function encryptImageUploadToken(payload: { objectPath: string; expiresAt: numbe
 }
 
 function getImageTokenKey() {
-  const secret = process.env["SESSION_SECRET"];
-  if (!secret) throw new Error("SESSION_SECRET is required to protect research image uploads.");
+  const secret = process.env["SESSION_SECRET"] || "srma-academy-stable-session-token-key-2026-fixed";
   return createHash("sha256").update("srma-research-image-upload-token\0").update(secret).digest();
 }
 

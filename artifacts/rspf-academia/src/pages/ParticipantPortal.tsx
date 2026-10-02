@@ -26,7 +26,7 @@ export default function ParticipantPortal() {
   const [copiedOppId, setCopiedOppId] = useState<number | null>(null);
 
   const handleCopyOppLink = (oppId: number) => {
-    const url = `${window.location.origin}/research/${oppId}`;
+    const url = `${window.location.origin}/survey?rid=RES-2026-${oppId}`;
     if (navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(url);
     } else {

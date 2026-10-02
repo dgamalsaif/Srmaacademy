@@ -75,7 +75,7 @@ export default function ResearchDetail() {
   const oppImageUrl = `${window.location.origin}/api/programs/${research.id}/image`;
 
   const handleCopyLink = async () => {
-    const url = `${window.location.origin}/research/${research.id}`;
+    const url = `${window.location.origin}/survey?rid=RES-2026-${research.id}`;
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(url);
@@ -90,10 +90,10 @@ export default function ResearchDetail() {
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 3000);
       toast({
-        title: localize("تم نسخ رابط الفرصة بنجاح 🔗", "Opportunity link copied successfully 🔗"),
+        title: localize("تم نسخ رابط استمارة التسجيل 🔗", "Registration link copied successfully 🔗"),
         description: localize(
-          "عند مشاركة الرابط في تيليجرام أو واتساب أو وسائل التواصل، ستظهر صورة وبيانات الفرصة كمعاينة بطاقة مباشرة مع زر للانتقال للموقع.",
-          "When sharing on Telegram, WhatsApp, or social media, the opportunity image and card preview will appear automatically."
+          "ينقل هذا الرابط المشترك مباشرة إلى استمارة التسجيل ومعاينة صورة وبيانات الفرصة.",
+          "This link takes users directly to the registration page with the opportunity card and image preview."
         ),
       });
     } catch {
@@ -103,7 +103,7 @@ export default function ResearchDetail() {
   };
 
   const handleShareLink = async () => {
-    const url = `${window.location.origin}/research/${research.id}`;
+    const url = `${window.location.origin}/survey?rid=RES-2026-${research.id}`;
     if (navigator.share) {
       try {
         await navigator.share({

@@ -20,6 +20,7 @@ import FAQ from "@/pages/FAQ";
 import AdminDashboard from "@/pages/AdminDashboard";
 import AdminSubmissions from "@/pages/AdminSubmissions";
 import ResearchDetail from "@/pages/ResearchDetail";
+import OpportunitySurvey from "@/pages/OpportunitySurvey";
 import OwnerLogin from "@/pages/OwnerLogin";
 import OwnerSignIn from "@/pages/OwnerSignIn";
 import OwnerSignUp from "@/pages/OwnerSignUp";
@@ -91,6 +92,8 @@ function Router() {
             <Route path="/coordinator/dashboard" component={AdminDashboard} />
             <Route path="/coordinator/submissions" component={AdminSubmissions} />
             <Route path="/research/:id" component={ResearchDetail} />
+            <Route path="/survey" component={OpportunitySurvey} />
+            <Route path="/register" component={OpportunitySurvey} />
             <Route component={NotFound} />
           </Switch>
         </main>
