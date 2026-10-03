@@ -1,14 +1,16 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "srma-academy",
+  "name": "srma-api-proxy",
   "main": "worker.ts",
   "compatibility_date": "2026-09-20",
-  "assets": {
-    "directory": "../../artifacts/rspf-academia/dist/public",
-    "binding": "ASSETS",
-    "not_found_handling": "single-page-application",
-    "run_worker_first": ["/api/*"]
-  },
+  "routes": [
+    { "pattern": "srmaacademy.com/api/*", "zone_name": "srmaacademy.com" },
+    { "pattern": "www.srmaacademy.com/api/*", "zone_name": "srmaacademy.com" },
+    { "pattern": "srmaacademy.com/research/*", "zone_name": "srmaacademy.com" },
+    { "pattern": "www.srmaacademy.com/research/*", "zone_name": "srmaacademy.com" },
+    { "pattern": "srmaacademy.com/share/research/*", "zone_name": "srmaacademy.com" },
+    { "pattern": "www.srmaacademy.com/share/research/*", "zone_name": "srmaacademy.com" }
+  ],
   "vars": {
     "API_ORIGIN": "https://srma-api.onrender.com"
   }

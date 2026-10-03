@@ -1,5 +1,5 @@
 export interface Env {
-  ASSETS: Fetcher;
+  ASSETS?: Fetcher;
   API_ORIGIN: string;
 }
 
@@ -52,7 +52,9 @@ export default {
     }
 
     if (!incomingUrl.pathname.startsWith("/api/")) {
-      return env.ASSETS.fetch(request);
+      // An API-only routed Worker has no ASSETS binding: continue to the
+      // existing Pages origin without changing the visitor's URL.
+      return env.ASSETS ? env.ASSETS.fetch(request) : fetch(request);
     }
 
     const apiOrigin = env.API_ORIGIN.replace(/\/+$/, "");
