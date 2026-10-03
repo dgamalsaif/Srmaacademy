@@ -7,8 +7,6 @@ const { Pool } = pg;
 export * from "./schema";
 
 function createInMemoryDb() {
-  console.warn("[AI Studio] DATABASE_URL not configured — using in-memory mock database");
-
   // In-memory table stores
   const store: Record<string, any[]> = {
     registrations: [],
@@ -357,6 +355,7 @@ if (process.env.DATABASE_URL) {
     throw new Error("DATABASE_URL is required in production");
   }
   useInMemory = true;
+  console.warn("[AI Studio] DATABASE_URL not configured — using in-memory mock database");
 }
 
 // Graceful pool closure on process termination

@@ -3,7 +3,7 @@ services:
     name: srma-api
     runtime: node
     plan: free
-    healthCheckPath: /api/healthz
+    healthCheckPath: /api/readyz
     buildCommand: pnpm install --no-frozen-lockfile && (pnpm --filter @workspace/db run migrate || echo "Build-time migration finished") && pnpm --filter @workspace/api-server run build
     startCommand: (node lib/db/run-migrate.mjs || echo "Database initialized") && node --enable-source-maps artifacts/api-server/dist/index.mjs
     envVars:

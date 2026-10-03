@@ -4,7 +4,7 @@ This setup keeps the Replit deployment intact and adds an independent deployment
 
 - Cloudflare Worker + Static Assets: React frontend and same-origin `/api/*` proxy
 - Render Web Service: Express API
-- Render PostgreSQL: application database
+- Neon PostgreSQL: application database, connected to Render through `DATABASE_URL`
 - Cloudflare R2: private research images
 - External Clerk: owner authentication
 
@@ -14,11 +14,11 @@ Coordinator access codes remain in PostgreSQL and do not use Clerk.
 
 1. Push this repository to GitHub.
 2. In Render, create a Blueprint from `render.yaml`.
-3. Set the unsynced environment variables in the Render dashboard.
+3. Set the unsynced environment variables in the Render dashboard, including `DATABASE_URL` with the existing Neon PostgreSQL connection string. This Blueprint does not create a database or inject that value automatically.
 4. Use the external Clerk instance's publishable and secret keys. Do not copy Replit-managed Clerk keys.
-5. Wait for `/api/healthz` on the Render service URL to return `{"status":"ok"}`.
+5. Wait for `/api/readyz` on the Render service URL to return `{"status":"ready","database":"connected"}`.
 
-The database migrations run during the Render build. `DATABASE_URL` is injected from the Render PostgreSQL service.
+The database migrations run during the Render build and on service start using `DATABASE_URL`. Keep that connection string in Render's environment settings; never commit it to the repository.
 
 ## 2. Cloudflare R2
 
