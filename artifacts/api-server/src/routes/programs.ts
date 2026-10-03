@@ -8,7 +8,7 @@ import { readSession, requireCoordinator, requireOwner } from "../middlewares/co
 import { getManagedOwner } from "../middlewares/ownerAuth";
 import { getSiteContentSettings, OpportunityFieldId } from "../lib/siteContentSettings";
 import { addImportedSpecialties, importResearchOpportunities, PROGRAM_CATALOG_LOCK_ID, type ResearchOpportunityImportRow } from "../lib/researchOpportunityImport";
-import { getResearchImageBytes, getResearchImageUrl, ResearchImageValidationError, resolveResearchImageUploadToken, uploadResearchImage } from "../lib/researchImageStorage";
+import { getResearchImageBytes, getResearchImageUrl, ResearchImageStorageError, ResearchImageValidationError, resolveResearchImageUploadToken, uploadResearchImage } from "../lib/researchImageStorage";
 import { ensureProgramCapacityModel, PROGRAM_CAPACITY_LOCK_NAMESPACE, type DatabaseTransaction } from "../lib/programCapacity";
 import { applyResearchCatalogSeatSnapshot, researchCatalogDisplayOrder } from "../lib/researchCatalogSeatSnapshot";
 
@@ -224,6 +224,10 @@ router.post("/program-images/upload", requireCoordinator, raw({
   } catch (error) {
     if (error instanceof ResearchImageValidationError) {
       res.status(400).json({ error: error.message });
+      return;
+    }
+    if (error instanceof ResearchImageStorageError) {
+      res.status(503).json({ error: error.message });
       return;
     }
     req.log.error({ err: error }, "Failed to upload research image");

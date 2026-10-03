@@ -34,20 +34,27 @@ export async function uploadResearchImage(input: {
 
   const objectPath = `${IMAGE_PATH_PREFIX}${randomUUID()}`;
   const filename = objectPath.slice(IMAGE_PATH_PREFIX.length);
+  const r2 = getR2Storage();
 
-  // 1. Always write to resilient local storage directories
+  if (process.env["NODE_ENV"] === "production" && !r2) {
+    throw new ResearchImageStorageError("أضف بيانات Cloudflare R2 إلى إعدادات الخادم لحفظ الصور بشكل دائم.");
+  }
+
+  // 1. Keep a local fallback for development and recovery
+  let storedLocally = false;
   for (const dir of LOCAL_STORAGE_DIRS) {
     try {
       await mkdir(dir, { recursive: true });
       await writeFile(path.join(dir, filename), input.data);
       await writeFile(path.join(dir, `${filename}.meta`), JSON.stringify({ contentType }));
+      storedLocally = true;
     } catch (fsErr) {
       logger.warn({ err: fsErr, dir }, "Failed writing to local fallback storage directory");
     }
   }
 
   // 2. Upload to Cloudflare R2 if configured
-  const r2 = getR2Storage();
+  let storedInR2 = false;
   if (r2) {
     const objectName = `${r2.prefix}/research-images/${filename}`;
     try {
@@ -57,13 +64,21 @@ export async function uploadResearchImage(input: {
         Body: input.data,
         ContentType: contentType,
       }));
+      storedInR2 = true;
       logger.info({ objectName }, "Successfully uploaded research image to R2");
     } catch (r2Err: any) {
       logger.warn(
         { err: r2Err?.message || r2Err, status: r2Err?.$metadata?.httpStatusCode },
-        "R2 upload encountered an error — image safely stored in local fallback storage.",
+        "R2 upload encountered an error; local fallback is only used outside production.",
       );
+      if (process.env["NODE_ENV"] === "production") {
+        throw new ResearchImageStorageError("تعذر حفظ الصورة في Cloudflare R2. تحقق من إعدادات التخزين ثم أعد المحاولة.");
+      }
     }
+  }
+
+  if (!storedLocally && !storedInR2) {
+    throw new ResearchImageStorageError("تعذر حفظ ملف الصورة على الخادم. تحقق من إعدادات التخزين ثم أعد المحاولة.");
   }
 
   return {
@@ -174,6 +189,7 @@ export function assertResearchImagePath(objectPath: string) {
 }
 
 export class ResearchImageValidationError extends Error {}
+export class ResearchImageStorageError extends Error {}
 
 function detectImageMimeFromBytes(data: Buffer): string | null {
   if (data.length >= 3 && data[0] === 0xff && data[1] === 0xd8 && data[2] === 0xff) {
@@ -293,10 +309,14 @@ function getR2Storage() {
   const accessKeyId = process.env["R2_ACCESS_KEY_ID"]?.trim();
   const secretAccessKey = process.env["R2_SECRET_ACCESS_KEY"]?.trim();
   const bucket = process.env["R2_BUCKET"]?.trim();
-  const configured = [accountId, accessKeyId, secretAccessKey, bucket].filter(Boolean).length;
-  if (configured === 0) return null;
-  if (configured !== 4) {
-    throw new Error("R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, and R2_BUCKET must all be configured.");
+  const credentials = [accountId, accessKeyId, secretAccessKey];
+  const configuredCredentials = credentials.filter(Boolean).length;
+  // Render's blueprint can set the bucket name even when the private R2
+  // credentials are intentionally left unset. A bucket name alone is not a
+  // partial R2 connection; development can use local storage in that case.
+  if (configuredCredentials === 0) return null;
+  if (configuredCredentials !== credentials.length || !bucket) {
+    throw new ResearchImageStorageError("إعداد التخزين السحابي غير مكتمل. أكمل إعدادات Cloudflare R2 في الخادم.");
   }
 
   return {

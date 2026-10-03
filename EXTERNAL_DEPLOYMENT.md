@@ -30,7 +30,7 @@ Create a private bucket named `srma-research-images`, then create an R2 API toke
 - `R2_BUCKET=srma-research-images`
 - `R2_PRIVATE_PREFIX=production`
 
-When all four required R2 values exist, the API uses R2. When none exist, it continues to use Replit Object Storage.
+When all four required R2 values exist, the API uses R2. `R2_BUCKET` by itself does not enable R2. Development may use the local fallback; production rejects uploads without R2 credentials rather than saving a broken image reference. Render's filesystem is not durable across redeploys, so configure all three R2 credentials on the Render service for production image persistence.
 
 ## 3. Cloudflare Worker and frontend
 
