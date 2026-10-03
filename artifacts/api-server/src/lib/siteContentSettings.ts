@@ -86,6 +86,7 @@ export interface BrandContactSettings {
   siteNameAr: string;
   siteNameEn: string;
   logoUrl: string;
+  logoAnimationEnabled: boolean;
   appNameAr: string;
   appNameEn: string;
   appShortName: string;
@@ -316,7 +317,8 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
   brand: {
     siteNameAr: "أكاديمية SRMA للأبحاث",
     siteNameEn: "SRMA Research Academy",
-    logoUrl: "/srma-logo.jpg",
+    logoUrl: "/srma-animated-logo.mp4",
+    logoAnimationEnabled: true,
     appNameAr: "أكاديمية SRMA للأبحاث",
     appNameEn: "SRMA Research Academy",
     appShortName: "SRMA",
@@ -614,6 +616,9 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
       siteNameAr: brandText("siteNameAr", 160),
       siteNameEn: brandText("siteNameEn", 160),
       logoUrl: safeUrl(brandText("logoUrl", 1000), DEFAULT_SITE_CONTENT_SETTINGS.brand.logoUrl),
+      logoAnimationEnabled: typeof brandInput.logoAnimationEnabled === "boolean"
+        ? brandInput.logoAnimationEnabled
+        : DEFAULT_SITE_CONTENT_SETTINGS.brand.logoAnimationEnabled,
       appNameAr: brandText("appNameAr", 160),
       appNameEn: brandText("appNameEn", 160),
       appShortName: brandText("appShortName", 30),

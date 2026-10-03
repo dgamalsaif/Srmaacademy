@@ -9,6 +9,8 @@ import { SRMA_LOGO } from "@/components/BrandBackground";
 import { useLanguage } from "@/lib/i18n";
 import { LanguageMenu } from "@/components/Navbar";
 import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
+import { apiFetch } from "@/lib/api";
+import BrandLogo from "@/components/BrandLogo";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -41,7 +43,7 @@ function CoordinatorHeader({ settings }: { settings: CoordinatorPortalSettings }
     <header className="relative z-50 border-b border-slate-100 bg-white shadow-[0_2px_12px_rgba(22,48,67,0.05)]">
       <div className="mx-auto flex h-[78px] max-w-[1450px] items-center justify-between gap-6 px-5 sm:px-8">
         <Link href="/" data-testid="link-coordinator-logo" className="flex shrink-0 items-center gap-2.5">
-          <img src={siteContent?.brand.logoUrl || SRMA_LOGO} alt={language === "ar" ? siteContent?.brand.siteNameAr : siteContent?.brand.siteNameEn} className="h-11 w-11 rounded-full border border-[#0d765c]/20 object-cover shadow-sm" />
+          <BrandLogo src={siteContent?.brand.logoUrl || SRMA_LOGO} alt={language === "ar" ? siteContent?.brand.siteNameAr : siteContent?.brand.siteNameEn} animationEnabled={siteContent?.brand.logoAnimationEnabled} className="h-11 w-16 rounded-xl border border-[#0d765c]/20 bg-white object-contain shadow-sm" />
           <div className="text-right leading-none">
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] font-black text-[#e2a229]">{settings.brandYear}</span>
@@ -143,7 +145,7 @@ export default function CoordinatorPortal() {
 
   useEffect(() => {
     let active = true;
-    fetch("/api/coordinator-portal-settings")
+    apiFetch("/api/coordinator-portal-settings")
       .then((response) => response.ok ? response.json() : Promise.reject())
       .then((saved: CoordinatorPortalSettings) => { if (active) setSettings(saved); })
       .catch(() => undefined);

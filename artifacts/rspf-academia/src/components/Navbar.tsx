@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Check, ChevronDown, Languages, Menu, MessageCircle, X } from "lucide-react";
-import { SRMA_LOGO } from "@/components/BrandBackground";
+import BrandLogo from "@/components/BrandLogo";
 import InstallAppButton from "@/components/InstallAppButton";
 import { useLanguage } from "@/lib/i18n";
 import { useCurrency, OpportunityCurrency } from "@/lib/currency";
@@ -36,10 +36,11 @@ export default function Navbar() {
         <div className="flex items-center justify-between h-16 gap-2 sm:gap-4">
           {/* Zone 1: Logo & Brand (Always at reading start: Right in RTL, Left in LTR) */}
           <Link href="/" data-testid="link-logo" className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            <img
-              src={settings?.brand.logoUrl || SRMA_LOGO}
-              alt={language === "ar" ? settings?.brand.siteNameAr : settings?.brand.siteNameEn}
-              className="h-10 w-10 sm:h-11 sm:w-11 rounded-full border border-[#0C3156]/15 object-cover shadow-sm"
+            <BrandLogo
+              src={settings?.brand.logoUrl}
+              animationEnabled={settings?.brand.logoAnimationEnabled}
+              alt={settings?.brand.siteNameAr || settings?.brand.siteNameEn || "SRMA Research Academy"}
+              className="h-10 w-16 rounded-xl border border-[#0C3156]/15 bg-white object-contain shadow-sm sm:h-11"
             />
             <div className="flex flex-col">
               <span className="max-w-36 sm:max-w-48 truncate text-base sm:text-lg md:text-xl font-black tracking-tight text-[#0C3156]">

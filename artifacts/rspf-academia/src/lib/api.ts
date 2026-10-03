@@ -19,7 +19,12 @@ export function buildApiUrl(path: string) {
 }
 
 export function apiFetch(path: string, options: RequestInit = {}) {
-  return fetch(buildApiUrl(path), {
+  const method = (options.method || "GET").toUpperCase();
+  const maxAttempts = method === "GET" ? 3 : 1;
+  const retryableStatuses = new Set([408, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524]);
+
+  const wait = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+  const request = () => fetch(buildApiUrl(path), {
     ...options,
     credentials: "include",
     headers: {
@@ -27,4 +32,25 @@ export function apiFetch(path: string, options: RequestInit = {}) {
       ...options.headers,
     },
   });
+
+  return (async () => {
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      let response: Response;
+      try {
+        response = await request();
+      } catch (error) {
+        if (attempt === maxAttempts - 1 || options.signal?.aborted) throw error;
+        await wait(300 * (attempt + 1));
+        continue;
+      }
+
+      if (!retryableStatuses.has(response.status) || attempt === maxAttempts - 1) {
+        return response;
+      }
+      await response.body?.cancel().catch(() => undefined);
+      await wait(300 * (attempt + 1));
+    }
+
+    throw new Error("API read request failed after retrying.");
+  })();
 }

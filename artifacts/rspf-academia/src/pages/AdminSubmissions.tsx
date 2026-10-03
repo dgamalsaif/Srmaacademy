@@ -5,6 +5,7 @@ import { ChevronRight, LogOut, RefreshCw, Users, FileText, Check, X, Clock, Mail
 import Footer from "@/components/Footer";
 import { SRMA_LOGO } from "@/components/BrandBackground";
 import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
+import { apiFetch } from "@/lib/api";
 
 const API_BASE = "/api";
 
@@ -374,7 +375,7 @@ export default function AdminSubmissions() {
 
   useEffect(() => {
     const workspace = location.startsWith("/coordinator/") ? "coordinator" : "owner";
-    fetch(`/api/coordinator/session?workspace=${workspace}`, { cache: "no-store", credentials: "same-origin" })
+    apiFetch(`/api/coordinator/session?workspace=${workspace}`, { cache: "no-store" })
       .then((response) => response.json() as Promise<{ authenticated?: boolean; role?: "owner" | "coordinator" }>)
       .then((result) => {
         const expectedRole = workspace === "owner" ? "owner" : "coordinator";
@@ -390,9 +391,9 @@ export default function AdminSubmissions() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await fetch(`${API_BASE}/registrations`).then((res) => res.json());
+      const r = await apiFetch(`${API_BASE}/registrations`).then((res) => res.json());
       const s = role === "owner"
-        ? await fetch(`${API_BASE}/service-requests`).then((res) => res.json())
+        ? await apiFetch(`${API_BASE}/service-requests`).then((res) => res.json())
         : [];
       setRegistrations(Array.isArray(r) ? r : []);
       setServices(Array.isArray(s) ? s : []);

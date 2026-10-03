@@ -4,6 +4,7 @@ import CountrySelector from "./CountrySelector";
 import OpportunityPrice from "./OpportunityPrice";
 import { DEFAULT_SITE_CONTENT_SETTINGS, RegistrationFieldId, SiteContentSettings, buildForwardingUrl, ForwardingType, DEFAULT_ACADEMIC_DEGREE_SETTINGS, DEFAULT_RESEARCH_EXPERIENCE_SETTINGS, DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS } from "@/lib/siteContentSettings";
 import { useLanguage } from "@/lib/i18n";
+import { apiFetch } from "@/lib/api";
 
 interface RegistrationModalProps {
   isOpen: boolean;
@@ -80,7 +81,7 @@ export default function RegistrationModal({
 
   useEffect(() => {
     if (!isOpen) return;
-    fetch("/api/site-content-settings")
+    apiFetch("/api/site-content-settings")
       .then((response) => response.ok ? response.json() : Promise.reject())
       .then((settings: SiteContentSettings) => setContentSettings(settings))
       .catch(() => setContentSettings(DEFAULT_SITE_CONTENT_SETTINGS));

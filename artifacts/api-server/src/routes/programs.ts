@@ -434,7 +434,6 @@ router.get("/programs/:id/share", async (req, res) => {
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="${escapeHtml(title)}">
-  <meta property="og:image:type" content="image/jpeg">
 
   <!-- Twitter / X Cards -->
   <meta name="twitter:card" content="summary_large_image">

@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronUp, Eye, EyeOff, Palette, Save, SlidersHorizontal, Image, Phone, Mail, Link as LinkIcon, FileText, Send, Share2, ExternalLink, MessageCircle, Check, GraduationCap, ShieldCheck, Plus, Trash2, AlertTriangle } from "lucide-react";
 import { useState } from "react";
+import BrandLogo from "@/components/BrandLogo";
 import { CARD_PARTS, OPPORTUNITY_FIELDS, OpportunityDisplayMode, OpportunityFieldId, RegistrationFieldSetting, SiteContentSettings, SpecialtyOption, JournalOption, PublicPageId, BrandContactSettings, PublicPageContent, SOCIAL_ICON_OPTIONS, SocialIconId, FloatingIconPosition, ForwardingType, ContactUsType, AcademicDegreeOption, DEFAULT_ACADEMIC_DEGREE_SETTINGS, DEFAULT_RESEARCH_EXPERIENCE_SETTINGS, DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS } from "@/lib/siteContentSettings";
 
 interface Props {
@@ -154,10 +155,40 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
               <TextField label="اسم المنصة (عربي)" value={settings.brand.siteNameAr} onChange={(v) => updateBrand("siteNameAr", v)} />
               <TextField label="اسم المنصة (إنجليزي)" value={settings.brand.siteNameEn} onChange={(v) => updateBrand("siteNameEn", v)} />
               <div className="md:col-span-2">
-                <TextField label="رابط الشعار (Logo URL)" value={settings.brand.logoUrl} onChange={(v) => updateBrand("logoUrl", v)} />
+                <TextField label="رابط الشعار (صورة أو GIF أو فيديو MP4)" value={settings.brand.logoUrl} onChange={(v) => updateBrand("logoUrl", v)} />
+                <p className="mt-1 text-xs leading-5 text-slate-500">استخدم رابط صورة أو ملف GIF أو MP4. يمكن إيقاف الحركة من الخيار أدناه، كما يمكن استعادة الشعار المتحرك المرفق.</p>
+                <div className="mt-3 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      update("brand", {
+                        ...settings.brand,
+                        logoUrl: "/srma-animated-logo.mp4",
+                        logoAnimationEnabled: true,
+                      });
+                    }}
+                    className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-100"
+                  >
+                    استخدام الشعار المتحرك المرفق
+                  </button>
+                  <label className="inline-flex items-center gap-2 text-sm font-bold text-slate-700">
+                    <input
+                      type="checkbox"
+                      checked={settings.brand.logoAnimationEnabled}
+                      onChange={(event) => updateBrand("logoAnimationEnabled", event.target.checked)}
+                      className="h-4 w-4 accent-emerald-700"
+                    />
+                    تشغيل حركة الشعار
+                  </label>
+                </div>
                 {settings.brand.logoUrl && (
-                  <div className="mt-3 inline-block rounded-xl border border-slate-200 p-2 bg-slate-50">
-                    <img src={settings.brand.logoUrl} alt="Logo Preview" className="h-10 object-contain" onError={(e) => (e.currentTarget.style.display = 'none')} />
+                  <div className="mt-3 inline-block overflow-hidden rounded-xl border border-slate-200 bg-slate-900 p-2">
+                    <BrandLogo
+                      src={settings.brand.logoUrl}
+                      alt="معاينة شعار المنصة"
+                      animationEnabled={settings.brand.logoAnimationEnabled}
+                      className="h-20 w-40 object-contain"
+                    />
                   </div>
                 )}
               </div>
@@ -1808,8 +1839,8 @@ function TextField({
     </div>
   );
 }
-function TextArea({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
-  return <div><label className="mb-2 block text-xs font-bold text-slate-500">{label}</label><textarea rows={4} value={value} onChange={(event) => onChange(event.target.value)} className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium outline-none focus:border-[#117b59]" /></div>;
+function TextArea({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string }) {
+  return <div><label className="mb-2 block text-xs font-bold text-slate-500">{label}</label><textarea rows={4} value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-medium outline-none focus:border-[#117b59]" /></div>;
 }
 function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3"><label className="text-sm font-bold text-slate-700">{label}</label><div className="flex items-center gap-2"><span className="font-mono text-xs text-slate-500">{value}</span><input type="color" value={value} onChange={(event) => onChange(event.target.value)} className="h-9 w-10 rounded-lg border border-slate-200 bg-white p-1" /></div></div>;

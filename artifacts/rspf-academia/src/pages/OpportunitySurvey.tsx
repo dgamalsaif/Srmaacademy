@@ -31,6 +31,7 @@ import { useLanguage } from "@/lib/i18n";
 import { useCurrency, formatOpportunityMoney } from "@/lib/opportunityPricing";
 import { PageSeo } from "@/lib/seo";
 import { useToast } from "@/hooks/use-toast";
+import { apiFetch } from "@/lib/api";
 
 const API_BASE = "/api";
 
@@ -76,12 +77,12 @@ export default function OpportunitySurvey() {
   const numericId = matchId ? parseInt(matchId[1], 10) : parseInt(rawRid.replace(/\D/g, ""), 10);
 
   useEffect(() => {
-    fetch("/api/site-content-settings")
+    apiFetch("/api/site-content-settings")
       .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then((settings: SiteContentSettings) => setContentSettings(settings))
       .catch(() => setContentSettings(DEFAULT_SITE_CONTENT_SETTINGS));
 
-    fetch("/api/programs", { cache: "no-store" })
+    apiFetch("/api/programs", { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then((data: ResearchOpportunity[]) => {
         setOpportunities(data);
@@ -109,11 +110,22 @@ export default function OpportunitySurvey() {
     }
   }, [selectedOpp]);
 
+  type ParticipantFieldId = RegistrationFieldId | "academicDegree" | "researchExperience" | "feeAndTaskAgreement";
   const fieldSetting = (id: RegistrationFieldId) =>
     contentSettings.registrationFields.find((f) => f.id === id) ||
     DEFAULT_SITE_CONTENT_SETTINGS.registrationFields.find((f) => f.id === id)!;
-  const visible = (id: RegistrationFieldId) => fieldSetting(id).showParticipant;
-  const required = (id: RegistrationFieldId) => fieldSetting(id).requiredParticipant;
+  const visible = (id: ParticipantFieldId) => {
+    if (id === "academicDegree") return degreeSettings.enabled;
+    if (id === "researchExperience") return expSettings.enabled;
+    if (id === "feeAndTaskAgreement") return agreementSettings.enabled;
+    return fieldSetting(id).showParticipant;
+  };
+  const required = (id: ParticipantFieldId) => {
+    if (id === "academicDegree") return degreeSettings.required;
+    if (id === "researchExperience") return expSettings.required;
+    if (id === "feeAndTaskAgreement") return agreementSettings.required;
+    return fieldSetting(id).requiredParticipant;
+  };
   const degreeSettings = contentSettings.academicDegreeSettings || DEFAULT_ACADEMIC_DEGREE_SETTINGS;
   const expSettings = contentSettings.researchExperienceSettings || DEFAULT_RESEARCH_EXPERIENCE_SETTINGS;
   const agreementSettings = contentSettings.feeAndTaskAgreementSettings || DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS;
@@ -202,19 +214,26 @@ export default function OpportunitySurvey() {
       }
 
       setResearchGroupUrl(resData.researchGroupUrl || selectedOpp.researchGroupUrl || "");
-      const fUrl = buildForwardingUrl(contentSettings.forwarding, {
-        fullName: form.fullName.trim(),
+      const forwarding = contentSettings.brand;
+      const forwardingType = forwarding.participantForwardType || "whatsapp";
+      const fUrl = buildForwardingUrl({
+        type: forwardingType,
+        target: forwarding.participantForwardTarget || forwarding.participantWhatsapp || forwarding.whatsapp,
+        customMessage: forwarding.participantCustomMessage,
+        studentName: form.fullName.trim(),
         specialization: form.specialization.trim(),
         email: form.email.trim(),
         whatsapp: `${form.dialCode} ${form.whatsapp}`.trim(),
         affiliation: form.affiliation.trim(),
-        country: form.country,
+        academicDegree: degreeSettings.enabled ? academicDegree || undefined : undefined,
+        hasResearchExperience: expSettings.enabled ? hasResearchExp || undefined : undefined,
+        researchExpDetails: expSettings.enabled ? researchExpDetails || undefined : undefined,
+        agreeFeesAndTasks: agreementSettings.enabled ? agreeFeesAndTasks || undefined : undefined,
         researchTitle: selectedOpp.titleEn || selectedOpp.title,
-        researchId: selectedOpp.id,
-        authorRole,
+        language,
       });
       setForwardUrl(fUrl);
-      setForwardType(contentSettings.forwarding.type);
+      setForwardType(forwardingType);
       setDone(true);
     } catch (err: any) {
       setError(err?.message || localize("حدث خطأ أثناء حفظ التسجيل", "Failed to save registration"));
@@ -596,8 +615,10 @@ export default function OpportunitySurvey() {
                         {localize("الدولة", "Country")}
                       </label>
                       <CountrySelector
-                        value={form.country}
-                        onChange={(country, dialCode) => setForm({ ...form, country, dialCode })}
+                        country={form.country}
+                        onCountryChange={(country) => setForm({ ...form, country })}
+                        dialCode={form.dialCode}
+                        onDialCodeChange={(dialCode) => setForm({ ...form, dialCode })}
                       />
                     </div>
                   )}
@@ -686,10 +707,10 @@ export default function OpportunitySurvey() {
                       <ShieldCheck size={18} className="text-[#117b59] shrink-0 mt-0.5" />
                       <div>
                         <p className="text-xs font-black text-slate-800">
-                          {localize("الإقرار بالالتزام بالمهام البحثية ورسوم البرنامج", "Acknowledgment of Tasks and Program Fees")}
+                          {localize(agreementSettings.questionAr, agreementSettings.questionEn)}
                         </p>
                         <p className="text-xs text-slate-600 mt-1 leading-5">
-                          {localize(agreementSettings.statementAr, agreementSettings.statementEn)}
+                          {localize(agreementSettings.warningNoticeAr, agreementSettings.warningNoticeEn)}
                         </p>
                         <div className="mt-3 flex gap-4">
                           <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-black text-emerald-800">

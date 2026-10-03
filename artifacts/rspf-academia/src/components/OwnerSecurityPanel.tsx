@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { UserProfile, useUser } from "@clerk/react";
 import { BadgeCheck, KeyRound, Loader2, MailCheck, Phone, ShieldCheck, UserRound } from "lucide-react";
+import { apiFetch } from "@/lib/api";
 
 type OwnerProfile = {
   fullName: string;
@@ -18,7 +19,7 @@ export default function OwnerSecurityPanel({ onNameUpdated }: { onNameUpdated: (
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetch("/api/owner/profile")
+    apiFetch("/api/owner/profile")
       .then((response) => response.ok ? response.json() as Promise<OwnerProfile> : Promise.reject())
       .then((data) => {
         setProfile(data);

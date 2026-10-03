@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Users, Save, Trash2, Download, AlertCircle, Phone, Mail, CheckCircle, XCircle, Key, FileDown, ShieldAlert, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { apiFetch } from "@/lib/api";
 
 interface CoordinatorAdmin {
   id: number;
@@ -37,7 +38,7 @@ export default function OwnerDataManagementPanel() {
   const loadCoordinators = async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/admin/coordinators");
+      const response = await apiFetch("/api/admin/coordinators");
       if (!response.ok) throw new Error("فشل جلب بيانات المنسقين");
       const data = await response.json();
       setCoordinators(data);
@@ -54,7 +55,7 @@ export default function OwnerDataManagementPanel() {
         title: "بدأ التصدير",
         description: "جاري تحضير النسخة الاحتياطية",
       });
-      const response = await fetch("/api/admin/export");
+      const response = await apiFetch("/api/admin/export");
       if (!response.ok) throw new Error("فشل التصدير");
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);

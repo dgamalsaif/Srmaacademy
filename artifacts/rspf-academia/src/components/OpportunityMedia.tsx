@@ -3,6 +3,7 @@ import { BadgePercent, BookOpen, Clock3, Expand, LibraryBig, UsersRound, X } fro
 import { ResearchOpportunity } from "@/lib/researchData";
 import { formatOpportunityMoney, getDiscountPercentage, getResearchStatusLabel } from "@/lib/opportunityPricing";
 import { SRMA_LOGO } from "@/components/BrandBackground";
+import BrandLogo from "@/components/BrandLogo";
 import { useLanguage } from "@/lib/i18n";
 import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
 
@@ -158,15 +159,16 @@ export default function OpportunityMedia({ research, className = "aspect-[4/3] m
                 </>
               ) : (
                 <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
-                  <img src={brandLogo} alt="" className="h-[80%] w-[80%] rounded-full object-cover opacity-20 blur-[0.3px]" />
+                  <img src={SRMA_LOGO} alt="" aria-hidden="true" className="h-[80%] w-[80%] rounded-full object-cover opacity-20 blur-[0.3px]" />
                   <BookOpen size={38} className="absolute text-white/80" />
                   {imageFailed && <p role="status" className="relative px-4 text-xs font-bold text-white/90">{localize("تعذر عرض الصورة المحمية حالياً", "The protected image cannot be displayed at this time.")}</p>}
                 </div>
               )}
-              <img
+              <BrandLogo
                 src={brandLogo}
                 alt={localize(`شعار ${brandName}`, `${brandName} logo`)}
-                aria-hidden="true"
+                animationEnabled={settings?.brand.logoAnimationEnabled}
+                decorative
                 className={`pointer-events-none absolute top-3 h-11 w-11 rounded-xl border border-white/30 object-cover opacity-90 shadow-lg ${direction === "rtl" ? "right-3" : "left-3"}`}
               />
               {discount > 0 && (

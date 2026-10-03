@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "wouter";
 import { ChevronLeft, Users, Clock, BookOpen, CheckCircle2, ArrowLeft, ExternalLink, MessageCircle, Send, Mail, Phone, Copy, Lock, ShieldCheck, Share2, Check } from "lucide-react";
 import { ResearchOpportunity } from "@/lib/researchData";
-import RegistrationModal from "@/components/RegistrationModal";
 import { DEFAULT_SITE_CONTENT_SETTINGS, SiteContentSettings, getContactUsHref, getOpportunityContactLinks, getOpportunityInquiryLink } from "@/lib/siteContentSettings";
 import OpportunityMedia from "@/components/OpportunityMedia";
 import OpportunityPrice from "@/components/OpportunityPrice";
@@ -12,20 +11,20 @@ import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
 import { useToast } from "@/hooks/use-toast";
 import { PageSeo } from "@/lib/seo";
 import { ProtectedResearchWatermark, AntiCaptureResearchTitle } from "@/components/ResearchProtection";
+import { apiFetch } from "@/lib/api";
 
 export default function ResearchDetail() {
   const { direction, language, localize, t } = useLanguage();
   const params = useParams<{ id: string }>();
   const [research, setResearch] = useState<ResearchOpportunity | null>(null);
   const [allResearch, setAllResearch] = useState<ResearchOpportunity[]>([]);
-  const [modalOpen, setModalOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const { currency, setCurrency } = useCurrency();
   const { data: contentSettings = DEFAULT_SITE_CONTENT_SETTINGS } = useSiteContentSettings();
   const { toast } = useToast();
 
   const loadResearch = () => {
-    fetch("/api/programs", { cache: "no-store" })
+    apiFetch("/api/programs", { cache: "no-store" })
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("programs unavailable")))
       .then((data: ResearchOpportunity[]) => {
         setAllResearch(data);
@@ -67,7 +66,7 @@ export default function ResearchDetail() {
   const statusLabel = localize(RESEARCH_STATUS_LABELS[research.status] || "دراسة منجزة", ({
     ethics_approved: "Ethics approved", under_review: "Under review", completed: "Completed study",
   } as Record<string, string>)[research.status], research.status);
-  const title = research.titleEn || research.title;
+  const title = localize(research.titleAr, research.titleEn, research.title);
   const specialty = localize(research.specialtyAr, research.specialtyEn, research.specialty);
   const description = localize(research.descriptionAr, research.descriptionEn, research.description);
   const contentFlow = direction === "rtl" ? "flex-row-reverse" : "flex-row";
@@ -78,7 +77,7 @@ export default function ResearchDetail() {
   ).toString();
 
   const handleCopyLink = async () => {
-    const url = `${window.location.origin}/survey?rid=RES-2026-${research.id}`;
+    const url = `${window.location.origin}/research/${research.id}`;
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(url);
@@ -93,10 +92,10 @@ export default function ResearchDetail() {
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 3000);
       toast({
-        title: localize("تم نسخ رابط استمارة التسجيل 🔗", "Registration link copied successfully 🔗"),
+        title: localize("تم نسخ رابط الفرصة البحثية 🔗", "Opportunity link copied 🔗"),
         description: localize(
-          "ينقل هذا الرابط المشترك مباشرة إلى استمارة التسجيل ومعاينة صورة وبيانات الفرصة.",
-          "This link takes users directly to the registration page with the opportunity card and image preview."
+          "يفتح الرابط تفاصيل الفرصة وعنوانها، ثم يمكن التسجيل وإدخال بيانات المشارك.",
+          "This link opens the opportunity details first, where applicants can continue to the participant form."
         ),
       });
     } catch {
@@ -106,7 +105,7 @@ export default function ResearchDetail() {
   };
 
   const handleShareLink = async () => {
-    const url = `${window.location.origin}/survey?rid=RES-2026-${research.id}`;
+    const url = `${window.location.origin}/research/${research.id}`;
     if (navigator.share) {
       try {
         await navigator.share({
@@ -326,13 +325,13 @@ export default function ResearchDetail() {
               </div>
 
               {research.status === "open" ? (
-                <button
+                <Link
+                  href={`/survey?rid=RES-2026-${research.id}`}
                   data-testid="button-detail-register"
-                  onClick={() => setModalOpen(true)}
                   className="w-full bg-[#0C3156] text-white font-bold py-3.5 rounded-xl hover:bg-[#0a2847] transition-colors text-base shadow-sm mb-2.5"
                 >
                   {t("common.registerNow")} 👤
-                </button>
+                </Link>
               ) : (
                 <div className="w-full bg-slate-100 text-slate-500 font-bold py-3.5 rounded-xl text-center text-base mb-2.5">
                   🔒 {localize("مغلق التسجيل", "Registration closed")}
@@ -495,17 +494,6 @@ export default function ResearchDetail() {
         )}
       </div>
 
-      <RegistrationModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        researchTitle={title}
-        researchId={research.id}
-        firstAuthorSeatsLeft={research.firstAuthorSeatsLeft}
-        coAuthorSeatsLeft={research.coAuthorSeatsLeft}
-        priceOriginalSar={research.priceOriginalSar}
-        priceDiscountedSar={research.priceDiscountedSar}
-        onRegistered={loadResearch}
-      />
       </div>
     </>
   );

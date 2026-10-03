@@ -10,6 +10,7 @@ import { OpportunityCurrency, useCurrency } from "@/lib/opportunityPricing";
 import { useLanguage } from "@/lib/i18n";
 import SpecialtyFilter, { buildSpecialtyOptions, canonicalSpecialty, specialtyMatches } from "@/components/SpecialtyFilter";
 import { ResearchProtectionBanner, ProtectedResearchWatermark, AntiCaptureResearchTitle } from "@/components/ResearchProtection";
+import { apiFetch } from "@/lib/api";
 
 const hallOfFame = [
   { specialty: "ENT – Head and Neck Surgery", specialtyColor: "bg-indigo-100 text-indigo-700", title: "Efficacy of Biologic Therapy versus Conventional Treatment in Chronic Rhinosinusitis" },
@@ -48,7 +49,7 @@ export default function ParticipantPortal() {
   const [displayMode, setDisplayMode] = useState<"grid" | "scroll">("grid");
 
   const refreshOpportunities = () => {
-    fetch("/api/programs", { cache: "no-store" })
+    apiFetch("/api/programs", { cache: "no-store" })
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("programs unavailable")))
       .then((data: ResearchOpportunity[]) => {
         const available = data.filter((item) => item.status === "open" && (item.category || "active") === "active");
@@ -64,7 +65,7 @@ export default function ParticipantPortal() {
     };
     window.addEventListener("focus", refreshOpportunities);
     document.addEventListener("visibilitychange", refreshWhenVisible);
-    fetch("/api/site-content-settings")
+    apiFetch("/api/site-content-settings")
       .then((response) => response.ok ? response.json() : Promise.reject())
       .then((settings: SiteContentSettings) => {
         setContentSettings(settings);

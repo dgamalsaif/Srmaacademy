@@ -90,6 +90,7 @@ export type OpportunityInquiryChannel = "whatsapp" | "email" | "telegram" | "pho
 
 export interface BrandContactSettings {
   siteNameAr: string; siteNameEn: string; logoUrl: string;
+  logoAnimationEnabled: boolean;
   appNameAr: string; appNameEn: string; appShortName: string; appIconUrl: string; appThemeColor: string;
   phone: string; whatsapp: string; participantWhatsapp: string; coordinatorWhatsapp: string; whatsappChannelUrl: string; email: string;
   telegramUsername: string; instagramUsername: string; xUsername: string; linkedinUsername: string;
@@ -324,7 +325,7 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
     { id: "country", label: "الدولة", labelEn: "Country", placeholder: "", placeholderEn: "", type: "text", requiredParticipant: true, requiredCoordinator: true, showParticipant: true, showCoordinator: true, color: "#117b59" },
   ],
   brand: {
-    siteNameAr: "أكاديمية SRMA للأبحاث", siteNameEn: "SRMA Research Academy", logoUrl: "/srma-logo.jpg",
+    siteNameAr: "أكاديمية SRMA للأبحاث", siteNameEn: "SRMA Research Academy", logoUrl: "/srma-animated-logo.mp4", logoAnimationEnabled: true,
     appNameAr: "أكاديمية SRMA للأبحاث", appNameEn: "SRMA Research Academy", appShortName: "SRMA", appIconUrl: "/srma-logo.jpg", appThemeColor: "#0d765c",
     phone: "+966562159258", whatsapp: "966562159258", participantWhatsapp: "966562159258", coordinatorWhatsapp: "966562159258", whatsappChannelUrl: "", email: "srmaacademy@gmail.com", telegramUsername: "SRMAAcademy", instagramUsername: "", xUsername: "", linkedinUsername: "",
     facebookUrl: "", tiktokUrl: "", youtubeUrl: "", snapchatUrl: "",
@@ -712,6 +713,10 @@ export function buildForwardingUrl({
   email,
   affiliation,
   whatsapp,
+  academicDegree,
+  hasResearchExperience,
+  researchExpDetails,
+  agreeFeesAndTasks,
   language,
 }: {
   type: ForwardingType;
@@ -723,13 +728,17 @@ export function buildForwardingUrl({
   email?: string;
   affiliation?: string;
   whatsapp?: string;
+  academicDegree?: string;
+  hasResearchExperience?: string;
+  researchExpDetails?: string;
+  agreeFeesAndTasks?: string;
   language: string;
 }): string {
   if (type === "none" || !target) return "";
 
   const defaultMsg = language === "en"
-    ? `Hello, I registered for the research opportunity:\n"${researchTitle}"\n\nName: ${studentName}\nSpecialty: ${specialization}${email ? `\nEmail: ${email}` : ""}${affiliation ? `\nAffiliation: ${affiliation}` : ""}${whatsapp ? `\nWhatsApp: ${whatsapp}` : ""}`
-    : `مرحباً، لقد أتممت التسجيل في الفرصة البحثية:\n"${researchTitle}"\n\nالاسم: ${studentName}\nالتخصص: ${specialization}${email ? `\nالبريد: ${email}` : ""}${affiliation ? `\nالجهة: ${affiliation}` : ""}${whatsapp ? `\nواتساب: ${whatsapp}` : ""}`;
+    ? `Hello, I registered for the research opportunity:\n"${researchTitle}"\n\nName: ${studentName}\nSpecialty: ${specialization}${academicDegree ? `\nAcademic degree: ${academicDegree}` : ""}${hasResearchExperience ? `\nResearch experience: ${hasResearchExperience}` : ""}${researchExpDetails ? `\nExperience details: ${researchExpDetails}` : ""}${email ? `\nEmail: ${email}` : ""}${affiliation ? `\nAffiliation: ${affiliation}` : ""}${whatsapp ? `\nWhatsApp: ${whatsapp}` : ""}${agreeFeesAndTasks ? `\nFees and tasks agreement: ${agreeFeesAndTasks}` : ""}`
+    : `مرحباً، لقد أتممت التسجيل في الفرصة البحثية:\n"${researchTitle}"\n\nالاسم: ${studentName}\nالتخصص: ${specialization}${academicDegree ? `\nالدرجة الأكاديمية: ${academicDegree}` : ""}${hasResearchExperience ? `\nالخبرة البحثية: ${hasResearchExperience}` : ""}${researchExpDetails ? `\nتفاصيل الخبرة: ${researchExpDetails}` : ""}${email ? `\nالبريد: ${email}` : ""}${affiliation ? `\nالجهة: ${affiliation}` : ""}${whatsapp ? `\nواتساب: ${whatsapp}` : ""}${agreeFeesAndTasks ? `\nالإقرار بالرسوم والمهام: ${agreeFeesAndTasks}` : ""}`;
 
   let body = customMessage && customMessage.trim() ? customMessage : defaultMsg;
   body = body
@@ -738,7 +747,11 @@ export function buildForwardingUrl({
     .replace(/{specialty}/g, specialization)
     .replace(/{email}/g, email || "")
     .replace(/{affiliation}/g, affiliation || "")
-    .replace(/{whatsapp}/g, whatsapp || "");
+    .replace(/{whatsapp}/g, whatsapp || "")
+    .replace(/{academicDegree}/g, academicDegree || "")
+    .replace(/{researchExperience}/g, hasResearchExperience || "")
+    .replace(/{researchExpDetails}/g, researchExpDetails || "")
+    .replace(/{feesAgreement}/g, agreeFeesAndTasks || "");
 
   const encoded = encodeURIComponent(body);
 

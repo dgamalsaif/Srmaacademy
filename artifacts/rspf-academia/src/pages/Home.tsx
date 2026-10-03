@@ -30,6 +30,7 @@ import {
   Star,
   Check,
 } from "lucide-react";
+import { apiFetch } from "@/lib/api";
 import { useLanguage } from "@/lib/i18n";
 import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
 import {
@@ -266,7 +267,7 @@ export default function Home() {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
   useEffect(() => {
-    fetch("/api/programs", { cache: "no-store" })
+    apiFetch("/api/programs", { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then((data: ResearchOpportunity[]) => {
         if (Array.isArray(data) && data.length > 0) {

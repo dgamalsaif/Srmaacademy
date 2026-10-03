@@ -8,7 +8,7 @@ const pageMetadata: Record<string, Record<SiteLanguage, { title: string; descrip
   "/": {
     ar: {
       title: "SRMA Research Academy | أبحاث للأطباء والنشر العلمي الطبي",
-      description: "فرص بحثية طبية ونشر علمي للأطباء: دعم اختيار المجلات والنشر في مجلات Q1 وQ2 المفهرسة في PubMed وScopus وWeb of Science.",
+      description: "نقدم خدمات أكاديمية وبحثية للأطباء لدعم التقديم على البورد والزمالات والترقي الأكاديمي، مع فرص بحثية وخدمات إعداد الأبحاث والتحليل الإحصائي والنشر العلمي.",
     },
     en: {
       title: "SRMA Research Academy | Medical Research & Publication Support",
@@ -144,7 +144,9 @@ export function PageSeo({ pathname, language, title, description, image, jsonLd,
           name: siteName,
           url: SITE_URL,
           logo,
-          description: "Medical research opportunities and scientific publication support for physicians.",
+          description: language === "ar"
+            ? "خدمات أكاديمية وبحثية للأطباء تشمل دعم التقديم على البورد والزمالات والترقي الأكاديمي وإعداد الأبحاث والتحليل الإحصائي والنشر العلمي."
+            : "Medical research opportunities and academic support for board applications, fellowships, research, statistics, and scientific publication.",
         },
         {
           "@type": "WebSite",

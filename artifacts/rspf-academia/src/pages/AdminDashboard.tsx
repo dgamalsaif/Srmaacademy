@@ -18,6 +18,7 @@ import SpecialtyFilter, { buildSpecialtyOptions, specialtyMatches } from "@/comp
 import OwnerSecurityPanel from "@/components/OwnerSecurityPanel";
 import OwnerDataManagementPanel from "@/components/OwnerDataManagementPanel";
 import OpportunityImportModal from "@/components/OpportunityImportModal";
+import { apiFetch } from "@/lib/api";
 
 const EMPTY_FORM: Omit<ResearchOpportunity, "id" | "createdAt"> = {
   category: "active",
@@ -732,7 +733,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const workspace = ownerWorkspace ? "owner" : "coordinator";
-    fetch(`/api/coordinator/session?workspace=${workspace}`, { cache: "no-store", credentials: "same-origin" })
+    apiFetch(`/api/coordinator/session?workspace=${workspace}`, { cache: "no-store" })
       .then((response) => {
         if (!response.ok) throw new Error("Unable to verify staff session");
         return response.json() as Promise<{ authenticated?: boolean; role?: "owner" | "coordinator"; coordinatorName?: string | null }>;
@@ -757,7 +758,7 @@ export default function AdminDashboard() {
     const loadPrograms = async () => {
       setLoadingPrograms(true);
       try {
-        let response = await fetch("/api/programs");
+        let response = await apiFetch("/api/programs");
         let data = await response.json() as ResearchOpportunity[];
         setResearch(Array.isArray(data) ? data : []);
       } catch {
@@ -773,7 +774,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!role) return;
-    fetch("/api/site-content-settings")
+    apiFetch("/api/site-content-settings")
       .then((response) => response.ok ? response.json() : Promise.reject())
       .then((settings: SiteContentSettings) => setContentSettings(settings))
       .catch(() => role === "owner" && setContentSettingsMessage("تعذر تحميل إعدادات المحتوى حالياً."));
@@ -781,7 +782,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (role !== "owner") return;
-    fetch("/api/coordinator-portal-settings")
+    apiFetch("/api/coordinator-portal-settings")
       .then((response) => response.ok ? response.json() : Promise.reject())
       .then((settings: CoordinatorPortalSettings) => setPortalSettings(settings))
       .catch(() => setPortalSettingsMessage("تعذر تحميل إعدادات البوابة حالياً."));
@@ -792,7 +793,7 @@ export default function AdminDashboard() {
       setPayments([]);
       return;
     }
-    fetch("/api/payments")
+    apiFetch("/api/payments")
       .then((response) => response.ok ? response.json() : [])
       .then((data) => setPayments(Array.isArray(data) ? data : []))
       .catch(() => setPayments([]));
