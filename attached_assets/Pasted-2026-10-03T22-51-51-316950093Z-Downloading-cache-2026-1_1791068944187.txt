@@ -1,0 +1,38 @@
+2026-10-03T22:51:51.316950093Z ==> Downloading cache...
+2026-10-03T22:51:51.344208893Z ==> Cloning from https://github.com/dgamalsaif/Srmaacademy
+2026-10-03T22:51:58.266210529Z ==> Checking out commit 861d0a2cc981ce4b600955be89b860d9c6300ead in branch main
+2026-10-03T22:52:00.710615644Z ==> Downloaded 82MB in 6s. Extraction took 2s.
+2026-10-03T22:52:01.509302706Z ==> Requesting Node.js version 24
+2026-10-03T22:52:01.612669383Z ==> Using Node.js version 24.21.0 via environment variable NODE_VERSION
+2026-10-03T22:52:01.612681152Z ==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+2026-10-03T22:52:01.648778572Z ==> Running build command 'pnpm install --no-frozen-lockfile && pnpm --filter @workspace/api-server run build'...
+2026-10-03T22:52:02.128536665Z  WARN  The "workspaces" field in package.json is not supported by pnpm. Create a "pnpm-workspace.yaml" file instead.
+2026-10-03T22:52:03.943321109Z  WARN  The "workspaces" field in package.json is not supported by pnpm. Create a "pnpm-workspace.yaml" file instead.
+2026-10-03T22:52:03.97933366Z 
+2026-10-03T22:52:03.979356604Z > @workspace/api-server@0.0.0 build /opt/render/project/src/artifacts/api-server
+2026-10-03T22:52:03.979361002Z > node ./build.mjs
+2026-10-03T22:52:03.979362982Z 
+2026-10-03T22:52:04.019235292Z node:internal/modules/package_json_reader:331
+2026-10-03T22:52:04.019260476Z   throw new ERR_MODULE_NOT_FOUND(packageName, fileURLToPath(base), null);
+2026-10-03T22:52:04.019263617Z         ^
+2026-10-03T22:52:04.019265015Z 
+2026-10-03T22:52:04.019267357Z Error [ERR_MODULE_NOT_FOUND]: Cannot find package 'esbuild-plugin-pino' imported from /opt/render/project/src/artifacts/api-server/build.mjs
+2026-10-03T22:52:04.019269504Z     at Object.getPackageJSONURL (node:internal/modules/package_json_reader:331:9)
+2026-10-03T22:52:04.019271238Z     at packageResolve (node:internal/modules/esm/resolve:784:25)
+2026-10-03T22:52:04.01927259Z     at moduleResolve (node:internal/modules/esm/resolve:873:18)
+2026-10-03T22:52:04.019273961Z     at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+2026-10-03T22:52:04.01927534Z     at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+2026-10-03T22:52:04.019276689Z     at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+2026-10-03T22:52:04.019278066Z     at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+2026-10-03T22:52:04.019279406Z     at #resolve (node:internal/modules/esm/loader:687:17)
+2026-10-03T22:52:04.01928075Z     at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+2026-10-03T22:52:04.019285481Z     at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33) {
+2026-10-03T22:52:04.0192871Z   code: 'ERR_MODULE_NOT_FOUND'
+2026-10-03T22:52:04.019288361Z }
+2026-10-03T22:52:04.019289556Z 
+2026-10-03T22:52:04.01929083Z Node.js v24.21.0
+2026-10-03T22:52:04.03646549Z /opt/render/project/src/artifacts/api-server:
+2026-10-03T22:52:04.036478599Z  ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @workspace/api-server@0.0.0 build: `node ./build.mjs`
+2026-10-03T22:52:04.036483288Z Exit status 1
+2026-10-03T22:52:04.079276154Z ==> Build failed 😞
+2026-10-03T22:52:04.07928735Z ==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys

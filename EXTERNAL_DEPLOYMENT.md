@@ -22,12 +22,14 @@ No migrations run during build, startup, or post-merge setup. The existing datab
 
 For an existing Render service, check its saved commands explicitly; updating this file alone does not guarantee those dashboard settings change:
 
-- Build Command: `pnpm install --no-frozen-lockfile && pnpm --filter @workspace/api-server run build`
+- Build Command: `pnpm install --prod=false --no-frozen-lockfile && pnpm --filter @workspace/api-server run build`
 - Start Command: `node --enable-source-maps artifacts/api-server/dist/index.mjs`
 - Health Check Path: `/api/readyz`
 - `NODE_ENV=production`
 
 Do not use `run-migrate.mjs`, `drizzle-kit push`, or `drizzle-kit migrate` in these commands. Do not bypass readiness failures: `503` means the API cannot confirm database connectivity. A `database ... does not exist` error means the configured connection URL references a nonexistent database; correct the URL rather than creating tables or guessing another name.
+
+Commit the root `pnpm-workspace.yaml` along with the package manifests. npm's `workspaces` field alone is not recognized by pnpm. Build-time development dependencies must be installed even with `NODE_ENV=production`; `--prod=false` includes tools such as `esbuild-plugin-pino`. If Render previously cached an incomplete dependency installation, use Clear build cache & deploy after these files reach its source repository.
 
 Copy the database URL unchanged. Legacy TLS modes such as `sslmode=require` are normalized to `verify-full`, preserving the installed pg driver's current certificate-verification behavior. Do not disable verification to silence an SSL warning.
 
