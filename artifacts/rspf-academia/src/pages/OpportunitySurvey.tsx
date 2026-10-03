@@ -224,7 +224,12 @@ export default function OpportunitySurvey() {
   };
 
   const title = selectedOpp ? selectedOpp.titleAr || selectedOpp.titleEn || selectedOpp.title : "";
-  const oppImageUrl = selectedOpp ? `${window.location.origin}/api/programs/${selectedOpp.id}/image` : "";
+  const oppImageUrl = selectedOpp
+    ? new URL(
+        selectedOpp.imageUrl || `/api/programs/${selectedOpp.id}/image`,
+        window.location.origin,
+      ).toString()
+    : "";
 
   return (
     <>

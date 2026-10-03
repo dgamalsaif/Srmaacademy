@@ -4,6 +4,31 @@ export interface Env {
 }
 
 const BOT_USER_AGENTS = /bot|crawl|spider|whatsapp|telegram|facebookexternalhit|facebot|twitterbot|linkedin|slack|discord|pinterest|skype|applebot|curl|wget|meta-externalagent/i;
+const RETRYABLE_API_STATUSES = new Set([500, 502, 503, 504]);
+
+async function fetchApiWithRetry(request: Request, upstreamUrl: URL, headers: Headers): Promise<Response> {
+  const maxAttempts = request.method === "GET" || request.method === "HEAD" ? 3 : 1;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const response = await fetch(upstreamUrl, {
+      method: request.method,
+      headers,
+      body: request.method === "GET" || request.method === "HEAD" ? undefined : request.body,
+      redirect: "manual",
+    });
+
+    if (attempt === maxAttempts - 1 || !RETRYABLE_API_STATUSES.has(response.status)) {
+      return response;
+    }
+
+    if (response.body) {
+      await response.body.cancel().catch(() => undefined);
+    }
+    await new Promise((resolve) => setTimeout(resolve, attempt === 0 ? 500 : 1500));
+  }
+
+  throw new Error("API retry loop ended unexpectedly.");
+}
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -23,12 +48,7 @@ export default {
       headers.set("x-forwarded-proto", incomingUrl.protocol.replace(":", ""));
       headers.delete("host");
 
-      return fetch(upstreamUrl, {
-        method: request.method,
-        headers,
-        body: request.method === "GET" || request.method === "HEAD" ? undefined : request.body,
-        redirect: "manual",
-      });
+      return fetchApiWithRetry(request, upstreamUrl, headers);
     }
 
     if (!incomingUrl.pathname.startsWith("/api/")) {
@@ -42,11 +62,6 @@ export default {
     headers.set("x-forwarded-proto", incomingUrl.protocol.replace(":", ""));
     headers.delete("host");
 
-    return fetch(upstreamUrl, {
-      method: request.method,
-      headers,
-      body: request.method === "GET" || request.method === "HEAD" ? undefined : request.body,
-      redirect: "manual",
-    });
+    return fetchApiWithRetry(request, upstreamUrl, headers);
   },
 } satisfies ExportedHandler<Env>;

@@ -95,6 +95,7 @@ async function listPrograms() {
 }
 
 function toClient(row: typeof researchProgramsTable.$inferSelect, includeOwnerFields = false) {
+  const imageVersion = row.updatedAt?.getTime?.() ?? row.createdAt.getTime();
   return {
     id: row.id,
     category: row.category,
@@ -128,7 +129,9 @@ function toClient(row: typeof researchProgramsTable.$inferSelect, includeOwnerFi
     supervisor: row.supervisor,
     specialtyColor: "bg-emerald-100 text-emerald-700",
     createdAt: row.createdAt.toISOString().slice(0, 10),
-    imageUrl: row.imagePath ? `/api/programs/${row.id}/image` : `/api/programs/${row.id}/poster.svg`,
+    imageUrl: row.imagePath
+      ? `/api/programs/${row.id}/image?v=${imageVersion}`
+      : `/api/programs/${row.id}/poster.svg?v=${imageVersion}`,
     ...(includeOwnerFields ? { researchGroupUrl: row.researchGroupUrl } : {}),
   };
 }
@@ -406,7 +409,8 @@ router.get("/programs/:id/share", async (req, res) => {
     english ? "Click to view full details and register." : "انقر لمعاينة التفاصيل والتسجيل مباشرة."
   ].filter(Boolean).join(" • ");
 
-  const image = `${origin}/api/programs/${program.id}/image`;
+  const imageVersion = program.updatedAt?.getTime?.() ?? program.createdAt.getTime();
+  const image = `${origin}/api/programs/${program.id}/image?v=${imageVersion}`;
 
   res.setHeader("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
   res.type("html").send(`<!doctype html>

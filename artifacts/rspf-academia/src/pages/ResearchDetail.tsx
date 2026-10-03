@@ -72,7 +72,10 @@ export default function ResearchDetail() {
   const description = localize(research.descriptionAr, research.descriptionEn, research.description);
   const contentFlow = direction === "rtl" ? "flex-row-reverse" : "flex-row";
   const siteName = language === "ar" ? contentSettings.brand.siteNameAr : contentSettings.brand.siteNameEn;
-  const oppImageUrl = `${window.location.origin}/api/programs/${research.id}/image`;
+  const oppImageUrl = new URL(
+    research.imageUrl || `/api/programs/${research.id}/image`,
+    window.location.origin,
+  ).toString();
 
   const handleCopyLink = async () => {
     const url = `${window.location.origin}/survey?rid=RES-2026-${research.id}`;
