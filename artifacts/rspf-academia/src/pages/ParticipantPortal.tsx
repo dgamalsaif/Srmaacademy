@@ -204,7 +204,7 @@ export default function ParticipantPortal() {
       </div>
 
       <section className="py-8 sm:py-10 px-3 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
+        <div className="w-full max-w-none mx-auto">
           <section data-testid="participant-welcome" className="srma-welcome-card mb-8 rounded-3xl border border-emerald-100 bg-gradient-to-l from-[#f3fbf8] via-white to-[#eff6ff] p-6 text-start shadow-sm sm:p-8">
             <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
               <div>

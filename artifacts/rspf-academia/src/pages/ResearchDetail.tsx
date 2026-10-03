@@ -130,18 +130,18 @@ export default function ResearchDetail() {
       {/* BREADCRUMB */}
       <div className="bg-slate-50 border-b border-slate-200 px-4 py-3">
 
-        <div className="mx-auto max-w-7xl mb-3">
+        <div className="mx-auto w-full max-w-none mb-3">
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 mb-1">{language === "ar" ? contentSettings.pages.researchDetail.titleAr : contentSettings.pages.researchDetail.titleEn}</h1>
           <p className="text-slate-600 text-xs sm:text-sm">{language === "ar" ? contentSettings.pages.researchDetail.descriptionAr : contentSettings.pages.researchDetail.descriptionEn}</p>
         </div>
 {((language === "ar" ? contentSettings?.pages.researchDetail.contentAr : contentSettings?.pages.researchDetail.contentEn) || "").trim() && (
-        <section className="mx-auto max-w-7xl mb-4 bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
+        <section className="mx-auto w-full max-w-none mb-4 bg-white rounded-2xl p-6 shadow-sm border border-slate-200">
           <div className="max-w-4xl mx-auto whitespace-pre-wrap text-slate-700 leading-relaxed text-sm">
             {language === "ar" ? contentSettings?.pages.researchDetail.contentAr : contentSettings?.pages.researchDetail.contentEn}
           </div>
         </section>
       )}
-        <div className="mx-auto flex max-w-7xl items-center gap-2 text-xs sm:text-sm text-slate-500 flex-wrap">
+        <div className="mx-auto flex w-full max-w-none items-center gap-2 text-xs sm:text-sm text-slate-500 flex-wrap">
           <Link href="/" className="hover:text-[#0C3156] font-medium transition-colors">{localize("الرئيسية", "Home")}</Link>
           <span className="text-slate-400">/</span>
           <Link href="/participant-portal" className="hover:text-[#0C3156] font-medium transition-colors">{localize("بوابة المشارك", "Participant Portal")}</Link>
@@ -150,7 +150,7 @@ export default function ResearchDetail() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8 sm:py-10">
+      <div className="w-full max-w-none mx-auto px-4 py-8 sm:py-10">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* MAIN CONTENT */}
           <div className="lg:col-span-2 space-y-6">

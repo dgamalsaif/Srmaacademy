@@ -32,7 +32,7 @@ export default function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 bg-white shadow-md border-b border-slate-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-none mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-2 sm:gap-4">
           {/* Zone 1: Logo & Brand (Always at reading start: Right in RTL, Left in LTR) */}
           <Link href="/" data-testid="link-logo" className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
