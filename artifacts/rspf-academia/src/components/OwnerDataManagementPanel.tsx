@@ -208,7 +208,7 @@ export default function OwnerDataManagementPanel() {
         ) : coordinators.length === 0 ? (
            <div className="p-12 text-center text-slate-400 font-medium">لا يوجد منسقين مسجلين</div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="w-full max-w-full min-w-0 overflow-x-auto">
             <table className="w-full text-right">
               <thead className="bg-slate-50 border-b border-slate-100">
                 <tr>

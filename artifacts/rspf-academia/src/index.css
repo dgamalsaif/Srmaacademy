@@ -73,9 +73,28 @@
 }
 
 @layer base {
-  * {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
     @apply border-border;
   }
+  html,
+  body,
+  #root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  @supports not (overflow: clip) {
+    html,
+    body,
+    #root {
+      overflow-x: hidden;
+    }
+  }
+
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
@@ -187,27 +206,40 @@
 }
 
 .srma-ticker {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
   overflow: hidden;
+  overflow-x: clip;
+  contain: paint;
   isolation: isolate;
 }
 
 .srma-ticker-track {
   display: flex;
   width: max-content;
+  min-width: max-content;
   gap: 4rem;
   white-space: nowrap;
+  will-change: transform;
   animation: srma-marquee-scroll 28s linear infinite;
 }
 
+.srma-ticker-track > span,
 .srma-ticker-track span {
-  display: block;
+  display: inline-block;
+  flex: 0 0 auto;
   padding-inline: 2.5rem;
   font-size: 0.875rem;
   font-weight: 700;
 }
 
 .animate-marquee {
+  display: flex;
   width: max-content;
+  min-width: max-content;
+  white-space: nowrap;
+  will-change: transform;
   animation: srma-marquee-scroll 32s linear infinite;
 }
 

@@ -318,11 +318,11 @@ export default function Home() {
   )}`;
 
   return (
-    <div className="min-h-screen bg-white text-slate-900" dir={direction}>
+    <div className="min-h-screen bg-white text-slate-900 w-full max-w-full overflow-x-clip" dir={direction}>
       {/* 1. TOP NOTICE / MARQUEE TICKER */}
       <section className="bg-gradient-to-r from-[#0C3156] via-[#117b59] to-[#0C3156] text-white py-2.5 px-4 text-xs sm:text-sm font-semibold shadow-inner">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-2 flex-1 min-w-[280px]">
+          <div className="flex items-center gap-2 flex-1 min-w-0">
             <span className="inline-flex items-center gap-1 rounded-full bg-amber-400/20 px-2.5 py-0.5 text-amber-300 font-bold text-xs border border-amber-400/30 animate-pulse">
               <Flame size={13} className="text-amber-300" />
               {localize("تسجيل مفتوح", "Registration Open")}
@@ -575,30 +575,32 @@ export default function Home() {
 
           {/* Specialty Filter Pills */}
           {specialtiesList.length > 0 && (
-            <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-8 scrollbar-none">
-              <button
-                onClick={() => setSelectedSpecialty("all")}
-                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
-                  selectedSpecialty === "all"
-                    ? "bg-[#0C3156] text-white shadow-sm"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                }`}
-              >
-                {localize("جميع التخصصات", "All Specialties")}
-              </button>
-              {specialtiesList.map((spec) => (
+            <div className="w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden pb-4 mb-8 scrollbar-none">
+              <div className="flex w-max min-w-max items-center gap-2">
                 <button
-                  key={spec}
-                  onClick={() => setSelectedSpecialty(spec)}
+                  onClick={() => setSelectedSpecialty("all")}
                   className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
-                    selectedSpecialty === spec
+                    selectedSpecialty === "all"
                       ? "bg-[#0C3156] text-white shadow-sm"
                       : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                   }`}
                 >
-                  {spec}
+                  {localize("جميع التخصصات", "All Specialties")}
                 </button>
-              ))}
+                {specialtiesList.map((spec) => (
+                  <button
+                    key={spec}
+                    onClick={() => setSelectedSpecialty(spec)}
+                    className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
+                      selectedSpecialty === spec
+                        ? "bg-[#0C3156] text-white shadow-sm"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    }`}
+                  >
+                    {spec}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 

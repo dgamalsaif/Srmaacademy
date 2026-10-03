@@ -129,7 +129,7 @@ export default function ParticipantPortal() {
   const contentFlow = direction === "rtl" ? "flex-row-reverse" : "flex-row";
 
   return (
-      <div className="min-h-screen bg-white" dir={direction}>
+      <div className="min-h-screen bg-white w-full max-w-full overflow-x-clip" dir={direction}>
       {/* HEADER */}
       <section className="relative overflow-hidden border-b border-slate-100 bg-gradient-to-b from-slate-50/80 via-white to-white py-12 px-4 sm:py-16">
         <div className="max-w-5xl mx-auto text-center">
@@ -169,32 +169,34 @@ export default function ParticipantPortal() {
       {/* TABS (Segmented Control) */}
       <div className="bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-3 sticky top-16 z-30 shadow-xs">
         <div className="max-w-5xl mx-auto">
-          <div className="flex p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/70 gap-1.5 overflow-x-auto">
-            {[
-              { id: 0, icon: "🔬", label: localize("الفرص البحثية الجاهزة للنشر", "Research opportunities ready for publication") },
-              { id: 1, icon: "📚", label: localize("برنامج تدريب باحث مع النشر", "Researcher training program with publication") },
-              { id: 2, icon: "🎓", label: localize("دورات طبية بساعات CME معتمدة", "Accredited CME medical courses") },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                data-testid={`button-tab-${tab.id}`}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 min-w-[200px] sm:min-w-0 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? "bg-[#0C3156] text-white shadow-sm"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
-                }`}
-              >
-                <span>{tab.icon}</span>
-                <span>{tab.label}</span>
-              </button>
-            ))}
+          <div className="w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/70 scrollbar-none">
+            <div className="flex w-max min-w-full gap-1.5">
+              {[
+                { id: 0, icon: "🔬", label: localize("الفرص البحثية الجاهزة للنشر", "Research opportunities ready for publication") },
+                { id: 1, icon: "📚", label: localize("برنامج تدريب باحث مع النشر", "Researcher training program with publication") },
+                { id: 2, icon: "🎓", label: localize("دورات طبية بساعات CME معتمدة", "Accredited CME medical courses") },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  data-testid={`button-tab-${tab.id}`}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex-1 min-w-[200px] sm:min-w-0 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all whitespace-nowrap ${
+                    activeTab === tab.id
+                      ? "bg-[#0C3156] text-white shadow-sm"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
+                  }`}
+                >
+                  <span>{tab.icon}</span>
+                  <span>{tab.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
       {/* TICKER */}
-      <div className="srma-ticker py-2.5 text-white" style={{ backgroundColor: contentSettings.primaryColor }}>
+      <div className="srma-ticker w-full max-w-full overflow-hidden overflow-x-clip py-2.5 text-white" style={{ backgroundColor: contentSettings.primaryColor }}>
         <div className="srma-ticker-track" dir="ltr">
           <span>⚡ {localize(`انضم لأكثر من 500 طبيب وباحث حققوا متطلبات الهيئة السعودية للتخصصات الصحية مع ${siteName} | سجل الآن وابدأ رحلتك البحثية اليوم`, `Join over 500 physicians and researchers who have met Saudi Commission for Health Specialties requirements with ${siteName} | Register now and begin your research journey today`)}</span>
           <span aria-hidden="true">⚡ {localize(`انضم لأكثر من 500 طبيب وباحث حققوا متطلبات الهيئة السعودية للتخصصات الصحية مع ${siteName} | سجل الآن وابدأ رحلتك البحثية اليوم`, `Join over 500 physicians and researchers who have met Saudi Commission for Health Specialties requirements with ${siteName} | Register now and begin your research journey today`)}</span>
@@ -334,7 +336,7 @@ export default function ParticipantPortal() {
                         id={`carousel-${group.id}`}
                         className={
                           isSpecialtyScroll
-                            ? "flex snap-x snap-mandatory gap-5 overflow-x-auto pb-4 scroll-smooth"
+                            ? "flex snap-x snap-mandatory gap-5 w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden pb-4 scroll-smooth"
                             : "grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3"
                         }
                       >
@@ -743,18 +745,20 @@ export default function ParticipantPortal() {
             <h2 className="text-2xl font-black text-slate-900">{localize("مشاريع اكتمل فريقها (لوحة الشرف) 🏆", "Projects with completed teams (Hall of Fame) 🏆")}</h2>
             <p className="text-slate-500 text-sm mt-1">{localize("أبحاث سابقة تم إغلاق التسجيل فيها بنجاح", "Previous research projects whose registration closed successfully.")}</p>
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-4">
-            {hallOfFame.map((item, i) => (
-              <div key={i} className="flex-shrink-0 w-72 bg-white rounded-2xl p-5 border border-slate-200 shadow-sm" data-testid={`card-hall-${i}`}>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="flex items-center gap-1 text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
-                    <Lock size={10} /> {localize("اكتمل الفريق", "Team complete")}
-                  </span>
+          <div className="w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden pb-4">
+            <div className="flex w-max min-w-max gap-4">
+              {hallOfFame.map((item, i) => (
+                <div key={i} className="flex-shrink-0 w-72 bg-white rounded-2xl p-5 border border-slate-200 shadow-sm" data-testid={`card-hall-${i}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="flex items-center gap-1 text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
+                      <Lock size={10} /> {localize("اكتمل الفريق", "Team complete")}
+                    </span>
+                  </div>
+                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${item.specialtyColor} inline-block mb-2`}>{item.specialty}</span>
+                  <p className="text-sm font-semibold text-slate-700 line-clamp-3">{item.title}</p>
                 </div>
-                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${item.specialtyColor} inline-block mb-2`}>{item.specialty}</span>
-                <p className="text-sm font-semibold text-slate-700 line-clamp-3">{item.title}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </section>

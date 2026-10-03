@@ -68,12 +68,12 @@ function Router() {
   const isPrivate = isAdmin || isCoordinatorPortal;
 
   return (
-    <div className="relative flex min-h-screen flex-col" style={{ fontFamily: "'Tajawal', sans-serif" }}>
+    <div className="relative flex min-h-screen flex-col w-full max-w-full overflow-x-clip" style={{ fontFamily: "'Tajawal', sans-serif" }}>
       <PageSeo pathname={location} language={language} noIndex={isPrivate} />
       <BrandBackground />
-      <div className="relative z-10 flex min-h-screen flex-col">
+      <div className="relative z-10 flex min-h-screen flex-col w-full max-w-full overflow-x-clip">
         {!isAdmin && !isCoordinatorPortal && <Navbar />}
-        <main className="flex-1">
+        <main className="flex-1 w-full max-w-full min-w-0">
           <Switch>
             <Route path="/" component={Home} />
             <Route path="/participant-portal" component={ParticipantPortal} />

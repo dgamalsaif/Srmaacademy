@@ -1122,7 +1122,7 @@ export default function AdminDashboard() {
   const canManage = role === "owner";
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-right" dir="rtl">
+    <div className="min-h-screen bg-[#f8fafc] text-right w-full max-w-full overflow-x-clip" dir="rtl">
       {/* TOP BAR */}
       <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-30 shadow-2xs">
         <div className="flex items-center gap-3.5">
@@ -1228,7 +1228,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* NAVIGATION TABS (Segmented bar) */}
-        <div className="bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200 flex overflow-x-auto sm:flex-wrap items-center gap-1.5 mb-8 shadow-2xs scrollbar-thin">
+        <div className="w-full max-w-full min-w-0 bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200 flex overflow-x-auto sm:flex-wrap items-center gap-1.5 mb-8 shadow-2xs scrollbar-thin">
           <button
             onClick={() => setView('programs')}
             className={`flex shrink-0 whitespace-nowrap items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
@@ -1329,26 +1329,28 @@ export default function AdminDashboard() {
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
 
               <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
-                <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-2 md:pb-0">
-                  {[
-                    { id: 'active', label: 'الفرص البحثية', icon: FlaskConical },
-                    { id: 'completed', label: 'الدراسات المنجزة', icon: CheckCircle },
-                    { id: 'training', label: 'تدريب باحث', icon: BookOpen },
-                    { id: 'cme', label: 'CME دورات', icon: Award }
-                  ].map(cat => (
-                    <button
-                      key={cat.id}
-                      onClick={() => setCategoryFilter(cat.id as any)}
-                      className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap border ${
-                        categoryFilter === cat.id
-                          ? 'bg-[#117b59] text-white border-[#117b59] shadow-sm'
-                          : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300 shadow-sm'
-                      }`}
-                    >
-                      <cat.icon size={16} />
-                      {cat.label}
-                    </button>
-                  ))}
+                <div className="w-full max-w-full min-w-0 md:w-auto overflow-x-auto overflow-y-hidden pb-2 md:pb-0">
+                  <div className="flex w-max min-w-max items-center gap-2">
+                    {[
+                      { id: 'active', label: 'الفرص البحثية', icon: FlaskConical },
+                      { id: 'completed', label: 'الدراسات المنجزة', icon: CheckCircle },
+                      { id: 'training', label: 'تدريب باحث', icon: BookOpen },
+                      { id: 'cme', label: 'CME دورات', icon: Award }
+                    ].map(cat => (
+                      <button
+                        key={cat.id}
+                        onClick={() => setCategoryFilter(cat.id as any)}
+                        className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-bold transition-all whitespace-nowrap border ${
+                          categoryFilter === cat.id
+                            ? 'bg-[#117b59] text-white border-[#117b59] shadow-sm'
+                            : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300 shadow-sm'
+                        }`}
+                      >
+                        <cat.icon size={16} />
+                        {cat.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 {canManage && (
                   <div className="flex w-full flex-col gap-2 sm:flex-row md:w-auto">
@@ -1482,7 +1484,7 @@ export default function AdminDashboard() {
                       <div className="h-px bg-slate-200 flex-1"></div>
                     </div>
 
-                    <div className={isSpecialtyScroll ? "flex snap-x snap-mandatory gap-5 overflow-x-auto pb-4" : "grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3"}>
+                    <div className={isSpecialtyScroll ? "flex snap-x snap-mandatory gap-5 w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden pb-4" : "grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3"}>
                       {items.map(r => (
                         <div key={r.id} className={isSpecialtyScroll ? "w-[min(88vw,360px)] shrink-0 snap-start" : ""}>
                           <ProgramCard
@@ -1523,7 +1525,7 @@ export default function AdminDashboard() {
                 </div>
               ) : (
                 <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                  <div className="overflow-x-auto">
+                  <div className="w-full max-w-full min-w-0 overflow-x-auto">
                     <table className="w-full text-right">
                       <thead className="bg-slate-50 border-b border-slate-100">
                         <tr>

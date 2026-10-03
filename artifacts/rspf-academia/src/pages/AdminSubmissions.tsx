@@ -563,7 +563,7 @@ export default function AdminSubmissions() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-right" dir="rtl">
+    <div className="min-h-screen bg-[#f8fafc] text-right w-full max-w-full overflow-x-clip" dir="rtl">
       {/* TOP BAR */}
       <header className="bg-white border-b border-slate-200 px-4 sm:px-8 py-5 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-20">
         <div className="flex items-center gap-4">
@@ -655,21 +655,23 @@ export default function AdminSubmissions() {
                   <h2 className="text-right text-sm font-black text-slate-800">تصفية حسب البرنامج</h2>
                   <button onClick={() => setSelectedResearchId("all")} className={`rounded-xl px-4 py-2 text-xs font-bold transition-colors ${selectedResearchId === "all" ? "bg-[#117b59] text-white shadow-sm" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>عرض الكل</button>
                 </div>
-                <div className="flex gap-3 overflow-x-auto pb-2">
-                  {Object.values(registrationGroups).map((group) => (
-                    <div key={group.id} className={`min-w-[230px] rounded-2xl border p-1.5 text-right transition-all ${selectedResearchId === group.id ? "border-[#117b59] bg-[#e6f5ef] shadow-sm" : "border-slate-200 bg-slate-50 hover:border-slate-300"}`}>
-                      <button onClick={() => setSelectedResearchId(group.id)} className="w-full rounded-xl p-2.5 text-right">
-                        <p className="line-clamp-2 text-xs font-bold leading-5 text-slate-800">{group.title}</p>
-                        <div className="mt-3 flex items-center gap-3">
-                          <span className="text-xs font-bold text-slate-600"><Users size={12} className="inline mr-1 text-slate-400" /> {group.count} مسجل</span>
-                          {group.pending > 0 && <span className="text-xs font-bold text-amber-600"><Clock size={12} className="inline mr-1 text-amber-400" /> {group.pending} مراجعة</span>}
-                        </div>
-                      </button>
-                      <button onClick={() => exportRegistrations(registrations.filter((registration) => registration.researchId === group.id), `srma-program-${group.id}-students.xls`)} className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2 text-xs font-black text-[#117b59] shadow-sm ring-1 ring-[#117b59]/15 transition hover:bg-[#f3fbf8]">
-                        <Download size={14} /> Excel لهذه الفرصة
-                      </button>
-                    </div>
-                  ))}
+                <div className="w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden pb-2">
+                  <div className="flex w-max min-w-max gap-3">
+                    {Object.values(registrationGroups).map((group) => (
+                      <div key={group.id} className={`min-w-[230px] rounded-2xl border p-1.5 text-right transition-all ${selectedResearchId === group.id ? "border-[#117b59] bg-[#e6f5ef] shadow-sm" : "border-slate-200 bg-slate-50 hover:border-slate-300"}`}>
+                        <button onClick={() => setSelectedResearchId(group.id)} className="w-full rounded-xl p-2.5 text-right">
+                          <p className="line-clamp-2 text-xs font-bold leading-5 text-slate-800">{group.title}</p>
+                          <div className="mt-3 flex items-center gap-3">
+                            <span className="text-xs font-bold text-slate-600"><Users size={12} className="inline mr-1 text-slate-400" /> {group.count} مسجل</span>
+                            {group.pending > 0 && <span className="text-xs font-bold text-amber-600"><Clock size={12} className="inline mr-1 text-amber-400" /> {group.pending} مراجعة</span>}
+                          </div>
+                        </button>
+                        <button onClick={() => exportRegistrations(registrations.filter((registration) => registration.researchId === group.id), `srma-program-${group.id}-students.xls`)} className="flex w-full items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-2 text-xs font-black text-[#117b59] shadow-sm ring-1 ring-[#117b59]/15 transition hover:bg-[#f3fbf8]">
+                          <Download size={14} /> Excel لهذه الفرصة
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -684,7 +686,7 @@ export default function AdminSubmissions() {
                   <p className="text-sm font-medium">اختر فرصة أخرى أو انتظر تسجيل أول مشارك</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="w-full max-w-full min-w-0 overflow-x-auto">
                   <table className="w-full text-right">
                     <thead className="bg-slate-50 border-b border-slate-100">
                       <tr>
@@ -772,7 +774,7 @@ export default function AdminSubmissions() {
                 <p className="text-sm font-medium">ستظهر هنا بعد تقديم أول طلب</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="w-full max-w-full min-w-0 overflow-x-auto">
                 <table className="w-full text-right">
                   <thead className="bg-slate-50 border-b border-slate-100">
                     <tr>

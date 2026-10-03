@@ -121,7 +121,7 @@ export default function SpecialtyFilter({
 
   return (
     <section
-      className={`rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm ${className}`}
+      className={`w-full max-w-full min-w-0 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm ${className}`}
       dir={direction}
       aria-label={localize("تصفية الفرص حسب التخصص", "Filter opportunities by specialty")}
     >
@@ -151,40 +151,42 @@ export default function SpecialtyFilter({
           </button>
         )}
       </label>
-      <div className="flex gap-2 overflow-x-auto pb-1">
-        <button
-          type="button"
-          data-testid="button-specialty-all"
-          onClick={() => onSelect(null)}
-          aria-pressed={!selectedSpecialty}
-          className={`shrink-0 rounded-full border px-4 py-2 text-xs font-black transition ${
-            !selectedSpecialty
-              ? "border-[#117b59] bg-[#117b59] text-white"
-              : "border-slate-200 bg-slate-50 text-slate-600 hover:border-[#117b59]/35 hover:bg-[#e6f5ef]"
-          }`}
-        >
-          {localize("كل التخصصات", "All specialties")}
-        </button>
-        {visibleOptions.map((option) => {
-          const value = option.nameEn || option.nameAr;
-          const selected = selectedSpecialty === value;
-          return (
-            <button
-              type="button"
-              key={option.id}
-              data-testid={`button-specialty-${option.id}`}
-              onClick={() => onSelect(value)}
-              aria-pressed={selected}
-              className={`shrink-0 rounded-full border px-4 py-2 text-xs font-black transition ${
-                selected
-                  ? "border-[#117b59] bg-[#117b59] text-white"
-                  : "border-slate-200 bg-slate-50 text-slate-600 hover:border-[#117b59]/35 hover:bg-[#e6f5ef]"
-              }`}
-            >
-              {localize(option.nameAr, option.nameEn)}
-            </button>
-          );
-        })}
+      <div className="w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden pb-1">
+        <div className="flex w-max min-w-max gap-2">
+          <button
+            type="button"
+            data-testid="button-specialty-all"
+            onClick={() => onSelect(null)}
+            aria-pressed={!selectedSpecialty}
+            className={`shrink-0 rounded-full border px-4 py-2 text-xs font-black transition ${
+              !selectedSpecialty
+                ? "border-[#117b59] bg-[#117b59] text-white"
+                : "border-slate-200 bg-slate-50 text-slate-600 hover:border-[#117b59]/35 hover:bg-[#e6f5ef]"
+            }`}
+          >
+            {localize("كل التخصصات", "All specialties")}
+          </button>
+          {visibleOptions.map((option) => {
+            const value = option.nameEn || option.nameAr;
+            const selected = selectedSpecialty === value;
+            return (
+              <button
+                type="button"
+                key={option.id}
+                data-testid={`button-specialty-${option.id}`}
+                onClick={() => onSelect(value)}
+                aria-pressed={selected}
+                className={`shrink-0 rounded-full border px-4 py-2 text-xs font-black transition ${
+                  selected
+                    ? "border-[#117b59] bg-[#117b59] text-white"
+                    : "border-slate-200 bg-slate-50 text-slate-600 hover:border-[#117b59]/35 hover:bg-[#e6f5ef]"
+                }`}
+              >
+                {localize(option.nameAr, option.nameEn)}
+              </button>
+            );
+          })}
+        </div>
       </div>
       {visibleOptions.length === 0 && (
         <p className="py-3 text-center text-xs font-semibold text-slate-500">
