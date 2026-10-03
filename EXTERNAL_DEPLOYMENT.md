@@ -1,10 +1,10 @@
 # SRMA external deployment
 
-This setup keeps the Replit deployment intact and adds an independent deployment:
+Production is hosted externally. Replit is used only to prepare the project; no Replit database, hosting, or managed authentication connection is required.
 
 - Cloudflare Worker + Static Assets: React frontend and same-origin `/api/*` proxy
 - Render Web Service: Express API
-- Neon PostgreSQL: application database, connected to Render through `DATABASE_URL`
+- Existing Render PostgreSQL: application database, connected to the Render API through `DATABASE_URL`
 - Cloudflare R2: private research images
 - External Clerk: owner authentication
 
@@ -14,11 +14,24 @@ Coordinator access codes remain in PostgreSQL and do not use Clerk.
 
 1. Push this repository to GitHub.
 2. In Render, create a Blueprint from `render.yaml`.
-3. Set the unsynced environment variables in the Render dashboard, including `DATABASE_URL` with the existing Neon PostgreSQL connection string. This Blueprint does not create a database or inject that value automatically.
+3. In the existing Render web service, set `DATABASE_URL` to the **Internal Database URL** copied directly from the restored Render PostgreSQL database's connection settings. Use the internal URL only when the API and database share the appropriate private network/region. Otherwise use that database's External Database URL. Do not manually substitute the display name for the database name in the URL. This Blueprint does not create a database or inject that value automatically.
 4. Use the external Clerk instance's publishable and secret keys. Do not copy Replit-managed Clerk keys.
 5. Wait for `/api/readyz` on the Render service URL to return `{"status":"ready","database":"connected"}`.
 
-The database migrations run during the Render build and on service start using `DATABASE_URL`. Keep that connection string in Render's environment settings; never commit it to the repository.
+No migrations run during build, startup, or post-merge setup. The existing database and schema are used as-is. Keep the connection string only in Render's environment settings; never commit it or send it in chat.
+
+For an existing Render service, check its saved commands explicitly; updating this file alone does not guarantee those dashboard settings change:
+
+- Build Command: `pnpm install --no-frozen-lockfile && pnpm --filter @workspace/api-server run build`
+- Start Command: `node --enable-source-maps artifacts/api-server/dist/index.mjs`
+- Health Check Path: `/api/readyz`
+- `NODE_ENV=production`
+
+Do not use `run-migrate.mjs`, `drizzle-kit push`, or `drizzle-kit migrate` in these commands. Do not bypass readiness failures: `503` means the API cannot confirm database connectivity. A `database ... does not exist` error means the configured connection URL references a nonexistent database; correct the URL rather than creating tables or guessing another name.
+
+Copy the database URL unchanged. Legacy TLS modes such as `sslmode=require` are normalized to `verify-full`, preserving the installed pg driver's current certificate-verification behavior. Do not disable verification to silence an SSL warning.
+
+The Blueprint's existing compute plan is not changed by this preparation. Keep your selected Render service/database plans in the dashboard.
 
 ## 2. Cloudflare R2
 
@@ -53,7 +66,7 @@ Attach `srmaacademy.com` and `www.srmaacademy.com` as Worker custom domains. Rem
 
 ## 4. Clerk
 
-Use the external Clerk instance connected for this migration:
+Keep the existing external Clerk instance:
 
 - Add `https://srmaacademy.com/sign-in/sso-callback` to allowed redirect URLs.
 - Add `https://srmaacademy.com` to allowed origins.
@@ -62,26 +75,15 @@ Use the external Clerk instance connected for this migration:
 
 The owner row in PostgreSQL must use the same verified email as the external Clerk owner. On first successful sign-in, the app binds that owner row to the external Clerk user ID.
 
-The production owner email already matches the connected external Clerk user. After importing the database into Render, clear only the old Replit-managed Clerk binding in the **Render database**:
+Do not reset owner bindings, copy data, migrate schema, or move existing image objects as part of deployment preparation. Such changes require a separate explicit request.
 
-```sql
-UPDATE owner_accounts
-SET clerk_user_id = NULL, updated_at = NOW()
-WHERE email = 'srmaacademy@gmail.com';
-```
+## 5. Verify the existing deployment
 
-Do not run this against the Replit database. The first verified owner sign-in on the external deployment will bind the Render row to the external Clerk user ID.
+After you apply the saved commands and corrected database URL in Render and redeploy:
 
-## 5. Data copy
+1. Confirm the log contains no migration execution.
+2. Confirm `/api/readyz` returns HTTP 200 and reports the database connected.
+3. Confirm existing opportunities and images load.
+4. Confirm existing owner and coordinator sign-in still work.
 
-Copy PostgreSQL data only during a planned maintenance window:
-
-1. Stop writes to the current site.
-2. Export the Replit production PostgreSQL database.
-3. Import it into Render PostgreSQL.
-4. Clear the old Clerk user ID in Render using the one-row SQL statement above.
-5. Copy existing research image objects into the R2 key prefix `production/research-images/`.
-6. Verify record counts, owner sign-in, coordinator sign-in, registrations, and image loading.
-7. Switch the Cloudflare custom domain to the new Worker.
-
-Do not point the public domain at the new deployment before both the database and object copy are complete.
+If the database schema is missing a field, report the exact error and stop; do not apply a migration automatically.

@@ -1,4 +1,4 @@
 #!/bin/bash
 set -e
 pnpm install --frozen-lockfile
-pnpm --filter @workspace/db run migrate
+# Database changes require explicit approval; setup must not run migrations.

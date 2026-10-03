@@ -1,6 +1,7 @@
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as schema from "./schema";
+import { getPostgresConnectionConfig } from "./connection-config";
 
 const { Pool } = pg;
 
@@ -304,43 +305,25 @@ let useInMemory = false;
 
 if (process.env.DATABASE_URL) {
   try {
-    const rawUrl = process.env.DATABASE_URL.trim().split(" ")[0];
-    const parsed = new URL(rawUrl);
+    const connectionConfig = getPostgresConnectionConfig(process.env.DATABASE_URL);
+    const parsed = new URL(connectionConfig.connectionString!);
     const safeHost = parsed.hostname;
-    // Render internal hostnames like "dpg-xxxx" cannot be resolved outside Render's private network
-    if (!safeHost.includes(".") && safeHost !== "localhost") {
+    activePool = new Pool(connectionConfig);
+
+    activePool.on("error", (err: any) => {
+      console.error("[DB] Unexpected idle PostgreSQL client error on pool:", err.message);
+    });
+
+    postgresDb = drizzle(activePool, { schema });
+
+    activePool.query("SELECT 1 AS database_ready").catch((err: any) => {
       if (isProduction) {
-        console.error(`[FATAL] Hostname "${safeHost}" is an internal cluster address not resolvable in production container.`);
-        throw new Error("Invalid production DATABASE_URL hostname");
+        console.error(`[FATAL] PostgreSQL connection verification failed in production on host "${safeHost}":`, err.message);
+      } else {
+        console.warn("[DB] PostgreSQL connection check failed, switching to resilient in-memory database:", err.message);
+        useInMemory = true;
       }
-      console.warn(`[DB] Hostname "${safeHost}" is an internal cluster address not resolvable in this container. Using resilient in-memory database.`);
-      useInMemory = true;
-    } else {
-      const isNeon = safeHost.includes("neon.tech");
-      const isSsl = isNeon || rawUrl.includes("sslmode=require") || rawUrl.includes("ssl=true");
-
-      activePool = new Pool({
-        connectionString: rawUrl,
-        connectionTimeoutMillis: 15000,
-        idleTimeoutMillis: 30000,
-        ...(isSsl ? { ssl: { rejectUnauthorized: false } } : {}),
-      });
-
-      activePool.on("error", (err: any) => {
-        console.error("[DB] Unexpected idle PostgreSQL client error on pool:", err.message);
-      });
-
-      postgresDb = drizzle(activePool, { schema });
-
-      activePool.query("SELECT 1 AS database_ready").catch((err: any) => {
-        if (isProduction) {
-          console.error(`[FATAL] PostgreSQL connection verification failed in production on host "${safeHost}":`, err.message);
-        } else {
-          console.warn("[DB] PostgreSQL connection check failed, switching to resilient in-memory database:", err.message);
-          useInMemory = true;
-        }
-      });
-    }
+    });
   } catch (err: any) {
     if (isProduction) {
       console.error("[FATAL] Failed to initialize Postgres connection pool in production:", err.message);

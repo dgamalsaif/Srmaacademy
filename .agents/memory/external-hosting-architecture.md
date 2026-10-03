@@ -3,10 +3,12 @@ name: External hosting architecture
 description: Production hosting split and the user's decision to keep uploaded images in Cloudflare R2.
 ---
 
-Production uses Cloudflare Pages/Worker for the frontend and same-origin API proxy, Render for the Express API, Neon PostgreSQL through `DATABASE_URL`, and private Cloudflare R2 for images. The Render Blueprint does not provision a database or inject `DATABASE_URL`; it must reference the existing Neon database.
+Production uses Cloudflare Pages/Worker for the frontend and same-origin API proxy, Render for the Express API, existing Render PostgreSQL through `DATABASE_URL`, and private Cloudflare R2 for images. The user restored the database to Render and wants it used as-is.
+
+The user explicitly instructed: no migrations now, no adding or connecting Replit to the project; use this workspace only to prepare the project and ask for anything needed.
 
 The user chose not to migrate images away from Cloudflare R2.
 
-**Why:** switching databases or image providers can disconnect existing production data or images.
+**Why:** the user asked to keep the restored Render database without migrations or Replit service connections. Switching databases or image providers can disconnect existing production data or images.
 
-**How to apply:** verify Render's `DATABASE_URL` and R2 credentials independently. Do not create a replacement database or migrate image storage unless the user explicitly asks.
+**How to apply:** prepare external configuration without provisioning services, running migrations, or connecting Replit. Ask the user to apply secret connection settings in Render, never to paste them in chat. Do not replace the database or image storage without an explicit request.
