@@ -1,0 +1,23 @@
+2026-10-04T00:50:42.843983719Z ==> Downloading cache...
+2026-10-04T00:50:42.871252759Z ==> Cloning from https://github.com/dgamalsaif/Srmaacademy
+2026-10-04T00:50:50.786423991Z ==> Checking out commit 4aa994f74510b7a85f16cb5bdbe6a048bad9bb7b in branch main
+2026-10-04T00:50:57.547241176Z ==> Downloaded 184MB in 8s. Extraction took 6s.
+2026-10-04T00:50:58.145827984Z ==> Requesting Node.js version 24
+2026-10-04T00:50:58.31263137Z ==> Using Node.js version 24.21.0 via environment variable NODE_VERSION
+2026-10-04T00:50:58.312637858Z ==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+2026-10-04T00:50:58.343608116Z ==> Running build command 'pnpm install --prod=false --frozen-lockfile && pnpm --filter @workspace/api-server run build'...
+2026-10-04T00:50:58.91127754Z  ERROR  Headless installation requires a pnpm-lock.yaml file
+2026-10-04T00:50:58.911290815Z 
+2026-10-04T00:50:58.911293989Z pnpm: Headless installation requires a pnpm-lock.yaml file
+2026-10-04T00:50:58.911297126Z     at tryFrozenInstall (/usr/lib/node_modules/pnpm/dist/pnpm.cjs:174516:19)
+2026-10-04T00:50:58.911299849Z     at _install (/usr/lib/node_modules/pnpm/dist/pnpm.cjs:174320:43)
+2026-10-04T00:50:58.911302288Z     at async mutateModules (/usr/lib/node_modules/pnpm/dist/pnpm.cjs:174215:23)
+2026-10-04T00:50:58.911304593Z     at async recursive (/usr/lib/node_modules/pnpm/dist/pnpm.cjs:175607:100)
+2026-10-04T00:50:58.911307307Z     at async recursiveInstallThenUpdateWorkspaceState (/usr/lib/node_modules/pnpm/dist/pnpm.cjs:176118:31)
+2026-10-04T00:50:58.911312186Z     at async installDeps (/usr/lib/node_modules/pnpm/dist/pnpm.cjs:175925:11)
+2026-10-04T00:50:58.911314431Z     at async /usr/lib/node_modules/pnpm/dist/pnpm.cjs:213262:23
+2026-10-04T00:50:58.911316389Z     at async main (/usr/lib/node_modules/pnpm/dist/pnpm.cjs:213220:34)
+2026-10-04T00:50:58.911318473Z     at async runPnpm (/usr/lib/node_modules/pnpm/dist/pnpm.cjs:213585:5)
+2026-10-04T00:50:58.91132056Z     at async /usr/lib/node_modules/pnpm/dist/pnpm.cjs:213577:7
+2026-10-04T00:50:58.949285712Z ==> Build failed 😞
+2026-10-04T00:50:58.949296619Z ==> Common ways to troubleshoot your deploy: https://render.com/docs/troubleshooting-deploys

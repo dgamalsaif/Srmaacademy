@@ -15,6 +15,6 @@ The user chose not to migrate images away from Cloudflare R2.
 
 Local API build success is not proof of a clean Render dependency installation.
 
-**Why:** the imported workspace's existing npm-installed dependencies allowed local builds while Render's pnpm installation missed a build plugin.
+**Why:** the imported workspace's existing npm-installed dependencies allowed local builds while Render's pnpm installation missed a build plugin. A locally generated lockfile also was not present in Render's GitHub checkout.
 
-**How to apply:** distinguish a local bundle check from a clean dependency-install check when reporting deployment readiness; never claim the latter based only on the former.
+**How to apply:** distinguish a local bundle check from a clean dependency-install check when reporting deployment readiness; never claim the latter based only on the former. Recommend frozen-lockfile installs only after confirming the lockfile exists in the deployment's source checkout, not merely in the local workspace.
