@@ -533,7 +533,6 @@ router.patch("/programs/:id", requireOwner, async (req, res) => {
     ...(researchGroupUrl === undefined ? {} : { researchGroupUrl }),
     indexedIn: Array.isArray(req.body?.indexedIn) ? req.body.indexedIn.join("|") : req.body?.indexedIn || "",
     benefits: Array.isArray(req.body?.benefits) ? req.body.benefits.join("|") : req.body?.benefits || "",
-    updatedAt: new Date(),
   }, "update");
   const parsed = insertResearchProgramSchema.partial().safeParse(body);
   if (!parsed.success) {
@@ -562,7 +561,9 @@ router.patch("/programs/:id", requireOwner, async (req, res) => {
         throw new ProgramUpdateError("يرجى تعبئة الحقول الإلزامية للفرصة", 400, missingFields);
       }
       const [row] = await tx.update(researchProgramsTable)
-        .set({ ...parsed.data, ...seatOverride.value, totalSeats: 15, firstAuthorSeats: 1, coAuthorSeats: 14 })
+        // The insert schema strips server-owned timestamps. Set this after
+        // validation so every saved replacement gets a fresh image URL.
+        .set({ ...parsed.data, ...seatOverride.value, totalSeats: 15, firstAuthorSeats: 1, coAuthorSeats: 14, updatedAt: new Date(Math.max(Date.now(), current.updatedAt.getTime() + 1)) })
         .where(eq(researchProgramsTable.id, id)).returning();
       return row;
     });

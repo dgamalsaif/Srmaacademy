@@ -63,6 +63,7 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, s
   const [formError, setFormError] = useState("");
   const [imageToken, setImageToken] = useState<string | null>(null);
   const [imageUploading, setImageUploading] = useState(false);
+  const [imageError, setImageError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const isCompletedResearch = form.category === "completed";
   const completedStatus = ["seats_full", "ethics_approved", "submitted", "under_review", "accepted", "published"].includes(form.status) ? form.status : "seats_full";
@@ -88,6 +89,10 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, s
     e.preventDefault();
     if (imageUploading) {
       setFormError("انتظر حتى يكتمل رفع الصورة قبل حفظ الفرصة.");
+      return;
+    }
+    if (imageError) {
+      setFormError("لم تُرفع الصورة الجديدة. أعد رفعها بنجاح أو أزل اختيار الصورة قبل الحفظ.");
       return;
     }
     const indexedIn = indexedStr.split(/[،,]/).map((s) => s.trim()).filter(Boolean);
@@ -144,7 +149,7 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, s
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-6 space-y-5">
-          <ResearchImagePicker initialImageUrl={initial.imageUrl} onImageTokenChange={setImageToken} onUploadingChange={setImageUploading} />
+          <ResearchImagePicker initialImageUrl={initial.imageUrl} onImageTokenChange={setImageToken} onUploadingChange={setImageUploading} onErrorChange={setImageError} />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2 text-right">عنوان البرنامج (بالعربية){isRequired("titleAr") && " *"}</label>
@@ -318,7 +323,7 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, s
             <button type="button" onClick={onClose} disabled={submitting} className="flex-1 border border-slate-200 text-slate-600 font-bold py-3.5 rounded-2xl hover:bg-slate-50 transition-colors text-sm shadow-sm disabled:opacity-50">
               إلغاء
             </button>
-            <button type="submit" disabled={submitting || imageUploading} className="flex-1 flex items-center justify-center gap-2 bg-[#117b59] text-white font-bold py-3.5 rounded-2xl hover:bg-[#0c6549] transition-colors text-sm shadow-sm disabled:opacity-60">
+            <button type="submit" disabled={submitting || imageUploading || Boolean(imageError)} className="flex-1 flex items-center justify-center gap-2 bg-[#117b59] text-white font-bold py-3.5 rounded-2xl hover:bg-[#0c6549] transition-colors text-sm shadow-sm disabled:opacity-60">
               {submitting ? (
                 <>
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />

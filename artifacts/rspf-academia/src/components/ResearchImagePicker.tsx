@@ -6,6 +6,7 @@ interface ResearchImagePickerProps {
   initialImageUrl?: string;
   onImageTokenChange: (imageToken: string) => void;
   onUploadingChange: (uploading: boolean) => void;
+  onErrorChange: (error: string) => void;
 }
 
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -23,11 +24,13 @@ export default function ResearchImagePicker({
   initialImageUrl = "",
   onImageTokenChange,
   onUploadingChange,
+  onErrorChange,
 }: ResearchImagePickerProps) {
   const [previewUrl, setPreviewUrl] = useState(initialImageUrl);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const previewObjectUrl = useRef<string | null>(null);
+  const acceptedPreviewUrl = useRef(initialImageUrl);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => () => {
@@ -43,8 +46,13 @@ export default function ResearchImagePicker({
     onUploadingChange(next);
   };
 
+  const setUploadError = (message: string) => {
+    setError(message);
+    onErrorChange(message);
+  };
+
   const uploadImage = async (file: File) => {
-    setError("");
+    setUploadError("");
     const fileExtension = file.name.slice(file.name.lastIndexOf(".")).toLowerCase();
     const mimeType = (file.type || "").toLowerCase();
 
@@ -54,25 +62,22 @@ export default function ResearchImagePicker({
       !ALLOWED_IMAGE_TYPES.has(mimeType) &&
       !ALLOWED_IMAGE_EXTENSIONS.has(fileExtension)
     ) {
-      setError("اختر صورة بصيغة JPG أو PNG أو WebP.");
+      setUploadError("اختر صورة بصيغة JPG أو PNG أو WebP.");
       return;
     }
 
     if (file.size > MAX_IMAGE_SIZE) {
-      setError("يجب ألا يتجاوز حجم الصورة 10 ميغابايت.");
+      setUploadError("يجب ألا يتجاوز حجم الصورة 10 ميغابايت.");
       return;
     }
 
     setUploadingState(true);
+    let pendingPreviewUrl: string | null = null;
     try {
       // 1. Instant local preview
-      if (previewObjectUrl.current) {
-        try {
-          URL.revokeObjectURL(previewObjectUrl.current);
-        } catch {}
-      }
-      previewObjectUrl.current = URL.createObjectURL(file);
-      setPreviewUrl(previewObjectUrl.current);
+      // Keep the last successful preview alive until the replacement succeeds.
+      pendingPreviewUrl = URL.createObjectURL(file);
+      setPreviewUrl(pendingPreviewUrl);
 
       // 2. Direct binary streaming to backend (bypasses FileReader & canvas limits completely)
       const uploadUrl = buildApiUrl("/api/program-images/upload");
@@ -106,13 +111,22 @@ export default function ResearchImagePicker({
         throw new Error(upload.error || "تعذر رفع الصورة.");
       }
 
+      if (previewObjectUrl.current) {
+        try {
+          URL.revokeObjectURL(previewObjectUrl.current);
+        } catch {}
+      }
+      previewObjectUrl.current = pendingPreviewUrl;
+      acceptedPreviewUrl.current = pendingPreviewUrl;
       onImageTokenChange(upload.imageToken);
     } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : "تعذر رفع الصورة. حاول مرة أخرى.");
-      // Rollback preview if upload fails
-      if (!initialImageUrl) {
-        setPreviewUrl("");
+      setUploadError(uploadError instanceof Error ? uploadError.message : "تعذر رفع الصورة. حاول مرة أخرى.");
+      if (pendingPreviewUrl) {
+        try {
+          URL.revokeObjectURL(pendingPreviewUrl);
+        } catch {}
       }
+      setPreviewUrl(acceptedPreviewUrl.current);
     } finally {
       setUploadingState(false);
       if (fileInputRef.current) {
@@ -130,8 +144,9 @@ export default function ResearchImagePicker({
       } catch {}
       previewObjectUrl.current = null;
     }
+    acceptedPreviewUrl.current = "";
     setPreviewUrl("");
-    setError("");
+    setUploadError("");
     onImageTokenChange("");
     if (fileInputRef.current) {
       try {
