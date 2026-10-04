@@ -8,3 +8,4 @@
 - [Cloudflare deployment access](cloudflare-deployment-access.md) — Worker upload and zone route permissions are separate; connector multipart uploads may hit an HTML challenge.
 - [Opportunity registration presentation](opportunity-registration-presentation.md) — English-only study titles; shared links open details and registration together, with one global details toggle.
 - [Public content policy](public-content-policy.md) — keep real tools and admin content; do not restore fabricated promotional sections or conceal empty/error states with invented data.
+- [Image cache invalidation](image-cache-invalidation.md) — persist cache versions after validation; successful deletion can conceal a replacement-cache defect.
