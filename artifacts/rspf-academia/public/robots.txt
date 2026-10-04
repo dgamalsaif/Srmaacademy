@@ -6,5 +6,21 @@ Disallow: /owner-admin
 Disallow: /coordinator
 Disallow: /coordinator/
 
+# Requests to cooperative training/scraping bots only; this is not access control.
+User-agent: GPTBot
+Disallow: /
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: Bytespider
+Disallow: /
+
+User-agent: Google-Extended
+Disallow: /
+
 Sitemap: https://srmaacademy.com/sitemap.xml
 Sitemap: https://srmaacademy.com/api/sitemap.xml

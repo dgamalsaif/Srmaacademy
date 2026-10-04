@@ -7,50 +7,17 @@ import { publishableKeyFromHost } from "@clerk/shared/keys";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { CLERK_PROXY_PATH, clerkProxyMiddleware, getClerkProxyHost } from "./middlewares/clerkProxyMiddleware";
+import { createPublicContentLimiter, isAllowedSiteOrigin } from "./middlewares/publicContentProtection";
 
 const app: Express = express();
 app.disable("x-powered-by");
-
-const envOrigins = (process.env.CORS_ORIGIN || "")
-  .split(",")
-  .map((o) => o.trim().replace(/\/+$/, ""))
-  .filter(Boolean);
-
-const KNOWN_ALLOWED_HOST_SUFFIXES = [
-  "srmaacademy.com",
-  ".onrender.com",
-  ".run.app",
-  "localhost",
-  "127.0.0.1",
-];
-
-function isOriginAllowed(origin: string): boolean {
-  const clean = origin.trim().replace(/\/+$/, "");
-  if (!clean || envOrigins.includes("*") || envOrigins.includes(clean)) return true;
-  try {
-    const parsed = new URL(clean);
-    const hostname = parsed.hostname.toLowerCase();
-    return KNOWN_ALLOWED_HOST_SUFFIXES.some(
-      (suffix) => hostname === suffix || hostname.endsWith(`.${suffix}`) || hostname.endsWith(suffix)
-    );
-  } catch {
-    return true;
-  }
-}
+// Render terminates requests at its reverse proxy. Do not trust arbitrary hop chains.
+app.set("trust proxy", 1);
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (origin) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Cookie, X-Requested-With, Accept, Origin, Range, Cache-Control");
-    res.setHeader("Access-Control-Expose-Headers", "Set-Cookie, Content-Disposition, Content-Length");
-    res.setHeader("Access-Control-Max-Age", "86400");
-  }
-
-  if (req.method === "OPTIONS") {
-    res.status(204).end();
+  if (origin && !isAllowedSiteOrigin(origin)) {
+    res.status(403).json({ error: "هذا المصدر غير مسموح له باستخدام الموقع." });
     return;
   }
   next();
@@ -59,13 +26,7 @@ app.use((req, res, next) => {
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow any legitimate web client or same-origin call with credentials
-      if (!origin || isOriginAllowed(origin)) {
-        callback(null, true);
-      } else {
-        // Fallback: reflect requesting origin so browser preflight passes cleanly
-        callback(null, true);
-      }
+      callback(null, !origin || isAllowedSiteOrigin(origin));
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
@@ -78,6 +39,7 @@ app.use(
       "Origin",
       "Range",
       "Cache-Control",
+      "Accept",
     ],
     exposedHeaders: ["Set-Cookie", "Content-Disposition", "Content-Length"],
     maxAge: 86400,
@@ -107,8 +69,11 @@ app.use((_req, res, next) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("Referrer-Policy", "same-origin");
   res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  res.setHeader("Content-Security-Policy", "frame-ancestors 'none'");
+  res.setHeader("X-Frame-Options", "DENY");
   next();
 });
+app.use(createPublicContentLimiter());
 app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 app.use(cookieParser());
 app.use(express.json());

@@ -20,3 +20,9 @@ Participant Portal sharing must copy an announcement headed «فرصة بحثي�
 **Why:** the user explicitly distinguished broken Participant Portal links from working Admin image links and specified this sharing format. The basic title, specialty and image identify the selected study even when additional details are hidden.
 
 **How to apply:** preserve this combined public registration experience when changing cards, metadata, sharing, or admin controls. Do not restore the older details-first sharing flow or introduce a different visibility scope without asking.
+
+Research-title protection must keep full titles accessible to all visitors. The user chose “جميع الزوار، مع تقليل سهولة النسخ”, not registration-only or staff-only access.
+
+**Why:** the user explicitly selected public visibility after being told that public titles, metadata and images cannot be made completely uncopyable.
+
+**How to apply:** use truthful copy deterrents and attribution while preserving public English titles, announcement sharing and registration. Do not introduce a title-access gate or block clipboard use in form fields. Do not claim screenshots or OCR can be prevented.

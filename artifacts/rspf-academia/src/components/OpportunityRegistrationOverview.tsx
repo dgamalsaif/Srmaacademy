@@ -6,6 +6,7 @@ import { useLanguage } from "@/lib/i18n";
 import { getResearchStatusLabel } from "@/lib/opportunityPricing";
 import type { ResearchOpportunity } from "@/lib/researchData";
 import { getEnglishOpportunityTitle } from "../lib/opportunityDisplay";
+import { ProtectedResearchWatermark } from "./ResearchProtection";
 
 interface Props {
   opportunity: ResearchOpportunity;
@@ -45,6 +46,8 @@ export default function OpportunityRegistrationOverview({ opportunity, showDetai
       <p className="mt-4 text-[11px] font-black uppercase tracking-wider text-[#117b59]">
         {localize("فرصة بحثية جديدة", "New research opportunity")}
       </p>
+      <div data-protected="research" className="relative select-none" style={{ userSelect: "none", WebkitUserSelect: "none" }}>
+      <ProtectedResearchWatermark />
       <h1
         id="opp-overview-title"
         dir="ltr"
@@ -54,6 +57,7 @@ export default function OpportunityRegistrationOverview({ opportunity, showDetai
       >
         {englishTitle}
       </h1>
+      </div>
       {specialty && <p className="mt-2 text-sm font-bold text-[#117b59]">{localize("التخصص:", "Specialty:")} {specialty}</p>}
     </div>
   );
