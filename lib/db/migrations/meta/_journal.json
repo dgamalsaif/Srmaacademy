@@ -78,6 +78,13 @@
       "when": 1790007200000,
       "tag": "0010_sync_schema_metadata",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791145800466,
+      "tag": "0011_registration_answers",
+      "breakpoints": true
     }
   ]
 }
