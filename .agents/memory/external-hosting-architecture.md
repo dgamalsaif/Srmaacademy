@@ -22,3 +22,9 @@ Local API build success is not proof of a clean Render dependency installation.
 **Why:** the imported workspace's existing npm-installed dependencies allowed local builds while Render's pnpm installation missed a build plugin. A locally generated lockfile also was not present in Render's GitHub checkout.
 
 **How to apply:** distinguish a local bundle check from a clean dependency-install check when reporting deployment readiness; never claim the latter based only on the former. Recommend frozen-lockfile installs only after confirming the lockfile exists in the deployment's source checkout, not merely in the local workspace.
+
+External Render PostgreSQL connections require verified TLS even when the supplied URL has no SSL parameter. Keep internal private-network hostname handling separate; never disable certificate verification to make an external connection work.
+
+**Why:** a read-only check against the authorized Render database was rejected with PostgreSQL code `28000` without TLS and succeeded with verified TLS, without changing credentials.
+
+**How to apply:** use verified TLS for Render external database connections and report connection failures separately from migration or build failures.

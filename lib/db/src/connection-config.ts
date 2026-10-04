@@ -13,7 +13,7 @@ export function getPostgresConnectionConfig(databaseUrl: string): PoolConfig {
   const legacyVerifiedModes = ["prefer", "require", "verify-ca"];
   if (
     (sslMode && legacyVerifiedModes.includes(sslMode)) ||
-    (!sslMode && (parsed.hostname.endsWith(".neon.tech") || parsed.searchParams.get("ssl") === "true"))
+    (!sslMode && (parsed.hostname.endsWith(".neon.tech") || parsed.hostname.endsWith(".render.com") || parsed.searchParams.get("ssl") === "true"))
   ) {
     // Preserve pg's current verified TLS behavior explicitly, without disabling
     // certificate verification or relying on aliases that change in pg v9.

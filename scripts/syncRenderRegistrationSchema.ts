@@ -17,16 +17,20 @@ async function run() {
   const expectedDatabase = nameArgument >= 0 ? process.argv[nameArgument + 1] : undefined;
   const databaseUrl = process.env.RENDER_DATABASE_URL;
   if (!databaseUrl) throw new SafetyError("RENDER_DATABASE_URL is required. No database was changed.");
-  let host: string;
-  try { host = new URL(databaseUrl).hostname; }
+  let parsed: URL;
+  try { parsed = new URL(databaseUrl); }
   catch { throw new SafetyError("The supplied Render database URL is invalid."); }
+  const host = parsed.hostname;
   if (!host.startsWith("dpg-") || !host.endsWith(".render.com")) {
     throw new SafetyError("Use the external Render PostgreSQL URL. Refusing an unverified database target.");
   }
   if (apply && !expectedDatabase) {
     throw new SafetyError("Run --check first, then --apply --database <verified database name>.");
   }
-  const client = new pg.Client(getPostgresConnectionConfig(databaseUrl));
+  // External Render PostgreSQL requires TLS. Never downgrade certificate checks.
+  parsed.searchParams.delete("ssl");
+  parsed.searchParams.set("sslmode", "verify-full");
+  const client = new pg.Client(getPostgresConnectionConfig(parsed.toString()));
   let transactionOpen = false;
   try {
     await client.connect();
