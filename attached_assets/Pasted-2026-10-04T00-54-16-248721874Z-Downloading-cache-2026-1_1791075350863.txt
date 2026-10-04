@@ -1,0 +1,43 @@
+2026-10-04T00:54:16.248721874Z ==> Downloading cache...
+2026-10-04T00:54:16.276601076Z ==> Cloning from https://github.com/dgamalsaif/Srmaacademy
+2026-10-04T00:54:24.45090564Z ==> Checking out commit 3fed834be13448383f91641f2bdf214364496e02 in branch main
+2026-10-04T00:54:31.393894539Z ==> Downloaded 184MB in 7s. Extraction took 6s.
+2026-10-04T00:54:33.723944892Z ==> Requesting Node.js version 24
+2026-10-04T00:54:33.817487291Z ==> Using Node.js version 24.21.0 via environment variable NODE_VERSION
+2026-10-04T00:54:33.817499695Z ==> Docs on specifying a Node.js version: https://render.com/docs/node-version
+2026-10-04T00:54:33.850584687Z ==> Running build command 'pnpm install --prod=false --frozen-lockfile && pnpm --filter @workspace/api-server run build'...
+2026-10-04T00:54:36.476131053Z 
+2026-10-04T00:54:36.476159216Z > @workspace/api-server@0.0.0 build /opt/render/project/src/artifacts/api-server
+2026-10-04T00:54:36.476162689Z > node ./build.mjs
+2026-10-04T00:54:36.476164241Z 
+2026-10-04T00:54:37.077032443Z 
+2026-10-04T00:54:37.077051491Z   dist/index.mjs                       2.9mb ⚠️
+2026-10-04T00:54:37.077054555Z   dist/pino-worker.mjs               152.8kb
+2026-10-04T00:54:37.077056493Z   dist/pino-file.mjs                 141.5kb
+2026-10-04T00:54:37.07705845Z   dist/pino-pretty.mjs               115.2kb
+2026-10-04T00:54:37.077060482Z   dist/thread-stream-worker.mjs        7.3kb
+2026-10-04T00:54:37.077062738Z   dist/index.mjs.map                   5.3mb
+2026-10-04T00:54:37.077064671Z   dist/pino-worker.mjs.map           256.8kb
+2026-10-04T00:54:37.077066741Z   dist/pino-file.mjs.map             229.0kb
+2026-10-04T00:54:37.077069168Z   dist/pino-pretty.mjs.map           209.5kb
+2026-10-04T00:54:37.077071078Z   dist/thread-stream-worker.mjs.map   12.0kb
+2026-10-04T00:54:37.077072228Z 
+2026-10-04T00:54:37.077073968Z ⚡ Done in 550ms
+2026-10-04T00:54:38.607722696Z ==> Uploading build...
+2026-10-04T00:54:49.9556766Z ==> Uploaded in 8.0s. Compression took 3.4s
+2026-10-04T00:54:49.959337755Z ==> Build successful 🎉
+2026-10-04T00:54:50.852304596Z ==> Deploying...
+2026-10-04T00:54:50.925647726Z ==> Setting WEB_CONCURRENCY=1 by default, based on available CPUs in the instance
+2026-10-04T00:55:18.291240328Z ==> Running 'node --enable-source-maps artifacts/api-server/dist/index.mjs'
+2026-10-04T00:55:21.902056765Z {"level":30,"time":1791075321900,"pid":70,"hostname":"srv-dao0vmbtqb8s73dgi5tg-hibernate-7f44474b7d-xmn58","port":10000,"host":"0.0.0.0","msg":"Server listening"}
+2026-10-04T00:55:22.894769619Z {"level":30,"time":1791075322894,"pid":70,"hostname":"srv-dao0vmbtqb8s73dgi5tg-hibernate-7f44474b7d-xmn58","req":{"id":1,"method":"HEAD","url":"/"},"res":{"statusCode":404},"responseTime":57,"msg":"request completed"}
+2026-10-04T00:55:31.204368079Z {"level":30,"time":1791075331204,"pid":70,"hostname":"srv-dao0vmbtqb8s73dgi5tg-hibernate-7f44474b7d-xmn58","req":{"id":2,"method":"GET","url":"/api/readyz"},"res":{"statusCode":200},"responseTime":7,"msg":"request completed"}
+2026-10-04T00:55:31.208921437Z {"level":30,"time":1791075331208,"pid":70,"hostname":"srv-dao0vmbtqb8s73dgi5tg-hibernate-7f44474b7d-xmn58","req":{"id":3,"method":"GET","url":"/api/readyz"},"res":{"statusCode":200},"responseTime":3,"msg":"request completed"}
+2026-10-04T00:55:31.920617744Z ==> Your service is live 🎉
+2026-10-04T00:55:31.960762893Z {"level":30,"time":1791075331960,"pid":70,"hostname":"srv-dao0vmbtqb8s73dgi5tg-hibernate-7f44474b7d-xmn58","req":{"id":4,"method":"GET","url":"/"},"res":{"statusCode":404},"responseTime":2,"msg":"request completed"}
+2026-10-04T00:55:32.059117598Z ==> 
+2026-10-04T00:55:32.072594987Z ==> ///////////////////////////////////////////////////////////
+2026-10-04T00:55:32.077574437Z ==> 
+2026-10-04T00:55:32.082464955Z ==> Available at your primary URL https://srma-api.onrender.com
+2026-10-04T00:55:32.086953751Z ==> 
+2026-10-04T00:55:32.090609164Z ==> ///////////////////////////////////////////////////////////
