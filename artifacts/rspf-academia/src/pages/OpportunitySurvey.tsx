@@ -383,7 +383,7 @@ export default function OpportunitySurvey() {
                   <div>
                     <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
                       <Sparkles size={18} className="text-[#117b59]" />
-                      <span>{localize("استمارة التسجيل والانضمام للفرصة البحثية", "Opportunity Registration Survey")}</span>
+                      <span>{localize("سجل الآن", "Register now")}</span>
                     </h2>
                     <p className="text-xs text-slate-500 mt-0.5">
                       {localize("املأ البيانات التالية لحجز مقعدك والتواصل مع المنسق المعتمد.", "Fill out the fields below to reserve your seat.")}

@@ -29,6 +29,7 @@ export default function OpportunityRegistrationOverview({ opportunity, showDetai
   const { direction, language, localize } = useLanguage();
   const englishTitle = getEnglishOpportunityTitle(opportunity);
   const code = `RES-2026-${opportunity.id}`;
+  const specialty = localize(opportunity.specialtyAr, opportunity.specialtyEn, opportunity.specialty);
 
   const header = (
     <div className="p-5 sm:p-7">
@@ -42,7 +43,7 @@ export default function OpportunityRegistrationOverview({ opportunity, showDetai
         )}
       </div>
       <p className="mt-4 text-[11px] font-black uppercase tracking-wider text-[#117b59]">
-        {localize("الدراسة التي ستسجل فيها", "The study you are registering for")}
+        {localize("فرصة بحثية جديدة", "New research opportunity")}
       </p>
       <h1
         id="opp-overview-title"
@@ -53,6 +54,7 @@ export default function OpportunityRegistrationOverview({ opportunity, showDetai
       >
         {englishTitle}
       </h1>
+      {specialty && <p className="mt-2 text-sm font-bold text-[#117b59]">{localize("التخصص:", "Specialty:")} {specialty}</p>}
     </div>
   );
 
@@ -61,13 +63,13 @@ export default function OpportunityRegistrationOverview({ opportunity, showDetai
   if (!showDetails) {
     return (
       <section aria-labelledby="opp-overview-title" className={shell} dir={direction} data-testid="section-opportunity-overview-minimal">
+        <OpportunityMedia research={opportunity} className="h-56 w-full" />
         <div className="border-s-4 border-[#117b59]">{header}</div>
       </section>
     );
   }
 
   const description = localize(opportunity.descriptionAr, opportunity.descriptionEn, opportunity.description);
-  const specialty = localize(opportunity.specialtyAr, opportunity.specialtyEn, opportunity.specialty);
   const issnLines = [
     opportunity.journalIssn && `ISSN: ${opportunity.journalIssn}`,
     opportunity.journalPubmed && `PubMed: ${opportunity.journalPubmed}`,

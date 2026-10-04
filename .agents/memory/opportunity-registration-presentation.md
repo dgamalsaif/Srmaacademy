@@ -15,4 +15,8 @@ The user selected one global control to show or hide complete details for all op
 
 **Why:** these are the user's explicit requirements and selected visibility scope.
 
+Participant Portal sharing must copy an announcement headed «فرصة بحثية جديدة», followed by the English study title, specialty and opportunity link. Social previews must show the opportunity title and image; opening the link must reach «سجل الآن» with the study title, image and participant input fields. This applies to all opportunities.
+
+**Why:** the user explicitly distinguished broken Participant Portal links from working Admin image links and specified this sharing format. The basic title, specialty and image identify the selected study even when additional details are hidden.
+
 **How to apply:** preserve this combined public registration experience when changing cards, metadata, sharing, or admin controls. Do not restore the older details-first sharing flow or introduce a different visibility scope without asking.

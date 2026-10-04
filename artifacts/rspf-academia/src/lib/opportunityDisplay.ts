@@ -20,3 +20,20 @@ export function getOpportunityRegistrationPath(id: number): string {
 export function getOpportunitySharePath(id: number): string {
   return `/share/research/${id}`;
 }
+
+/** Copy the announcement together with the HTML preview link, never a raw image. */
+export function getOpportunityShareText(
+  opportunity: OpportunityTitle & { specialtyAr?: string | null; specialtyEn?: string | null; specialty?: string | null },
+  origin: string,
+  language = "ar",
+): string {
+  const english = language === "en";
+  const specialty = (english ? opportunity.specialtyEn : opportunity.specialtyAr)
+    || opportunity.specialtyEn || opportunity.specialtyAr || opportunity.specialty;
+  return [
+    english ? "New research opportunity" : "فرصة بحثية جديدة",
+    getEnglishOpportunityTitle(opportunity),
+    specialty?.trim() ? `${english ? "Specialty" : "التخصص"}: ${specialty.trim()}` : "",
+    `${origin.replace(/\/+$/, "")}${getOpportunitySharePath(opportunity.id)}${english ? "?lang=en" : ""}`,
+  ].filter(Boolean).join("\n");
+}

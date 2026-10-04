@@ -12,7 +12,7 @@ import { OpportunityCurrency, useCurrency } from "@/lib/opportunityPricing";
 import { useLanguage } from "@/lib/i18n";
 import SpecialtyFilter, { buildSpecialtyOptions, canonicalSpecialty, specialtyMatches } from "@/components/SpecialtyFilter";
 import { ProtectedResearchWatermark, AntiCaptureResearchTitle } from "@/components/ResearchProtection";
-import { getEnglishOpportunityTitle, getOpportunitySharePath } from "@/lib/opportunityDisplay";
+import { getEnglishOpportunityTitle, getOpportunityShareText } from "@/lib/opportunityDisplay";
 import { apiFetch } from "@/lib/api";
 
 export default function ParticipantPortal() {
@@ -22,15 +22,16 @@ export default function ParticipantPortal() {
   const [copiedOppId, setCopiedOppId] = useState<number | null>(null);
   const [copyErrorId, setCopyErrorId] = useState<number | null>(null);
 
-  const handleCopyOppLink = async (oppId: number) => {
-    const url = `${window.location.origin}${getOpportunitySharePath(oppId)}`;
+  const handleCopyOppLink = async (opportunity: ResearchOpportunity) => {
+    const oppId = opportunity.id;
+    const text = getOpportunityShareText(opportunity, window.location.origin, language);
     setCopyErrorId(null);
     try {
       if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(url);
+        await navigator.clipboard.writeText(text);
       } else {
         const input = document.createElement("textarea");
-        input.value = url;
+        input.value = text;
         input.style.position = "fixed";
         input.style.opacity = "0";
         document.body.appendChild(input);
@@ -429,12 +430,12 @@ export default function ParticipantPortal() {
                                 ? "bg-emerald-50 text-emerald-800 border-emerald-300 font-bold"
                                 : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80 border-slate-200/60"
                             }`}
-                            onClick={() => handleCopyOppLink(opp.id)}
+                            onClick={() => handleCopyOppLink(opp)}
                           >
                             {copiedOppId === opp.id ? (
                               <>
                                 <Check size={13} className="text-emerald-600" />
-                                <span>{localize("تم نسخ رابط التسجيل", "Registration link copied")}</span>
+                                <span>{localize("تم نسخ الفرصة ورابط التسجيل", "Opportunity and registration link copied")}</span>
                               </>
                             ) : (
                               <>
@@ -443,7 +444,7 @@ export default function ParticipantPortal() {
                               </>
                             )}
                           </button>
-                           {copyErrorId === opp.id && <input readOnly dir="ltr" aria-label={localize("رابط المشاركة للنسخ اليدوي", "Share link for manual copy")} value={`${window.location.origin}${getOpportunitySharePath(opp.id)}`} onFocus={(event) => event.currentTarget.select()} className="w-full min-w-0 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-700 outline-none focus:ring-2 focus:ring-emerald-600" />}
+                           {copyErrorId === opp.id && <textarea readOnly rows={5} dir={direction} aria-label={localize("الفرصة ورابط المشاركة للنسخ اليدوي", "Opportunity and share link for manual copy")} value={getOpportunityShareText(opp, window.location.origin, language)} onFocus={(event) => event.currentTarget.select()} className="w-full min-w-0 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-700 outline-none focus:ring-2 focus:ring-emerald-600" />}
                         </div>
                       </div>
                     );

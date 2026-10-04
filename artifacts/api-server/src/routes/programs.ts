@@ -7,7 +7,7 @@ import { desc, eq, sql } from "drizzle-orm";
 import { readSession, requireCoordinator, requireOwner } from "../middlewares/coordinatorAuth";
 import { getManagedOwner } from "../middlewares/ownerAuth";
 import { getSiteContentSettings, OpportunityFieldId } from "../lib/siteContentSettings";
-import { getEnglishOpportunityTitle } from "../lib/opportunityDisplay";
+import { getEnglishOpportunityTitle, getOpportunityShareSummary } from "../lib/opportunityDisplay";
 import { addImportedSpecialties, importResearchOpportunities, PROGRAM_CATALOG_LOCK_ID, type ResearchOpportunityImportRow } from "../lib/researchOpportunityImport";
 import { getResearchImageBytes, getResearchImageUrl, ResearchImageStorageError, ResearchImageValidationError, resolveResearchImageUploadToken, uploadResearchImage } from "../lib/researchImageStorage";
 import { ensureProgramCapacityModel, PROGRAM_CAPACITY_LOCK_NAMESPACE, type DatabaseTransaction } from "../lib/programCapacity";
@@ -389,8 +389,7 @@ router.get("/programs/:id/share", async (req, res) => {
   const english = req.query.lang === "en";
   const destination = `${origin}/survey?rid=RES-2026-${program.id}${english ? "&lang=en" : ""}`;
   const shareUrl = `${origin}/share/research/${program.id}${english ? "?lang=en" : ""}`;
-  const title = getEnglishOpportunityTitle(program);
-  const specialty = (english ? program.specialtyEn : program.specialtyAr) || program.specialtyEn || program.specialtyAr || "";
+  const { title, specialty, heading, previewTitle, specialtyLine } = getOpportunityShareSummary(program, english);
   const rawDescription = (english ? program.descriptionEn : program.descriptionAr) || program.descriptionEn || program.descriptionAr || "";
   
   const siteSettings = await getSiteContentSettings().catch(() => null);
@@ -402,8 +401,7 @@ router.get("/programs/:id/share", async (req, res) => {
     ? `${program.seatsLeft} of ${program.totalSeats} seats available`
     : `المقاعد المتاحة: ${program.seatsLeft} من أصل ${program.totalSeats}`;
   
-  const metaDesc = showDetails ? [
-    specialty ? `[${specialty}]` : "",
+  const detailDescription = showDetails ? [
     rawDescription ? rawDescription.slice(0, 120) : (english ? "Medical research opportunity for physicians and board applicants." : "فرصة بحثية ونشر علمي طبي للأطباء والريزيدنت لدعم البورد والزمالات."),
     journal,
     seatsInfo,
@@ -412,6 +410,7 @@ router.get("/programs/:id/share", async (req, res) => {
     ? `Register for this research opportunity at ${siteName}.`
     : `سجل في هذه الفرصة البحثية لدى ${siteName}.`);
 
+  const metaDesc = [specialtyLine, detailDescription].filter(Boolean).join(" • ");
   const imageVersion = program.updatedAt?.getTime?.() ?? program.createdAt.getTime();
   const image = `${origin}/api/programs/${program.id}/image?v=${imageVersion}`;
 
@@ -421,7 +420,7 @@ router.get("/programs/:id/share", async (req, res) => {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>${escapeHtml(title)} | ${escapeHtml(siteName)}</title>
+   <title>${escapeHtml(previewTitle)} | ${escapeHtml(siteName)}</title>
   <meta name="description" content="${escapeHtml(metaDesc)}">
   <link rel="canonical" href="${escapeHtml(shareUrl)}">
 
@@ -430,35 +429,35 @@ router.get("/programs/:id/share", async (req, res) => {
   <meta property="og:site_name" content="${escapeHtml(siteName)}">
   <meta property="og:locale" content="${english ? "en_US" : "ar_SA"}">
   <meta property="og:url" content="${escapeHtml(shareUrl)}">
-  <meta property="og:title" content="${escapeHtml(title)}">
+   <meta property="og:title" content="${escapeHtml(previewTitle)}">
   <meta property="og:description" content="${escapeHtml(metaDesc)}">
   <meta property="og:image" content="${escapeHtml(image)}">
   <meta property="og:image:secure_url" content="${escapeHtml(image)}">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="${escapeHtml(title)}">
 
   <!-- Twitter / X Cards -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:url" content="${escapeHtml(shareUrl)}">
-  <meta name="twitter:title" content="${escapeHtml(title)}">
+   <meta name="twitter:title" content="${escapeHtml(previewTitle)}">
   <meta name="twitter:description" content="${escapeHtml(metaDesc)}">
   <meta name="twitter:image" content="${escapeHtml(image)}">
   <meta name="twitter:image:alt" content="${escapeHtml(title)}">
 
-  <!-- Instant Redirection for Humans Clicking the Card -->
-  <meta http-equiv="refresh" content="0;url=${escapeHtml(destination)}">
+   <!-- JavaScript redirects visitors, not crawlers, to the registration form.
+        Do not add meta refresh: crawlers may follow it to generic SPA metadata. -->
   <script>window.location.replace(${JSON.stringify(destination)});</script>
 </head>
 <body style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f8fafc;color:#0f2744;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;text-align:center;">
   <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:20px;padding:32px;max-width:520px;box-shadow:0 10px 25px -5px rgba(0,0,0,0.08);">
     <div style="display:inline-block;padding:4px 12px;background:#ecfdf5;color:#047857;border-radius:999px;font-size:12px;font-weight:700;margin-bottom:12px;">
-      ${escapeHtml((showDetails && specialty) || (english ? "Research Opportunity" : "فرصة بحثية"))}
+       ${escapeHtml(heading)}
     </div>
     <h1 style="margin:0 0 12px 0;font-size:18px;font-weight:800;color:#0f2744;line-height:1.4;">${escapeHtml(title)}</h1>
+     ${specialty ? `<p style="font-weight:700;">${escapeHtml(specialtyLine)}</p>` : ""}
+     <img src="${escapeHtml(image)}" alt="${escapeHtml(title)}" style="display:block;width:100%;height:auto;border-radius:12px;margin:16px 0;">
     <p style="margin:0 0 24px 0;color:#64748b;font-size:14px;line-height:1.6;">${english ? "Redirecting you to the research opportunity on the website..." : "جارٍ توجيهك إلى تفاصيل الفرصة البحثية على الموقع..."}</p>
     <a href="${escapeHtml(destination)}" style="display:inline-block;background:#0c3156;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 28px;border-radius:12px;font-size:14px;box-shadow:0 4px 12px rgba(12,49,86,0.25);">
-      ${english ? "Open Opportunity on Website 🔗" : "فتح الفرصة على الموقع 🔗"}
+       ${english ? "Register now" : "سجل الآن"}
     </a>
   </div>
 </body>

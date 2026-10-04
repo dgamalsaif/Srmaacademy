@@ -95,7 +95,7 @@ function Router() {
             <Route path="/research/:id" component={ResearchDetail} />
             <Route path="/share/research/:id">
               {(params) => /^[1-9]\d*$/.test(params.id)
-                ? <Redirect to={getOpportunityRegistrationPath(Number(params.id))} />
+                ? <Redirect to={`${getOpportunityRegistrationPath(Number(params.id))}${new URLSearchParams(window.location.search).get("lang") === "en" ? "&lang=en" : ""}`} />
                 : <NotFound />}
             </Route>
             <Route path="/survey" component={OpportunitySurvey} />
