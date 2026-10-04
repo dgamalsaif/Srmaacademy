@@ -12,7 +12,7 @@ import { OpportunityCurrency, useCurrency } from "@/lib/opportunityPricing";
 import { useLanguage } from "@/lib/i18n";
 import SpecialtyFilter, { buildSpecialtyOptions, canonicalSpecialty, specialtyMatches } from "@/components/SpecialtyFilter";
 import { ProtectedResearchWatermark, AntiCaptureResearchTitle } from "@/components/ResearchProtection";
-import { getEnglishOpportunityTitle, getOpportunityRegistrationPath } from "@/lib/opportunityDisplay";
+import { getEnglishOpportunityTitle, getOpportunitySharePath } from "@/lib/opportunityDisplay";
 import { apiFetch } from "@/lib/api";
 
 export default function ParticipantPortal() {
@@ -23,7 +23,7 @@ export default function ParticipantPortal() {
   const [copyErrorId, setCopyErrorId] = useState<number | null>(null);
 
   const handleCopyOppLink = async (oppId: number) => {
-    const url = `${window.location.origin}${getOpportunityRegistrationPath(oppId)}`;
+    const url = `${window.location.origin}${getOpportunitySharePath(oppId)}`;
     setCopyErrorId(null);
     try {
       if (navigator.clipboard?.writeText) {
@@ -443,7 +443,7 @@ export default function ParticipantPortal() {
                               </>
                             )}
                           </button>
-                           {copyErrorId === opp.id && <input readOnly dir="ltr" aria-label={localize("رابط التسجيل للنسخ اليدوي", "Registration link for manual copy")} value={`${window.location.origin}${getOpportunityRegistrationPath(opp.id)}`} onFocus={(event) => event.currentTarget.select()} className="w-full min-w-0 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-700 outline-none focus:ring-2 focus:ring-emerald-600" />}
+                           {copyErrorId === opp.id && <input readOnly dir="ltr" aria-label={localize("رابط المشاركة للنسخ اليدوي", "Share link for manual copy")} value={`${window.location.origin}${getOpportunitySharePath(opp.id)}`} onFocus={(event) => event.currentTarget.select()} className="w-full min-w-0 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-700 outline-none focus:ring-2 focus:ring-emerald-600" />}
                         </div>
                       </div>
                     );

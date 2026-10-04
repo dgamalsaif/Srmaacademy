@@ -30,7 +30,7 @@ import { PageSeo } from "@/lib/seo";
 import { useToast } from "@/hooks/use-toast";
 import { apiFetch } from "@/lib/api";
 import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
-import { getEnglishOpportunityTitle, getOpportunityRegistrationPath } from "@/lib/opportunityDisplay";
+import { getEnglishOpportunityTitle, getOpportunityRegistrationPath, getOpportunitySharePath } from "@/lib/opportunityDisplay";
 
 const API_BASE = "/api";
 
@@ -125,7 +125,7 @@ export default function OpportunitySurvey() {
 
   const handleCopySurveyLink = async () => {
     if (!selectedOpp) return;
-    const link = `${window.location.origin}${getOpportunityRegistrationPath(selectedOpp.id)}`;
+    const link = `${window.location.origin}${getOpportunitySharePath(selectedOpp.id)}`;
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(link);
@@ -134,8 +134,11 @@ export default function OpportunitySurvey() {
         input.value = link;
         document.body.appendChild(input);
         input.select();
-        document.execCommand("copy");
-        document.body.removeChild(input);
+        try {
+          if (!document.execCommand("copy")) throw new Error("Copy unavailable");
+        } finally {
+          input.remove();
+        }
       }
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 2500);

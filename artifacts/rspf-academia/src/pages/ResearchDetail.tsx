@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PageSeo } from "@/lib/seo";
 import { ProtectedResearchWatermark, AntiCaptureResearchTitle } from "@/components/ResearchProtection";
 import { apiFetch } from "@/lib/api";
-import { getEnglishOpportunityTitle, getOpportunityRegistrationPath } from "@/lib/opportunityDisplay";
+import { getEnglishOpportunityTitle, getOpportunityRegistrationPath, getOpportunitySharePath } from "@/lib/opportunityDisplay";
 
 export default function ResearchDetail() {
   const { direction, language, localize, t } = useLanguage();
@@ -78,7 +78,7 @@ export default function ResearchDetail() {
   ).toString();
 
   const handleCopyLink = async () => {
-    const url = `${window.location.origin}${getOpportunityRegistrationPath(research.id)}`;
+    const url = `${window.location.origin}${getOpportunitySharePath(research.id)}`;
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(url);
@@ -87,8 +87,11 @@ export default function ResearchDetail() {
         input.value = url;
         document.body.appendChild(input);
         input.select();
-        document.execCommand("copy");
-        document.body.removeChild(input);
+        try {
+          if (!document.execCommand("copy")) throw new Error("Copy unavailable");
+        } finally {
+          input.remove();
+        }
       }
       setCopiedLink(true);
       setTimeout(() => setCopiedLink(false), 3000);
@@ -100,13 +103,17 @@ export default function ResearchDetail() {
         ),
       });
     } catch {
-      setCopiedLink(true);
-      setTimeout(() => setCopiedLink(false), 3000);
+      setCopiedLink(false);
+      toast({
+        title: localize("تعذر نسخ الرابط", "Could not copy the link"),
+        description: localize("استخدم زر المشاركة أو أعد المحاولة.", "Use the share button or try again."),
+        variant: "destructive",
+      });
     }
   };
 
   const handleShareLink = async () => {
-    const url = `${window.location.origin}${getOpportunityRegistrationPath(research.id)}`;
+    const url = `${window.location.origin}${getOpportunitySharePath(research.id)}`;
     if (navigator.share) {
       try {
         await navigator.share({

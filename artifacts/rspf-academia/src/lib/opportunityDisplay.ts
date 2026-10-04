@@ -15,3 +15,8 @@ export function getEnglishOpportunityTitle(opportunity: OpportunityTitle): strin
 export function getOpportunityRegistrationPath(id: number): string {
   return `/survey?rid=RES-2026-${id}`;
 }
+
+/** Public HTML metadata for link previews; visitors continue to registration. */
+export function getOpportunitySharePath(id: number): string {
+  return `/share/research/${id}`;
+}

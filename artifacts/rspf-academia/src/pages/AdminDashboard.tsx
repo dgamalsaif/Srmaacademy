@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { Plus, Pencil, Trash2, Eye, X, ChevronRight, LogOut, Search, Users, BookOpen, TrendingUp, AlertCircle, UserPlus, GraduationCap, Award, Landmark, LayoutDashboard, CreditCard, Settings, ClipboardList, CheckCircle, FlaskConical, Stethoscope, User, Clock, Copy, Check, Edit, FileSpreadsheet, Database, Layers, CheckSquare, ExternalLink } from "lucide-react";
 import { ResearchOpportunity, SPECIALTY_COLORS } from "@/lib/researchData";
+import { getOpportunitySharePath } from "@/lib/opportunityDisplay";
 import RegistrationModal from "@/components/RegistrationModal";
 import BulkEditModal from "@/components/BulkEditModal";
 import CoordinatorPortalSettingsPanel from "@/components/CoordinatorPortalSettingsPanel";
@@ -545,7 +546,7 @@ const STATUS_MAP: Record<string, { label: string, className: string }> = {
 function ProgramCard({ research, onRegister, onEdit, onDelete, canManage, isSelected, onToggleSelect }: any) {
   const [copied, setCopied] = useState(false);
   const copyLink = () => {
-    navigator.clipboard.writeText(`${window.location.origin}/research/${research.id}`);
+    navigator.clipboard.writeText(`${window.location.origin}${getOpportunitySharePath(research.id)}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }

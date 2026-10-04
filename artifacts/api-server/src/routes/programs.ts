@@ -388,6 +388,7 @@ router.get("/programs/:id/share", async (req, res) => {
   const origin = requestOrigin(req);
   const english = req.query.lang === "en";
   const destination = `${origin}/survey?rid=RES-2026-${program.id}${english ? "&lang=en" : ""}`;
+  const shareUrl = `${origin}/share/research/${program.id}${english ? "?lang=en" : ""}`;
   const title = getEnglishOpportunityTitle(program);
   const specialty = (english ? program.specialtyEn : program.specialtyAr) || program.specialtyEn || program.specialtyAr || "";
   const rawDescription = (english ? program.descriptionEn : program.descriptionAr) || program.descriptionEn || program.descriptionAr || "";
@@ -422,13 +423,13 @@ router.get("/programs/:id/share", async (req, res) => {
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>${escapeHtml(title)} | ${escapeHtml(siteName)}</title>
   <meta name="description" content="${escapeHtml(metaDesc)}">
-  <link rel="canonical" href="${escapeHtml(destination)}">
+  <link rel="canonical" href="${escapeHtml(shareUrl)}">
 
   <!-- OpenGraph / Facebook / WhatsApp / Telegram / LinkedIn -->
   <meta property="og:type" content="article">
   <meta property="og:site_name" content="${escapeHtml(siteName)}">
   <meta property="og:locale" content="${english ? "en_US" : "ar_SA"}">
-  <meta property="og:url" content="${escapeHtml(destination)}">
+  <meta property="og:url" content="${escapeHtml(shareUrl)}">
   <meta property="og:title" content="${escapeHtml(title)}">
   <meta property="og:description" content="${escapeHtml(metaDesc)}">
   <meta property="og:image" content="${escapeHtml(image)}">
@@ -439,7 +440,7 @@ router.get("/programs/:id/share", async (req, res) => {
 
   <!-- Twitter / X Cards -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:url" content="${escapeHtml(destination)}">
+  <meta name="twitter:url" content="${escapeHtml(shareUrl)}">
   <meta name="twitter:title" content="${escapeHtml(title)}">
   <meta name="twitter:description" content="${escapeHtml(metaDesc)}">
   <meta name="twitter:image" content="${escapeHtml(image)}">

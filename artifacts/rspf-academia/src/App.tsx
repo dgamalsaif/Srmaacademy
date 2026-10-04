@@ -1,7 +1,8 @@
 import { ClerkProvider } from "@clerk/react";
 import { publishableKeyFromHost } from "@clerk/react/internal";
 import { shadcn } from "@clerk/themes";
-import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
+import { Switch, Route, Redirect, Router as WouterRouter, useLocation } from "wouter";
+import { getOpportunityRegistrationPath } from "@/lib/opportunityDisplay";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -92,6 +93,11 @@ function Router() {
             <Route path="/coordinator/dashboard" component={AdminDashboard} />
             <Route path="/coordinator/submissions" component={AdminSubmissions} />
             <Route path="/research/:id" component={ResearchDetail} />
+            <Route path="/share/research/:id">
+              {(params) => /^[1-9]\d*$/.test(params.id)
+                ? <Redirect to={getOpportunityRegistrationPath(Number(params.id))} />
+                : <NotFound />}
+            </Route>
             <Route path="/survey" component={OpportunitySurvey} />
             <Route path="/register" component={OpportunitySurvey} />
             <Route component={NotFound} />
