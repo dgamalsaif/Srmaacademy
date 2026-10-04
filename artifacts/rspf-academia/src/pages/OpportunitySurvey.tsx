@@ -201,9 +201,9 @@ export default function OpportunitySurvey() {
           researchId: selectedOpp.id,
           researchTitle: getEnglishOpportunityTitle(selectedOpp),
           academicDegree: academicDegree || undefined,
-          hasResearchExp: hasResearchExp || undefined,
-          researchExpDetails: researchExpDetails || undefined,
-          agreeFeesAndTasks: agreeFeesAndTasks || undefined,
+          hasResearchExperience: hasResearchExp || undefined,
+          researchExperienceDetails: researchExpDetails || undefined,
+          agreedToFeeAndTasks: agreeFeesAndTasks || undefined,
           authorRole,
         }),
       });

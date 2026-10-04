@@ -5,6 +5,7 @@ import { sendServiceRequestEmail } from "../lib/mailer";
 import { type StaffSession, requireCoordinator, requireOwner } from "../middlewares/coordinatorAuth";
 import { getSiteContentSettings } from "../lib/siteContentSettings";
 import { ensureProgramCapacityModel, PROGRAM_CAPACITY_LOCK_NAMESPACE } from "../lib/programCapacity";
+import { insertCompatibleRegistration, normalizeRegistrationAnswers } from "../lib/registrationCompatibility";
 
 const router = Router();
 const AUTHOR_ROLES = new Set(["first_author", "co_author"]);
@@ -17,7 +18,9 @@ class RegistrationCapacityError extends Error {
 
 async function createRegistration(req: Request, res: Response, coordinatorId: number | null, audience: "participant" | "coordinator") {
   const settings = await getSiteContentSettings();
-  const source = req.body && typeof req.body === "object" ? req.body as Record<string, unknown> : {};
+  const source = normalizeRegistrationAnswers(
+    req.body && typeof req.body === "object" ? req.body as Record<string, unknown> : {},
+  );
   const valueOf = (fieldId: string) => typeof source[fieldId] === "string" ? source[fieldId].trim() : "";
 
   for (const field of settings.registrationFields) {
@@ -101,12 +104,12 @@ async function createRegistration(req: Request, res: Response, coordinatorId: nu
       const coAuthorSeatsLeft = program.coAuthorSeatsLeft - (isFirstAuthor ? 0 : 1);
       const seatsLeft = firstAuthorSeatsLeft + coAuthorSeatsLeft;
       const researchTitle = program.titleAr || program.titleEn;
-      const [registration] = await tx.insert(registrationsTable).values({
+      const registration = await insertCompatibleRegistration(tx, registrationsTable, {
         ...parsed.data,
         authorRole,
         researchTitle,
         coordinatorId,
-      }).returning();
+      });
       await tx.update(researchProgramsTable).set({
         firstAuthorSeatsLeft,
         coAuthorSeatsLeft,

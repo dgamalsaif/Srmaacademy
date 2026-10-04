@@ -1,4 +1,5 @@
 - [Registration email delivery](registration-email-delivery.md) — distinguish a saved registration from a successfully delivered email whenever SMTP may be unavailable.
+- [Registration verification](registration-verification.md) — development success is not proof of PostgreSQL defaults, seat allocation or transaction rollback.
 - [Database migration baseline](database-migration-baseline.md) — verify Drizzle migration snapshots before generating a new migration; a missing baseline can produce full table creation SQL.
 - [Owner and coordinator authentication](owner-coordinator-auth.md) — keep Clerk owner access separate from coordinator access-code sessions; public participant routes stay open.
 - [External hosting architecture](external-hosting-architecture.md) — Pages serves the frontend, an API-only Worker proxies to Render, and images remain unmigrated by choice.
