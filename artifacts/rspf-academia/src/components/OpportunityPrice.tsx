@@ -19,8 +19,8 @@ interface OpportunityPriceProps {
 }
 
 export default function OpportunityPrice({
-  originalSar = 1500,
-  discountedSar = 1000,
+  originalSar: providedOriginal,
+  discountedSar: providedDiscounted,
   currency: propCurrency,
   onCurrencyChange,
   compact = false,
@@ -37,6 +37,11 @@ export default function OpportunityPrice({
     globalCurrency.setCurrency(next);
   };
 
+  const originalSar = providedOriginal ?? providedDiscounted;
+  const discountedSar = providedDiscounted ?? providedOriginal;
+  if (originalSar === undefined || discountedSar === undefined) {
+    return <p className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-600">{localize("الرسوم غير محددة؛ تواصل مع الأكاديمية للاستفسار.", "Fees are not specified; contact the academy for details.")}</p>;
+  }
   const discount = getDiscountPercentage(originalSar, discountedSar);
   const dual = formatDualOpportunityMoney(discountedSar, activeCurrency, language);
   const dualOriginal = formatDualOpportunityMoney(originalSar, activeCurrency, language);
@@ -67,7 +72,7 @@ export default function OpportunityPrice({
                 : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
             }`}
           >
-            🇸🇦 SAR
+            SAR
           </button>
           <button
             type="button"
@@ -79,7 +84,7 @@ export default function OpportunityPrice({
                 : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
             }`}
           >
-            🇺🇸 USD
+            USD
           </button>
         </div>
       </div>
@@ -88,7 +93,7 @@ export default function OpportunityPrice({
       <div className="flex items-end justify-between gap-3">
         <div>
           <p className="text-[11px] text-slate-500 font-semibold mb-0.5">
-            {localize("السعر النهائي بعد التخفيض", "Discounted Final Price")}
+            {discount > 0 ? localize("السعر بعد التخفيض", "Discounted price") : localize("رسوم المشاركة", "Participation fee")}
           </p>
           <div className="flex items-baseline gap-2">
             <span
@@ -116,9 +121,9 @@ export default function OpportunityPrice({
         </div>
 
         <div className="text-left">
-          <p dir="ltr" className="text-xs text-slate-400 line-through font-semibold">
+          {discount > 0 && <p dir="ltr" className="text-xs text-slate-400 line-through font-semibold">
             {dualOriginal.primary}
-          </p>
+          </p>}
           {discount > 0 && (
             <span className="mt-1 inline-block rounded-full bg-[#e9a020] px-2.5 py-0.5 text-[10px] font-black text-[#0c3156] shadow-2xs">
               {localize("وفر", "Save")} {discount.toFixed(0)}%

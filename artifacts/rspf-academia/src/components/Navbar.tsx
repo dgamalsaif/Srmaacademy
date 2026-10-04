@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Check, ChevronDown, Languages, Menu, MessageCircle, X } from "lucide-react";
 import BrandLogo from "@/components/BrandLogo";
@@ -14,6 +14,13 @@ export default function Navbar() {
   const { t, language, setLanguage } = useLanguage();
   const { currency, setCurrency } = useCurrency();
   const { data: settings } = useSiteContentSettings();
+  useEffect(() => { setMobileOpen(false); }, [location]);
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMobileOpen(false); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [mobileOpen]);
   const contact = getContactUsHref(settings?.brand);
   const contactLabel = language === "ar" ? contact.labelAr : contact.labelEn;
   const languageLabel = language === "ar" ? "اللغة" : "Language";
@@ -31,29 +38,24 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className="sticky top-0 z-50 bg-white shadow-md border-b border-slate-100">
-      <div className="w-full max-w-none mx-auto px-4 sm:px-6 lg:px-8">
+    <nav aria-label={language === "ar" ? "التنقل الرئيسي" : "Main navigation"} className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 gap-2 sm:gap-4">
           {/* Zone 1: Logo & Brand (Always at reading start: Right in RTL, Left in LTR) */}
-          <Link href="/" data-testid="link-logo" className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+          <Link href="/" data-testid="link-logo" className="flex shrink-0 items-center gap-2">
             <BrandLogo
               src={settings?.brand.logoUrl}
               animationEnabled={settings?.brand.logoAnimationEnabled}
               alt={settings?.brand.siteNameAr || settings?.brand.siteNameEn || "SRMA Research Academy"}
-              className="h-10 w-16 rounded-xl border border-[#0C3156]/15 bg-white object-contain shadow-sm sm:h-11"
+              className="h-10 w-14 max-h-10 max-w-14 rounded-lg border border-[#0C3156]/15 bg-white object-contain"
             />
-            <div className="flex flex-col">
-              <span className="max-w-36 sm:max-w-48 truncate text-base sm:text-lg md:text-xl font-black tracking-tight text-[#0C3156]">
-                {language === "ar" ? settings?.brand.siteNameAr : settings?.brand.siteNameEn || "SRMA"}
-              </span>
-              <span className="text-[10px] text-slate-500 font-medium tracking-wide truncate max-w-36 sm:max-w-48">
-                {language === "ar" ? settings?.brand.siteNameAr : settings?.brand.siteNameEn}
-              </span>
-            </div>
+            <span className="max-w-[9rem] truncate text-base font-black tracking-tight text-[#0C3156] sm:max-w-[13rem] lg:max-w-24 xl:max-w-28">
+              {(language === "ar" ? settings?.brand.siteNameAr : settings?.brand.siteNameEn) || "SRMA"}
+            </span>
           </Link>
 
           {/* Zone 2: Navigation links (Center, Desktop) */}
-          <div className="hidden md:flex items-center gap-1 justify-center flex-1">
+          <div className="hidden lg:flex items-center gap-0.5 justify-center flex-1 min-w-0">
             {navLinks.map((link) => {
               const isActive = location === link.href;
               return (
@@ -61,11 +63,12 @@ export default function Navbar() {
                   key={link.label}
                   href={link.href}
                   data-testid={`link-nav-${link.href.replace("/", "") || "home"}`}
-                  className={`px-3 lg:px-4 py-2 rounded-full text-xs lg:text-sm font-semibold transition-all whitespace-nowrap ${
+                  aria-current={isActive ? "page" : undefined}
+                   className={`px-2 py-2 rounded-full text-sm font-semibold transition-colors whitespace-nowrap ${
                     isActive
-                      ? "bg-[#0C3156] text-white shadow-sm"
+                      ? "bg-[#0C3156] text-white"
                       : link.highlight
-                      ? "bg-[#0C3156] text-white hover:bg-[#0a2847]"
+                      ? "text-[#117b59] hover:bg-[#e6f5ef]"
                       : "text-slate-700 hover:bg-slate-100 hover:text-[#0C3156]"
                   }`}
                 >
@@ -77,7 +80,7 @@ export default function Navbar() {
 
           {/* Zone 3: Actions & Controls (Always at reading end: Left in RTL, Right in LTR) */}
           <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-            <div className="hidden lg:block">
+            <div className="hidden xl:block">
               <InstallAppButton className="flex items-center gap-1.5 rounded-full border border-[#117b59]/25 bg-[#f3fbf8] px-3 py-2 text-xs font-black text-[#117b59] transition hover:bg-[#e6f5ef]" />
             </div>
 
@@ -86,7 +89,7 @@ export default function Navbar() {
               target={contact.isExternal ? "_blank" : undefined}
               rel={contact.isExternal ? "noopener noreferrer" : undefined}
               data-testid="link-nav-contact"
-              className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-[#117b59] px-3.5 py-2 text-xs font-black text-white shadow-sm transition hover:bg-[#0c6549]"
+              className="hidden xl:inline-flex items-center gap-1.5 rounded-full bg-[#117b59] px-3.5 py-2 text-xs font-black text-white shadow-sm transition hover:bg-[#0c6549]"
             >
               <MessageCircle size={14} />
               <span>{contactLabel}</span>
@@ -95,7 +98,7 @@ export default function Navbar() {
             <CurrencyToggle
               currency={currency}
               onSelect={setCurrency}
-              triggerClassName="hidden sm:inline-flex"
+              triggerClassName="hidden lg:inline-flex"
             />
 
             <LanguageMenu
@@ -103,15 +106,17 @@ export default function Navbar() {
               label={languageLabel}
               options={languageOptions}
               onSelect={setLanguage}
-              triggerClassName="hidden sm:inline-flex"
+              triggerClassName="hidden lg:inline-flex"
             />
 
             {/* Mobile hamburger */}
             <button
               data-testid="button-mobile-menu"
-              className="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100"
+              className="lg:hidden inline-flex h-11 w-11 items-center justify-center rounded-lg text-slate-700 hover:bg-slate-100"
               onClick={() => setMobileOpen(!mobileOpen)}
-              aria-label="القائمة"
+              aria-expanded={mobileOpen}
+              aria-controls="mobile-nav-panel"
+              aria-label={language === "ar" ? (mobileOpen ? "إغلاق القائمة" : "فتح القائمة") : (mobileOpen ? "Close menu" : "Open menu")}
             >
               {mobileOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
@@ -121,13 +126,14 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden bg-white border-t border-slate-100 px-4 pb-4 pt-2 shadow-lg">
+        <div id="mobile-nav-panel" className="lg:hidden max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-slate-100 bg-white px-4 pb-4 pt-2 shadow-lg">
           {navLinks.map((link) => (
             <Link
               key={link.label}
               href={link.href}
               data-testid={`link-mobile-${link.href.replace("/", "") || "home"}`}
-              className="block py-2.5 px-3 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#0C3156]"
+              aria-current={location === link.href ? "page" : undefined}
+              className={`block rounded-lg px-3 py-3 text-sm font-semibold ${location === link.href ? "bg-[#0C3156] text-white" : "text-slate-700 hover:bg-slate-50 hover:text-[#0C3156]"}`}
               onClick={() => setMobileOpen(false)}
             >
               {link.label}
@@ -199,7 +205,7 @@ export function LanguageMenu({
         <ChevronDown size={14} className={isOpen ? "rotate-180 transition-transform" : "transition-transform"} />
       </button>
       {isOpen && (
-        <div role="menu" className={`absolute z-[60] mt-2 min-w-36 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl ${mobile ? "left-0 right-0" : "right-0"}`}>
+        <div role="menu" className={`absolute z-[60] mt-2 min-w-36 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg ${mobile ? "inset-x-0" : "end-0"}`}>
         {options.map((option) => (
           <button
             type="button"
@@ -208,7 +214,7 @@ export function LanguageMenu({
             onClick={() => { onSelect(option.value); setIsOpen(false); }}
             role="menuitemradio"
             aria-checked={language === option.value}
-            className="flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2.5 text-right text-sm font-bold text-slate-700 transition hover:bg-[#e6f5ef] hover:text-[#117b59] focus:bg-[#e6f5ef] focus:text-[#117b59]"
+            className="flex w-full cursor-pointer items-center justify-between rounded-lg px-3 py-2.5 text-start text-sm font-bold text-slate-700 transition hover:bg-[#e6f5ef] hover:text-[#117b59] focus:bg-[#e6f5ef] focus:text-[#117b59]"
           >
             {option.label}
             {language === option.value && <Check size={15} className="text-[#117b59]" />}
@@ -251,7 +257,7 @@ export function CurrencyToggle({
           }`}
           title="Saudi Riyal (SAR)"
         >
-          🇸🇦 SAR
+          SAR
         </button>
         <button
           type="button"
@@ -266,7 +272,7 @@ export function CurrencyToggle({
           }`}
           title="US Dollar (USD)"
         >
-          🇺🇸 USD
+          USD
         </button>
       </div>
     </div>

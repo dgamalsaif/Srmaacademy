@@ -4,6 +4,9 @@ import { useLanguage } from "@/lib/i18n";
 import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
 
 const QUICK_LINKS = [
+  { href: "/participant-portal", ar: "بوابة المشارك", en: "Participant portal" },
+  { href: "/knowledge-center", ar: "مركز المعرفة", en: "Knowledge Center" },
+  { href: "/special-requests", ar: "الطلبات الخاصة", en: "Special requests" },
   { href: "/about", ar: "عن المنصة", en: "About the platform" },
   { href: "/faq", ar: "الأسئلة الشائعة", en: "Frequently asked questions" },
 ];
@@ -75,8 +78,8 @@ export default function Footer() {
   const ContactIcon = contactType === "telegram" ? Send : contactType === "email" ? Mail : contactType === "phone" ? Phone : MessageCircle;
 
   return (
-    <footer className="bg-[#0C3156] text-white">
-      <div className="w-full max-w-none mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <footer data-site-footer className="bg-[#0C3156] text-white">
+      <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
           {/* Contact */}
           <div>
@@ -110,7 +113,7 @@ export default function Footer() {
                 </a>
               )}
 
-              <a
+              {contactType !== "whatsapp" && <a
                 href={`https://wa.me/${brand?.whatsapp || "966562159258"}`}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -119,7 +122,7 @@ export default function Footer() {
               >
                 <MessageCircle size={15} />
                 {brand?.whatsapp ? `+${brand.whatsapp.replace(/^\+/, "")}` : "+966 56 215 9258"}
-              </a>
+              </a>}
 
               {telegramUrl && (
                 <a

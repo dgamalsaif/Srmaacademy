@@ -326,8 +326,8 @@ export default function RegistrationModal({
             {!coordinatorEntry && (priceDiscountedSar || priceOriginalSar) && (
               <div className="rounded-xl overflow-hidden mb-2">
                 <OpportunityPrice
-                  originalSar={priceOriginalSar || 2500}
-                  discountedSar={priceDiscountedSar || 1500}
+                  originalSar={priceOriginalSar}
+                  discountedSar={priceDiscountedSar}
                   compact
                 />
               </div>

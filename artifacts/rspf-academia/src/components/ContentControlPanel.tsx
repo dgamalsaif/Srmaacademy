@@ -1822,7 +1822,17 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
 }
 
 function Panel({ title, icon: Icon, children }: { title: string; icon: typeof Palette; children: React.ReactNode }) {
-  return <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"><div className="mb-6 flex items-center gap-3"><div className="rounded-2xl bg-[#e6f5ef] p-3 text-[#117b59]"><Icon size={21} /></div><h2 className="text-lg font-black text-slate-800">{title}</h2></div>{children}</div>;
+  const [open, setOpen] = useState(title.includes("هوية") || title === "إظهار تفاصيل جميع الفرص البحثية");
+  return (
+    <details open={open} onToggle={(event) => setOpen(event.currentTarget.open)} className="group overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+      <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-4 outline-none transition-colors hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-600 sm:px-5 [&::-webkit-details-marker]:hidden">
+        <span className="rounded-xl bg-[#e6f5ef] p-2 text-[#117b59]"><Icon size={18} aria-hidden="true" /></span>
+        <h2 className="flex-1 text-sm font-bold leading-6 text-slate-800 sm:text-base">{title}</h2>
+        <ChevronDown size={18} aria-hidden="true" className="shrink-0 text-slate-500 transition-transform group-open:rotate-180" />
+      </summary>
+      <div className="border-t border-slate-100 p-4 sm:p-5">{children}</div>
+    </details>
+  );
 }
 function TextField({
   label,
@@ -1858,9 +1868,6 @@ function TextArea({ label, value, onChange, placeholder }: { label: string; valu
 }
 function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (value: string) => void }) {
   return <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-3"><label className="text-sm font-bold text-slate-700">{label}</label><div className="flex items-center gap-2"><span className="font-mono text-xs text-slate-500">{value}</span><input type="color" value={value} onChange={(event) => onChange(event.target.value)} className="h-9 w-10 rounded-lg border border-slate-200 bg-white p-1" /></div></div>;
-}
-function LanguageField({ label, value, onChange }: { label: string; value: "arabic" | "english" | "both"; onChange: (value: "arabic" | "english" | "both") => void }) {
-  return <div><label className="mb-2 block text-xs font-bold text-slate-500">{label}</label><select value={value} onChange={(event) => onChange(event.target.value as "arabic" | "english" | "both")} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-bold outline-none focus:border-[#117b59]"><option value="arabic">العربية</option><option value="english">الإنجليزية</option><option value="both">العربية والإنجليزية</option></select></div>;
 }
 function AudienceToggle({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return <button type="button" onClick={onClick} className={`flex items-center justify-between rounded-xl border px-3 py-2.5 text-sm font-bold transition ${active ? "border-emerald-200 bg-[#e6f5ef] text-[#117b59]" : "border-slate-200 bg-white text-slate-500"}`}><span>{label}</span>{active ? <Eye size={16} /> : <EyeOff size={16} />}</button>;

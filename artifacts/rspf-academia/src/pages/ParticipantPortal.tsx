@@ -3,60 +3,74 @@ import { ChevronDown, ChevronUp, Lock, Flame, ChevronLeft, ChevronRight, Message
 import { Link } from "wouter";
 import { ResearchOpportunity } from "@/lib/researchData";
 import RegistrationModal from "@/components/RegistrationModal";
-import { DEFAULT_SITE_CONTENT_SETTINGS, SiteContentSettings, getContactUsHref, getOpportunityInquiryLink } from "@/lib/siteContentSettings";
+import SiteAnnouncement from "@/components/SiteAnnouncement";
+import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
+import { getContactUsHref, getOpportunityInquiryLink } from "@/lib/siteContentSettings";
 import OpportunityMedia from "@/components/OpportunityMedia";
 import OpportunityPrice from "@/components/OpportunityPrice";
 import { OpportunityCurrency, useCurrency } from "@/lib/opportunityPricing";
 import { useLanguage } from "@/lib/i18n";
 import SpecialtyFilter, { buildSpecialtyOptions, canonicalSpecialty, specialtyMatches } from "@/components/SpecialtyFilter";
-import { ResearchProtectionBanner, ProtectedResearchWatermark, AntiCaptureResearchTitle } from "@/components/ResearchProtection";
+import { ProtectedResearchWatermark, AntiCaptureResearchTitle } from "@/components/ResearchProtection";
 import { getEnglishOpportunityTitle, getOpportunityRegistrationPath } from "@/lib/opportunityDisplay";
 import { apiFetch } from "@/lib/api";
 
-const hallOfFame = [
-  { specialty: "ENT – Head and Neck Surgery", specialtyColor: "bg-indigo-100 text-indigo-700", title: "Efficacy of Biologic Therapy versus Conventional Treatment in Chronic Rhinosinusitis" },
-  { specialty: "Obesity Surgery", specialtyColor: "bg-yellow-100 text-yellow-700", title: "Endoscopic Versus Surgical Bariatric Procedures: Long-term Outcomes Comparison" },
-  { specialty: "Anesthesiology", specialtyColor: "bg-emerald-100 text-emerald-700", title: "Comparative Effectiveness of Regional vs. General Anesthesia in Major Orthopedic Procedures" },
-  { specialty: "Clinical Cardiology", specialtyColor: "bg-red-100 text-red-700", title: "Comparative Efficacy and Safety of Patiromer vs. Sodium Zirconium Cyclosilicate" },
-];
-
 export default function ParticipantPortal() {
   const { direction, language, localize, t } = useLanguage();
-  const [activeTab, setActiveTab] = useState(0);
   const [expandedCards, setExpandedCards] = useState<number[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [copiedOppId, setCopiedOppId] = useState<number | null>(null);
+  const [copyErrorId, setCopyErrorId] = useState<number | null>(null);
 
-  const handleCopyOppLink = (oppId: number) => {
+  const handleCopyOppLink = async (oppId: number) => {
     const url = `${window.location.origin}${getOpportunityRegistrationPath(oppId)}`;
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(url);
-    } else {
-      const input = document.createElement("input");
-      input.value = url;
-      document.body.appendChild(input);
-      input.select();
-      document.execCommand("copy");
-      document.body.removeChild(input);
+    setCopyErrorId(null);
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        const input = document.createElement("textarea");
+        input.value = url;
+        input.style.position = "fixed";
+        input.style.opacity = "0";
+        document.body.appendChild(input);
+        try {
+          input.select();
+          if (!document.execCommand("copy")) throw new Error("Copy unavailable");
+        } finally {
+          input.remove();
+        }
+      }
+      setCopiedOppId(oppId);
+      setTimeout(() => setCopiedOppId(null), 2500);
+    } catch {
+      setCopiedOppId(null);
+      setCopyErrorId(oppId);
     }
-    setCopiedOppId(oppId);
-    setTimeout(() => setCopiedOppId(null), 2500);
   };
   const [selectedResearch, setSelectedResearch] = useState<ResearchOpportunity | null>(null);
   const [opportunities, setOpportunities] = useState<ResearchOpportunity[]>([]);
   const { currency, setCurrency } = useCurrency();
-  const [contentSettings, setContentSettings] = useState<SiteContentSettings>(DEFAULT_SITE_CONTENT_SETTINGS);
+  const { data: contentSettings } = useSiteContentSettings();
   const [selectedSpecialty, setSelectedSpecialty] = useState<string | null>(null);
-  const [displayMode, setDisplayMode] = useState<"grid" | "scroll">("grid");
+  const [displayMode, setDisplayMode] = useState<"grid" | "scroll">(contentSettings.opportunityDisplayMode || "grid");
+  const adminDisplayMode = contentSettings.opportunityDisplayMode;
+  useEffect(() => {
+    if (adminDisplayMode) setDisplayMode(adminDisplayMode);
+  }, [adminDisplayMode]);
+
+  const [loadState, setLoadState] = useState<"loading" | "error" | "ready">("loading");
 
   const refreshOpportunities = () => {
+    setLoadState("loading");
     apiFetch("/api/programs", { cache: "no-store" })
       .then((response) => response.ok ? response.json() : Promise.reject(new Error("programs unavailable")))
       .then((data: ResearchOpportunity[]) => {
         const available = data.filter((item) => item.status === "open" && (item.category || "active") === "active");
         setOpportunities(uniqueResearchOpportunities(available));
+        setLoadState("ready");
       })
-      .catch(() => setOpportunities([]));
+      .catch(() => setLoadState("error"));
   };
 
   useEffect(() => {
@@ -66,15 +80,6 @@ export default function ParticipantPortal() {
     };
     window.addEventListener("focus", refreshOpportunities);
     document.addEventListener("visibilitychange", refreshWhenVisible);
-    apiFetch("/api/site-content-settings")
-      .then((response) => response.ok ? response.json() : Promise.reject())
-      .then((settings: SiteContentSettings) => {
-        setContentSettings(settings);
-        if (settings.opportunityDisplayMode) {
-          setDisplayMode(settings.opportunityDisplayMode);
-        }
-      })
-      .catch(() => setContentSettings(DEFAULT_SITE_CONTENT_SETTINGS));
     return () => {
       window.removeEventListener("focus", refreshOpportunities);
       document.removeEventListener("visibilitychange", refreshWhenVisible);
@@ -89,8 +94,6 @@ export default function ParticipantPortal() {
   const displayTitle = getEnglishOpportunityTitle;
   const participantTitle = language === "en" ? contentSettings.pages.participant.titleEn : contentSettings.pages.participant.titleAr;
   const participantDescription = language === "en" ? contentSettings.pages.participant.descriptionEn : contentSettings.pages.participant.descriptionAr;
-  const siteName = language === "en" ? contentSettings.brand.siteNameEn : contentSettings.brand.siteNameAr;
-  const whatsappUrl = `https://wa.me/${contentSettings.brand.participantWhatsapp || contentSettings.brand.whatsapp || "966562159258"}`;
   const contactHref = getContactUsHref(contentSettings.brand);
 
   const specialtyOptions = buildSpecialtyOptions(contentSettings.specialtyOptions, opportunities);
@@ -136,7 +139,7 @@ export default function ParticipantPortal() {
       <section className="relative overflow-hidden border-b border-slate-100 bg-gradient-to-b from-slate-50/80 via-white to-white py-12 px-4 sm:py-16">
         <div className="max-w-5xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 rounded-xl border border-emerald-200/80 bg-emerald-50/70 px-3.5 py-1.5 text-xs font-black text-[#117b59] mb-4 shadow-2xs">
-            <span className="w-2 h-2 rounded-full bg-[#117b59] animate-pulse" />
+            <span className="h-2 w-2 rounded-full bg-[#117b59]" />
             <span>{participantTitle}</span>
           </div>
           <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-slate-900 tracking-tight leading-tight mb-4">
@@ -145,106 +148,27 @@ export default function ParticipantPortal() {
           <p className="mx-auto max-w-2xl text-sm sm:text-base text-slate-600 leading-relaxed font-medium">
             {participantDescription}
           </p>
-
-          {/* Value Stats Strip */}
-          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4 max-w-3xl mx-auto text-center">
-            <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-2xs">
-              <p className="text-xl sm:text-2xl font-black text-[#117b59]">+500</p>
-              <p className="text-xs font-bold text-slate-600 mt-0.5">{localize("طبيب وباحث منجز", "Completed researchers")}</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-2xs">
-              <p className="text-xl sm:text-2xl font-black text-[#0C3156]">100%</p>
-              <p className="text-xs font-bold text-slate-600 mt-0.5">{localize("مطابق للهيئة السعودية", "SCFHS compliant")}</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-2xs">
-              <p className="text-xl sm:text-2xl font-black text-amber-600">Scopus/WoS</p>
-              <p className="text-xs font-bold text-slate-600 mt-0.5">{localize("مجلات عالمية مصنفة", "Indexed journals")}</p>
-            </div>
-            <div className="rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-2xs">
-              <p className="text-xl sm:text-2xl font-black text-sky-600">1:1</p>
-              <p className="text-xs font-bold text-slate-600 mt-0.5">{localize("إشراف وتوجيه مباشر", "Direct supervision")}</p>
-            </div>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3 text-sm font-bold">
+            <a href={contactHref.href} target={contactHref.isExternal ? "_blank" : undefined} rel={contactHref.isExternal ? "noopener noreferrer" : undefined} data-testid="button-portal-welcome-contact" className="inline-flex items-center gap-2 rounded-xl bg-[#0C3156] px-4 py-2 text-white transition-colors hover:bg-[#0a2847]">
+              <MessageCircle size={14} />
+              <span>{language === "ar" ? (contentSettings.brand.contactUsLabelAr || "تواصل معنا") : (contentSettings.brand.contactUsLabelEn || "Contact us")}</span>
+            </a>
+            <Link href="/knowledge-center" className="text-[#117b59] hover:underline">{localize("مركز المعرفة", "Knowledge Center")}</Link>
           </div>
+
         </div>
       </section>
 
-      {/* TABS (Segmented Control) */}
-      <div className="bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-3 sticky top-16 z-30 shadow-xs">
-        <div className="max-w-5xl mx-auto">
-          <div className="w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden p-1.5 bg-slate-100/90 rounded-2xl border border-slate-200/70 scrollbar-none">
-            <div className="flex w-max min-w-full gap-1.5">
-              {[
-                { id: 0, icon: "🔬", label: localize("الفرص البحثية الجاهزة للنشر", "Research opportunities ready for publication") },
-                { id: 1, icon: "📚", label: localize("برنامج تدريب باحث مع النشر", "Researcher training program with publication") },
-                { id: 2, icon: "🎓", label: localize("دورات طبية بساعات CME معتمدة", "Accredited CME medical courses") },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  data-testid={`button-tab-${tab.id}`}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 min-w-[200px] sm:min-w-0 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm transition-all whitespace-nowrap ${
-                    activeTab === tab.id
-                      ? "bg-[#0C3156] text-white shadow-sm"
-                      : "text-slate-600 hover:text-slate-900 hover:bg-white/60"
-                  }`}
-                >
-                  <span>{tab.icon}</span>
-                  <span>{tab.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* TICKER */}
-      <div className="srma-ticker w-full max-w-full overflow-hidden overflow-x-clip py-2.5 text-white" style={{ backgroundColor: contentSettings.primaryColor }}>
-        <div className="srma-ticker-track" dir="ltr">
-          <span>⚡ {localize(`انضم لأكثر من 500 طبيب وباحث حققوا متطلبات الهيئة السعودية للتخصصات الصحية مع ${siteName} | سجل الآن وابدأ رحلتك البحثية اليوم`, `Join over 500 physicians and researchers who have met Saudi Commission for Health Specialties requirements with ${siteName} | Register now and begin your research journey today`)}</span>
-          <span aria-hidden="true">⚡ {localize(`انضم لأكثر من 500 طبيب وباحث حققوا متطلبات الهيئة السعودية للتخصصات الصحية مع ${siteName} | سجل الآن وابدأ رحلتك البحثية اليوم`, `Join over 500 physicians and researchers who have met Saudi Commission for Health Specialties requirements with ${siteName} | Register now and begin your research journey today`)}</span>
-        </div>
-      </div>
 
       <section className="py-8 sm:py-10 px-3 sm:px-6 lg:px-8">
-        <div className="w-full max-w-none mx-auto">
-          <section data-testid="participant-welcome" className="srma-welcome-card mb-8 rounded-3xl border border-emerald-100 bg-gradient-to-l from-[#f3fbf8] via-white to-[#eff6ff] p-6 text-start shadow-sm sm:p-8">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-black text-[#117b59]">{localize(`مرحباً بك في ${siteName} 👋`, `Welcome to ${siteName} 👋`)}</p>
-                <h2 className="mt-1 text-2xl font-black text-slate-900">{localize("ابدأ رحلتك البحثية بخطوات بسيطة", "Start your research journey in a few simple steps")}</h2>
-                <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">{localize("اختر التخصص، راجع تفاصيل الفرصة ومقاعدها المتبقية، ثم اضغط «سجل الآن» لإرسال بياناتك.", "Choose a specialty, review the opportunity details and remaining seats, then select “Register now” to submit your details.")}</p>
+        <div className="mx-auto w-full max-w-7xl">
+              <div className="mb-5">
+                <SiteAnnouncement content={localize(contentSettings.pages.participant.contentAr, contentSettings.pages.participant.contentEn)} />
               </div>
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-[#0C3156] text-3xl shadow-lg shadow-[#0C3156]/20">🔬</div>
-            </div>
-            <div className="mt-5 grid gap-2 text-xs font-bold text-slate-600 sm:grid-cols-3">
-              {[localize("1. اختر تخصصك", "1. Choose your specialty"), localize("2. راجع المقاعد والسعر", "2. Review seats and price"), localize("3. أرسل طلب التسجيل", "3. Send your registration")].map((step) => (
-                <span key={step} className="rounded-xl border border-white bg-white/80 px-3 py-3 shadow-sm">{step}</span>
-              ))}
-            </div>
-            <div className="mt-5 pt-4 border-t border-emerald-100/70 flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
-                <span>💬 {localize("تحتاج مساعدة أو استفسار بخصوص البرامج البحثية؟", "Need help or have questions about research programs?")}</span>
-              </div>
-              <a
-                href={contactHref.href}
-                target={contactHref.isExternal ? "_blank" : undefined}
-                rel={contactHref.isExternal ? "noopener noreferrer" : undefined}
-                data-testid="button-portal-welcome-contact"
-                className="inline-flex items-center gap-2 rounded-xl bg-[#0C3156] hover:bg-[#0a2847] text-white px-4 py-2 text-xs font-bold transition-colors shadow-xs"
-              >
-                <MessageCircle size={14} />
-                <span>{language === "ar" ? (contentSettings.brand.contactUsLabelAr || "تواصل معنا مباشرة") : (contentSettings.brand.contactUsLabelEn || "Contact Us Directly")}</span>
-              </a>
-            </div>
-          </section>
-          {activeTab === 0 && (
-            <>
-              {/* Intellectual Property & Anti-Theft Protection Banner */}
-              <ResearchProtectionBanner />
 
               <div className={`mb-6 flex flex-wrap items-center justify-between gap-3 ${contentFlow}`}>
                 <div>
-                  <h2 className="text-xl font-black text-slate-900">✨ {localize("الفرص البحثية المتاحة للتسجيل", "Research opportunities open for registration")}</h2>
+                  <h2 className="text-xl font-black text-slate-900">{localize("الفرص البحثية المتاحة للتسجيل", "Research opportunities open for registration")}</h2>
                   <p className="text-xs text-slate-500 mt-1">{localize("تصفح البرامج والفرص وسجل مقعدك مباشرة أو استفسر عبر القنوات المباشرة", "Browse programs, reserve your seat directly or inquire via direct channels")}</p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -290,11 +214,19 @@ export default function ParticipantPortal() {
                 onSelect={setSelectedSpecialty}
                 className="mb-5"
               />
-              {visibleOpportunities.length === 0 ? (
+              {loadState === "loading" && opportunities.length === 0 ? (
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3" aria-busy="true" data-testid="portal-loading">
+                  {[0, 1, 2].map((i) => <div key={i} className="h-72 animate-pulse rounded-2xl border border-slate-200 bg-white motion-reduce:animate-none" />)}
+                </div>
+              ) : loadState === "error" && opportunities.length === 0 ? (
+                <div role="alert" data-testid="portal-error" className="rounded-2xl border border-slate-200 bg-white p-8 text-center">
+                  <p className="font-bold text-slate-800">{localize("تعذر تحميل الفرص البحثية حالياً.", "We could not load research opportunities.")}</p>
+                  <button type="button" onClick={refreshOpportunities} data-testid="button-portal-retry" className="mt-4 rounded-xl bg-[#0C3156] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#0a2847]">{localize("إعادة المحاولة", "Retry")}</button>
+                </div>
+              ) : visibleOpportunities.length === 0 ? (
                 <div className="text-center py-16 text-slate-400">
-                  <div className="text-5xl mb-4">🔬</div>
                   <p className="font-medium">{selectedSpecialty ? localize("لا توجد فرص متاحة في هذا التخصص حالياً", "There are currently no opportunities in this specialty.") : localize("لا توجد فرص متاحة حالياً", "There are currently no opportunities available.")}</p>
-                  <p className="text-sm mt-1">{selectedSpecialty ? localize("اختر كل التخصصات لعرض جميع الفرص.", "Choose all specialties to view every opportunity.") : localize("تابع قناتنا على Telegram للإشعارات الفورية", "Follow our Telegram channel for instant notifications.")}</p>
+                  <p className="text-sm mt-1">{selectedSpecialty ? localize("اختر كل التخصصات لعرض جميع الفرص.", "Choose all specialties to view every opportunity.") : localize("تواصل معنا ليصلك إشعار عند فتح دراسة جديدة.", "Contact us to be notified when a new study opens.")}</p>
                 </div>
               ) : (
                 <div className="space-y-10">
@@ -386,9 +318,6 @@ export default function ParticipantPortal() {
                          {contentSettings.showOpportunityDetails !== false && <>
                          <div className="mb-4"><OpportunityMedia research={opp} className="aspect-[4/3] min-h-[172px]" /></div>
 
-                        <p className="mb-3 text-start text-sm font-medium italic text-[#0C3156]">
-                           🏆 {localize(`نحن في ${siteName} – نبني ملفك البحثي ونصنع الفارق`, `At ${siteName}, we build your research profile and make the difference.`)}
-                        </p>
                         <div className="mb-4 space-y-2 text-start text-sm leading-6 text-slate-600">
                           {contentSettings.participantCardOrder.filter((part) => contentSettings.visibleParticipantCardParts.includes(part) && !["specialty", "seats", "benefits"].includes(part)).map((part) => {
                             if (part === "description") return <p key={part}>{localize(opp.descriptionAr, opp.descriptionEn, opp.description)}</p>;
@@ -415,7 +344,7 @@ export default function ParticipantPortal() {
                         {contentSettings.visibleParticipantCardParts.includes("benefits") && <><button data-testid={`button-expand-benefits-${opp.id}`} onClick={() => toggleExpand(opp.id)}
                           className={`mb-3 flex w-full items-center justify-start gap-2 text-sm font-semibold text-slate-600 hover:text-[#0C3156] ${contentFlow}`}>
                           {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                          {localize("مزايا وقيمة المشاركة 💡", "Benefits and participation value 💡")}
+                          {localize("مزايا وقيمة المشاركة", "Benefits and participation value")}
                         </button>
                         {isExpanded && opp.benefits.length > 0 && (
                           <ul className="space-y-1.5 mb-4 bg-[#EFF6FF] rounded-xl p-4">
@@ -440,7 +369,6 @@ export default function ParticipantPortal() {
                               style={{ backgroundColor: contentSettings.primaryColor }}
                             >
                               <span>{t("common.registerNow")}</span>
-                              <span>👤</span>
                             </button>
                             {contentSettings.showOpportunityDetails !== false && <Link
                               href={`/research/${opp.id}`}
@@ -506,15 +434,16 @@ export default function ParticipantPortal() {
                             {copiedOppId === opp.id ? (
                               <>
                                 <Check size={13} className="text-emerald-600" />
-                                <span>{localize("تم نسخ الرابط ومعاينة الصورة جاهزة ✓", "Link copied! Image preview ready ✓")}</span>
+                                <span>{localize("تم نسخ رابط التسجيل", "Registration link copied")}</span>
                               </>
                             ) : (
                               <>
                                 <Copy size={13} className="text-slate-400" />
-                                <span>{localize("نسخ رابط الفرصة 🔗", "Copy opportunity link 🔗")}</span>
+                                 <span>{copyErrorId === opp.id ? localize("تعذر النسخ التلقائي؛ انسخ الرابط أدناه", "Automatic copy failed; copy the link below") : localize("نسخ رابط الفرصة", "Copy opportunity link")}</span>
                               </>
                             )}
                           </button>
+                           {copyErrorId === opp.id && <input readOnly dir="ltr" aria-label={localize("رابط التسجيل للنسخ اليدوي", "Registration link for manual copy")} value={`${window.location.origin}${getOpportunityRegistrationPath(opp.id)}`} onFocus={(event) => event.currentTarget.select()} className="w-full min-w-0 rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-700 outline-none focus:ring-2 focus:ring-emerald-600" />}
                         </div>
                       </div>
                     );
@@ -524,246 +453,17 @@ export default function ParticipantPortal() {
                    ))}
                 </div>
               )}
-            </>
-          )}
 
-          {activeTab === 1 && (
-            <div className="space-y-8 animate-in fade-in duration-300">
-              {/* Main Banner */}
-              <div className="rounded-3xl border border-sky-100 bg-gradient-to-br from-sky-50/80 via-white to-indigo-50/40 p-6 sm:p-10 shadow-xs text-start">
-                <div className="inline-flex items-center gap-2 rounded-xl bg-sky-100/80 px-3 py-1 text-xs font-bold text-sky-800 mb-3">
-                  <span>📚</span>
-                  <span>{localize("مسار تدريبي وعملي شامل", "Comprehensive practical training track")}</span>
-                </div>
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 leading-snug">
-                  {localize("برنامج تدريب باحث سريري متقدم (من الفكرة حتى النشر الدولي)", "Advanced Clinical Researcher Program (From Concept to International Publication)")}
-                </h2>
-                <p className="mt-3 text-sm sm:text-base text-slate-600 leading-relaxed max-w-3xl">
-                  {localize(
-                    "برنامج تدريبي تطبيقي يدمج بين التدريب الأكاديمي النظري والممارسة العملية الفعلية تحت إشراف نخبة من كبار الباحثين والمحكمين الدوليين، وينتهي ببحث علمي منشور باسمك ومطابق لمعايير الهيئة السعودية للتخصصات الصحية.",
-                    "An applied training program combining theoretical academic training and real-world practical research under the mentorship of top international researchers and reviewers, concluding with a published paper under your name complying with SCFHS standards."
-                  )}
-                </p>
-
-                <div className="mt-6 flex flex-wrap items-center gap-3">
-                  <a
-                    href={contactHref.href}
-                    target={contactHref.isExternal ? "_blank" : undefined}
-                    rel={contactHref.isExternal ? "noopener noreferrer" : undefined}
-                    data-testid="button-trainer-register"
-                    className="inline-flex items-center gap-2 bg-[#0C3156] hover:bg-[#08223c] text-white px-6 py-3 rounded-xl font-bold text-sm transition-all shadow-sm"
-                  >
-                    <MessageCircle size={16} />
-                    <span>{localize("التسجيل في الدفعة القادمة", "Register for upcoming cohort")}</span>
-                  </a>
-                  <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-3 rounded-xl font-bold text-sm transition-all shadow-sm"
-                  >
-                    <span>💬</span>
-                    <span>{localize("استفسار عبر واتساب الأكاديمية", "Inquire via WhatsApp")}</span>
-                  </a>
-                </div>
-              </div>
-
-              {/* 4 Pillars Grid */}
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                {[
-                  {
-                    icon: "💡",
-                    titleAr: "1. اختيار الفكرة والبروتوكول",
-                    titleEn: "1. Topic & Protocol Design",
-                    descAr: "صياغة سؤال البحث، بناء خطة الدراسة، وكتابة البروتوكول العلمي المعتمد.",
-                    descEn: "Formulate research question, design study plan, and write approved scientific protocol.",
-                  },
-                  {
-                    icon: "📊",
-                    titleAr: "2. الإحصاء وتحليل البيانات",
-                    titleEn: "2. Biostatistics & Data Analysis",
-                    descAr: "تدريب عملي على برامج الإحصاء (SPSS / R / RevMan) وإجراء الميتا أناليسيس.",
-                    descEn: "Hands-on training in statistical tools (SPSS, R, RevMan) and meta-analyses.",
-                  },
-                  {
-                    icon: "✍️",
-                    titleAr: "3. الكتابة والنشر المصنف",
-                    titleEn: "3. Academic Writing & Indexing",
-                    descAr: "صياغة المخطوطة وفق دليل النشر بمجلات Scopus وWeb of Science وPubMed.",
-                    descEn: "Draft manuscript adhering to guidelines of Scopus, Web of Science, and PubMed journals.",
-                  },
-                  {
-                    icon: "🎯",
-                    titleAr: "4. الرد على المحكمين والقبول",
-                    titleEn: "4. Peer Review & Acceptance",
-                    descAr: "متابعة الملاحظات والرد على المحكمين حتى صدور خطاب القبول النهائي.",
-                    descEn: "Handle reviewer feedback until final official acceptance letter is issued.",
-                  },
-                ].map((item, idx) => (
-                  <div key={idx} className="rounded-2xl border border-slate-200/90 bg-white p-5 space-y-2 shadow-2xs hover:border-sky-300 transition-colors text-start">
-                    <span className="text-2xl">{item.icon}</span>
-                    <h3 className="font-black text-slate-900 text-sm">{localize(item.titleAr, item.titleEn)}</h3>
-                    <p className="text-xs text-slate-600 leading-relaxed">{localize(item.descAr, item.descEn)}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Details and Target Audience */}
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 text-start space-y-3">
-                  <h4 className="font-black text-slate-900 text-base flex items-center gap-2">
-                    <span>🎯</span>
-                    <span>{localize("الفئات المستهدفة", "Target Audience")}</span>
-                  </h4>
-                  <ul className="space-y-2 text-xs font-medium text-slate-700">
-                    <li className="flex items-center gap-2">✓ {localize("الأطباء المقيمون وأطباء الزمالة (Residents & Fellows).", "Residents and Fellows.")}</li>
-                    <li className="flex items-center gap-2">✓ {localize("أطباء الامتياز والخريجون الباحثون عن نقاط المفاضلة.", "Interns and medical graduates seeking matching points.")}</li>
-                    <li className="flex items-center gap-2">✓ {localize("الممارسون الصحيون والراغبون في الترقية المهنية والأكاديمية.", "Healthcare practitioners seeking academic promotion.")}</li>
-                  </ul>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 text-start space-y-3">
-                  <h4 className="font-black text-slate-900 text-base flex items-center gap-2">
-                    <span>🏆</span>
-                    <span>{localize("مخرجات البرنامج والشهادة", "Program Outcomes & Certificate")}</span>
-                  </h4>
-                  <ul className="space-y-2 text-xs font-medium text-slate-700">
-                    <li className="flex items-center gap-2">✓ {localize("ورقة بحثية منشورة أو مقبولة في مجلة عالمية مصنفة.", "Published or accepted research paper in an indexed journal.")}</li>
-                    <li className="flex items-center gap-2">✓ {localize("شهادة إتمام برنامج تدريب باحث معتمدة من الأكاديمية.", "Certified program completion certificate from the Academy.")}</li>
-                    <li className="flex items-center gap-2">✓ {localize("ملف باحث متكامل (ORCID, ResearchGate, Google Scholar).", "Comprehensive researcher profile (ORCID, ResearchGate, Google Scholar).")}</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 2 && (
-            <div className="space-y-8 animate-in fade-in duration-300">
-              {/* CME Header */}
-              <div className="rounded-3xl border border-violet-100 bg-gradient-to-br from-violet-50/80 via-white to-purple-50/40 p-6 sm:p-10 shadow-xs text-start">
-                <div className="inline-flex items-center gap-2 rounded-xl bg-violet-100/80 px-3 py-1 text-xs font-bold text-violet-800 mb-3">
-                  <span>🎓</span>
-                  <span>{localize("معتمدة من الهيئة السعودية للتخصصات الصحية (SCFHS)", "Accredited by Saudi Commission for Health Specialties (SCFHS)")}</span>
-                </div>
-                <h2 className="text-2xl sm:text-3xl font-black text-slate-900 leading-snug">
-                  {localize("دورات طبية تخصصية بساعات تعليم طبي مستمر (CME)", "Specialized Medical Courses with Continuing Medical Education (CME) Hours")}
-                </h2>
-                <p className="mt-3 text-sm sm:text-base text-slate-600 leading-relaxed max-w-3xl">
-                  {localize(
-                    "احصل على ساعات CME المعتمدة لتجديد التصنيف المهني والتسجيل في برامج البورد، مع تقديم محتوى عملي يقدمه خبراء سريريون وأكاديميون معتمدون وشهادات رقمية فورية.",
-                    "Earn accredited CME hours for professional re-registration and matching in residency programs, with practical curriculum by certified clinicians and instant verified digital certificates."
-                  )}
-                </p>
-
-                <div className="mt-6 flex flex-wrap items-center gap-3">
-                  <a
-                    href={contactHref.href}
-                    target={contactHref.isExternal ? "_blank" : undefined}
-                    rel={contactHref.isExternal ? "noopener noreferrer" : undefined}
-                    data-testid="button-cme-register"
-                    className="inline-flex items-center gap-2 bg-violet-700 hover:bg-violet-800 text-white px-6 py-3 rounded-xl font-bold text-sm transition-all shadow-sm"
-                  >
-                    <MessageCircle size={16} />
-                    <span>{localize("طلب التسجيل في الدورات", "Register for Courses")}</span>
-                  </a>
-                  <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-white border border-violet-300 text-violet-800 hover:bg-violet-50 px-5 py-3 rounded-xl font-bold text-sm transition-all shadow-sm"
-                  >
-                    <span>💬</span>
-                    <span>{localize("استفسار عن جدول الدورات القادمة", "Inquire about Upcoming Schedule")}</span>
-                  </a>
-                </div>
-              </div>
-
-              {/* Sample Courses Grid */}
-              <div className="grid gap-4 sm:grid-cols-2">
-                {[
-                  {
-                    code: "CME-101",
-                    hours: "15 CME",
-                    titleAr: "منهجية الأبحاث السريرية وتصميم الدراسات الطبية",
-                    titleEn: "Clinical Research Methodology & Study Design",
-                    topicsAr: "أنواع الدراسات، صياغة السؤال البحثي PICO، عينات الدراسة، والتحيز السريري.",
-                    topicsEn: "Study designs, PICO question formulation, sampling, and clinical bias mitigation.",
-                  },
-                  {
-                    code: "CME-102",
-                    hours: "12 CME",
-                    titleAr: "التحليل الإحصائي الحيوي التطبيقي للأطباء (SPSS & R)",
-                    titleEn: "Applied Biostatistics for Physicians (SPSS & R)",
-                    topicsAr: "المتغيرات، اختبارات الفرضيات، تحليل الانحدار، وقراءة الجداول الإحصائية للأوراق العلمية.",
-                    topicsEn: "Variables, hypothesis testing, regression analysis, and reading journal statistical tables.",
-                  },
-                  {
-                    code: "CME-103",
-                    hours: "20 CME",
-                    titleAr: "المراجعات المنهجية والميتا أناليسيس (PRISMA Guideline)",
-                    titleEn: "Systematic Reviews & Meta-Analyses (PRISMA)",
-                    topicsAr: "استراتيجية البحث في قواعد البيانات، استخراج البيانات، تقييم جودة الدراسات، ورسم Forest Plot.",
-                    topicsEn: "Database search strategies, data extraction, risk of bias assessment, and Forest plots.",
-                  },
-                  {
-                    code: "CME-104",
-                    hours: "8 CME",
-                    titleAr: "أخلاقيات البحث الطبي والممارسة السريرية الجيدة (GCP)",
-                    titleEn: "Good Clinical Practice (GCP) & Medical Ethics",
-                    topicsAr: "موافقات اللجان الأخلاقية IRB، حماية خصوصية المرضى، وتطبيق إعلان هلسنكي.",
-                    topicsEn: "IRB ethical approval requirements, patient privacy, and the Declaration of Helsinki.",
-                  },
-                ].map((course, idx) => (
-                  <div key={idx} className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3 text-start shadow-2xs hover:border-violet-300 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono font-bold text-slate-400">{course.code}</span>
-                      <span className="text-xs font-black text-violet-700 bg-violet-50 border border-violet-200 px-2.5 py-1 rounded-lg">
-                        {course.hours}
-                      </span>
-                    </div>
-                    <h3 className="font-black text-slate-900 text-sm leading-snug">{localize(course.titleAr, course.titleEn)}</h3>
-                    <p className="text-xs text-slate-600 leading-relaxed">{localize(course.topicsAr, course.topicsEn)}</p>
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
-                      <span className="text-emerald-700">✓ شهادة معتمدة فورية</span>
-                      <a
-                        href={whatsappUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-violet-700 hover:text-violet-900 hover:underline"
-                      >
-                        {localize("احجز مقعدك ←", "Reserve seat →")}
-                      </a>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       </section>
 
-      {/* HALL OF FAME */}
-      <section className="py-12 px-4 bg-slate-50 border-t border-slate-100">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-right mb-6">
-            <h2 className="text-2xl font-black text-slate-900">{localize("مشاريع اكتمل فريقها (لوحة الشرف) 🏆", "Projects with completed teams (Hall of Fame) 🏆")}</h2>
-            <p className="text-slate-500 text-sm mt-1">{localize("أبحاث سابقة تم إغلاق التسجيل فيها بنجاح", "Previous research projects whose registration closed successfully.")}</p>
+      <section className="border-t border-slate-200 bg-slate-50 px-4 py-10">
+        <div className="mx-auto flex max-w-5xl flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-start">
+            <h2 className="text-xl font-black text-[#0C3156]">{localize("مكتبة المعرفة", "Knowledge library")}</h2>
+            <p className="mt-1 text-sm text-slate-600">{localize("أدلة ومقالات عن منهجية البحث والنشر في مركز المعرفة.", "Guides and articles on research methods and publishing in the Knowledge Center.")}</p>
           </div>
-          <div className="w-full max-w-full min-w-0 overflow-x-auto overflow-y-hidden pb-4">
-            <div className="flex w-max min-w-max gap-4">
-              {hallOfFame.map((item, i) => (
-                <div key={i} className="flex-shrink-0 w-72 bg-white rounded-2xl p-5 border border-slate-200 shadow-sm" data-testid={`card-hall-${i}`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="flex items-center gap-1 text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">
-                      <Lock size={10} /> {localize("اكتمل الفريق", "Team complete")}
-                    </span>
-                  </div>
-                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${item.specialtyColor} inline-block mb-2`}>{item.specialty}</span>
-                  <p className="text-sm font-semibold text-slate-700 line-clamp-3">{item.title}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+          <Link href="/knowledge-center" data-testid="link-portal-knowledge" className="inline-flex items-center justify-center rounded-xl bg-[#0C3156] px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-[#0a2847]">{localize("افتح مركز المعرفة", "Open the Knowledge Center")}</Link>
         </div>
       </section>
 
