@@ -1,5 +1,5 @@
 import { coordinatorPortalSettingsTable, db } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 export type Audience = "participant" | "coordinator";
 type TitleLanguage = "arabic" | "english" | "both";
@@ -727,4 +727,25 @@ export async function saveSiteContentSettings(settings: SiteContentSettings) {
   const value = settings as unknown as Record<string, unknown>;
   await db.insert(coordinatorPortalSettingsTable).values({ key: SITE_CONTENT_KEY, value })
     .onConflictDoUpdate({ target: coordinatorPortalSettingsTable.key, set: { value, updatedAt: new Date() } });
+}
+
+/** One atomic JSONB merge: unrelated settings and unknown stored fields remain intact. */
+export async function saveOpportunityInquirySettings(patch: Record<string, string | boolean>) {
+  const initial = { ...DEFAULT_SITE_CONTENT_SETTINGS, brand: { ...DEFAULT_SITE_CONTENT_SETTINGS.brand, ...patch } };
+  const [record] = await db.insert(coordinatorPortalSettingsTable)
+    .values({ key: SITE_CONTENT_KEY, value: initial as unknown as Record<string, unknown> })
+    .onConflictDoUpdate({
+      target: coordinatorPortalSettingsTable.key,
+      set: {
+        value: sql`jsonb_set(${coordinatorPortalSettingsTable.value}, '{brand}',
+          (CASE WHEN jsonb_typeof(${coordinatorPortalSettingsTable.value}->'brand') = 'object'
+          THEN ${coordinatorPortalSettingsTable.value}->'brand' ELSE '{}'::jsonb END)
+          || ${JSON.stringify(patch)}::jsonb, true)`,
+        updatedAt: new Date(),
+      },
+    }).returning();
+  if (!record || !record.value || typeof record.value !== "object" || !("brand" in record.value)) {
+    throw new Error("لم يتم تأكيد حفظ إعدادات الاستفسار في قاعدة البيانات.");
+  }
+  return sanitizeSiteContentSettings(record.value);
 }

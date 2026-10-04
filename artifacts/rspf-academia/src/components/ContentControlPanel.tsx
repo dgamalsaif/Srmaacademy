@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronUp, Eye, EyeOff, Palette, Save, SlidersHorizontal, Image, Phone, Mail, Link as LinkIcon, FileText, Send, Share2, ExternalLink, MessageCircle, Check, GraduationCap, ShieldCheck, Plus, Trash2, AlertTriangle } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef, useId } from "react";
 import BrandLogo from "@/components/BrandLogo";
+import { getOpportunityInquiryLink } from "@/lib/siteContentSettings";
 import { CARD_PARTS, OPPORTUNITY_FIELDS, OpportunityDisplayMode, OpportunityFieldId, RegistrationFieldSetting, SiteContentSettings, SpecialtyOption, JournalOption, PublicPageId, BrandContactSettings, PublicPageContent, SOCIAL_ICON_OPTIONS, SocialIconId, FloatingIconPosition, ForwardingType, ContactUsType, AcademicDegreeOption, DEFAULT_ACADEMIC_DEGREE_SETTINGS, DEFAULT_RESEARCH_EXPERIENCE_SETTINGS, DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS } from "@/lib/siteContentSettings";
 
 interface Props {
@@ -9,15 +10,27 @@ interface Props {
   onSave: () => void;
   saving: boolean;
   message: string;
+  onSaveInquiry?: () => void;
+  inquirySaving?: boolean;
+  inquiryMessage?: string;
 }
 
-export default function ContentControlPanel({ settings, onChange, onSave, saving, message }: Props) {
+export default function ContentControlPanel({ settings, onChange, onSave, saving, message, onSaveInquiry, inquirySaving, inquiryMessage }: Props) {
   const [specialtyDraft, setSpecialtyDraft] = useState({ nameAr: "", nameEn: "", groupUrl: "" });
   const [journalDraft, setJournalDraft] = useState({ nameAr: "", nameEn: "", issn: "", pubmed: "", scopus: "", wos: "", specialty: "" });
   const [degreeDraft, setDegreeDraft] = useState({ nameAr: "", nameEn: "" });
   const [activePageTab, setActivePageTab] = useState<PublicPageId>("home");
+  const [inquiryPreviewTitle, setInquiryPreviewTitle] = useState("Research opportunity — preview");
+  const [inquiryPreviewLanguage, setInquiryPreviewLanguage] = useState<"ar" | "en">("ar");
+  const previewInquiry = getOpportunityInquiryLink(settings.brand, inquiryPreviewTitle, inquiryPreviewLanguage);
   const [activeForwardTab, setActiveForwardTab] = useState<"participant" | "coordinator">("participant");
-  const update = <K extends keyof SiteContentSettings>(key: K, value: SiteContentSettings[K]) => onChange({ ...settings, [key]: value });
+  const latestSettings = useRef(settings);
+  latestSettings.current = settings;
+  const update = <K extends keyof SiteContentSettings>(key: K, value: SiteContentSettings[K]) => {
+    const next = { ...latestSettings.current, [key]: value };
+    latestSettings.current = next;
+    onChange(next);
+  };
 
   const academicDegreeSettings = settings.academicDegreeSettings || DEFAULT_ACADEMIC_DEGREE_SETTINGS;
   const researchExpSettings = settings.researchExperienceSettings || DEFAULT_RESEARCH_EXPERIENCE_SETTINGS;
@@ -83,7 +96,7 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
     update("requiredOpportunityFields", fields.includes(fieldId) ? fields.filter((id) => id !== fieldId) : [...fields, fieldId]);
   };
   const updateBrand = <K extends keyof BrandContactSettings>(key: K, value: BrandContactSettings[K]) => {
-    update("brand", { ...settings.brand, [key]: value });
+    update("brand", { ...latestSettings.current.brand, [key]: value });
   };
   const toggleSocialIcon = (audience: "public" | "participant" | "coordinator", id: SocialIconId) => {
     const key = `${audience}SocialIcons` as const;
@@ -528,7 +541,6 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                           type="button"
                           onClick={() => {
                             updateBrand("opportunityInquiryChannel", "whatsapp");
-                            updateBrand("opportunityContactType", "whatsapp");
                           }}
                           className={`p-3 rounded-xl border-2 text-start transition-all relative flex flex-col gap-1 ${
                             (settings.brand.opportunityInquiryChannel || "whatsapp") === "whatsapp"
@@ -551,7 +563,6 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                           type="button"
                           onClick={() => {
                             updateBrand("opportunityInquiryChannel", "email");
-                            updateBrand("opportunityContactType", "email");
                           }}
                           className={`p-3 rounded-xl border-2 text-start transition-all relative flex flex-col gap-1 ${
                             settings.brand.opportunityInquiryChannel === "email"
@@ -574,7 +585,6 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                           type="button"
                           onClick={() => {
                             updateBrand("opportunityInquiryChannel", "telegram");
-                            updateBrand("opportunityContactType", "telegram");
                           }}
                           className={`p-3 rounded-xl border-2 text-start transition-all relative flex flex-col gap-1 ${
                             settings.brand.opportunityInquiryChannel === "telegram"
@@ -597,7 +607,6 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                           type="button"
                           onClick={() => {
                             updateBrand("opportunityInquiryChannel", "phone");
-                            updateBrand("opportunityContactType", "phone");
                           }}
                           className={`p-3 rounded-xl border-2 text-start transition-all relative flex flex-col gap-1 ${
                             settings.brand.opportunityInquiryChannel === "phone"
@@ -620,7 +629,6 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                           type="button"
                           onClick={() => {
                             updateBrand("opportunityInquiryChannel", "custom_url");
-                            updateBrand("opportunityContactType", "custom_url");
                           }}
                           className={`p-3 rounded-xl border-2 text-start transition-all relative flex flex-col gap-1 ${
                             settings.brand.opportunityInquiryChannel === "custom_url"
@@ -649,7 +657,6 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                             value={settings.brand.opportunityInquiryWhatsapp ?? settings.brand.opportunityContactWhatsapp ?? ""}
                             onChange={(v) => {
                               updateBrand("opportunityInquiryWhatsapp", v);
-                              updateBrand("opportunityContactWhatsapp", v);
                             }}
                             placeholder="مثال: 966562159258 أو 0562159258"
                             dir="ltr"
@@ -661,7 +668,6 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                                 type="button"
                                 onClick={() => {
                                   updateBrand("opportunityInquiryWhatsapp", settings.brand.whatsapp);
-                                  updateBrand("opportunityContactWhatsapp", settings.brand.whatsapp);
                                 }}
                                 className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors border border-emerald-200"
                               >
@@ -673,7 +679,6 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                                 type="button"
                                 onClick={() => {
                                   updateBrand("opportunityInquiryWhatsapp", settings.brand.participantWhatsapp);
-                                  updateBrand("opportunityContactWhatsapp", settings.brand.participantWhatsapp);
                                 }}
                                 className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-50 text-slate-700 hover:bg-slate-100 transition-colors border border-slate-200"
                               >
@@ -706,9 +711,6 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                               value={settings.brand.opportunityInquiryEmail ?? ""}
                               onChange={(v) => {
                                 updateBrand("opportunityInquiryEmail", v);
-                                if (!settings.brand.opportunityContactEmail) {
-                                  updateBrand("opportunityContactEmail", v);
-                                }
                               }}
                               placeholder={settings.brand.email || "srmaacademy@gmail.com"}
                               dir="ltr"
@@ -783,7 +785,6 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                               value={tgVal}
                               onChange={(v) => {
                                 updateBrand("opportunityInquiryTelegram", v);
-                                updateBrand("opportunityContactTelegram", v);
                               }}
                               placeholder="مثال: SRMAAcademy أو +966562159258"
                               dir="ltr"
@@ -796,7 +797,6 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                                   type="button"
                                   onClick={() => {
                                     updateBrand("opportunityInquiryTelegram", settings.brand.telegramUsername);
-                                    updateBrand("opportunityContactTelegram", settings.brand.telegramUsername);
                                   }}
                                   className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-sky-50 text-sky-700 hover:bg-sky-100 transition-colors border border-sky-200"
                                 >
@@ -809,7 +809,6 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                                   onClick={() => {
                                     const ph = settings.brand.phone || settings.brand.whatsapp;
                                     updateBrand("opportunityInquiryTelegram", ph);
-                                    updateBrand("opportunityContactTelegram", ph);
                                   }}
                                   className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-50 text-slate-700 hover:bg-slate-100 transition-colors border border-slate-200"
                                 >
@@ -863,7 +862,6 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                             value={settings.brand.opportunityInquiryPhone ?? settings.brand.opportunityContactPhone ?? ""}
                             onChange={(v) => {
                               updateBrand("opportunityInquiryPhone", v);
-                              updateBrand("opportunityContactPhone", v);
                             }}
                             placeholder="مثال: +966562159258"
                             dir="ltr"
@@ -876,7 +874,6 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                                 onClick={() => {
                                   const ph = settings.brand.phone || settings.brand.whatsapp;
                                   updateBrand("opportunityInquiryPhone", ph);
-                                  updateBrand("opportunityContactPhone", ph);
                                 }}
                                 className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors border border-blue-200"
                               >
@@ -949,6 +946,14 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
 
                     {/* Interactive Preview Card */}
                     <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3.5">
+                      <TextField label="اسم الفرصة لاختبار رسالة الاستفسار (معاينة فقط)"
+                        value={inquiryPreviewTitle} onChange={setInquiryPreviewTitle} dir="ltr" />
+                      <select aria-label="لغة معاينة زر الاستفسار" value={inquiryPreviewLanguage}
+                        onChange={event => setInquiryPreviewLanguage(event.target.value as "ar" | "en")}
+                        className="my-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs">
+                        <option value="ar">معاينة بالعربية</option>
+                        <option value="en">Preview in English</option>
+                      </select>
                       <p className="text-xs font-black text-slate-700 mb-2 flex items-center gap-1.5">
                         <span>👁️</span>
                         <span>معاينة حية لشكل الزر وموضعه تحت «سجل الآن»:</span>
@@ -963,7 +968,11 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                           </div>
                         </div>
 
-                        <div
+                        <a href={previewInquiry?.href}
+                          target={previewInquiry?.isExternal ? "_blank" : undefined}
+                          rel={previewInquiry?.isExternal ? "noopener noreferrer" : undefined}
+                          aria-disabled={!previewInquiry}
+                          data-testid="link-inquiry-preview"
                           className={`w-full font-bold py-2.5 rounded-xl text-xs text-center flex items-center justify-center gap-1.5 border transition-all ${
                             (settings.brand.opportunityInquiryChannel || "whatsapp") === "whatsapp"
                               ? "border-emerald-500/40 bg-emerald-50 text-emerald-800"
@@ -991,8 +1000,11 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                           {settings.brand.opportunityInquiryChannel === "custom_url" && (
                             <ExternalLink size={14} className="text-purple-600 shrink-0" />
                           )}
-                          <span className="truncate">{settings.brand.opportunityInquiryLabelAr || "تواصل معنا للاستفسار 💬"}</span>
-                        </div>
+                          <span className="truncate">{inquiryPreviewLanguage === "ar"
+                            ? previewInquiry?.labelAr || "تواصل معنا للاستفسار"
+                            : previewInquiry?.labelEn || "Contact us for inquiries"}</span>
+                        </a>
+                        {previewInquiry && <p dir="ltr" className="break-all text-[10px] text-slate-500">{previewInquiry.href}</p>}
 
                         <div className="text-[11px] text-slate-400 py-0.5 text-center font-medium">
                           🔗 نسخ رابط الفرصة
@@ -1002,6 +1014,16 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                   </div>
                 )}
               </div>
+
+              {onSaveInquiry && <div className="md:col-span-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4 space-y-2">
+                <button type="button" onClick={onSaveInquiry} disabled={inquirySaving || saving}
+                  data-testid="button-save-opportunity-inquiry"
+                  className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">
+                  <Save size={16} />{inquirySaving ? "جارٍ حفظ إعدادات الاستفسار…" : "حفظ إعدادات الاستفسار فقط"}
+                </button>
+                <p className="text-xs text-slate-600">يحفظ وسيلة التواصل وبياناتها ونصوص زر الاستفسار فقط، دون تغيير إعدادات الموقع أو رابط الفرصة.</p>
+                {inquiryMessage && <p role="status" className="text-sm font-bold">{inquiryMessage}</p>}
+              </div>}
 
               {/* Opportunity Page Direct Contact Channels */}
               <div className="md:col-span-2 rounded-2xl border border-emerald-100 bg-emerald-50/30 p-5 space-y-4">
@@ -1849,10 +1871,12 @@ function TextField({
   dir?: string;
   type?: string;
 }) {
+  const inputId = useId();
   return (
     <div>
-      <label className="mb-2 block text-xs font-bold text-slate-700">{label}</label>
+      <label htmlFor={inputId} className="mb-2 block text-xs font-bold text-slate-700">{label}</label>
       <input
+        id={inputId}
         type={type}
         dir={dir}
         value={value ?? ""}

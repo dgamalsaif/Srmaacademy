@@ -577,7 +577,7 @@ export function getOpportunityInquiryLink(
   const defaultArMsg = b.opportunityInquiryMessageAr || "مرحباً، أود الاستفسار والتسجيل بخصوص الفرصة البحثية: {title}";
   const defaultEnMsg = b.opportunityInquiryMessageEn || "Hello, I would like to inquire about the research opportunity: {title}";
   const rawMsg = language === "en" ? defaultEnMsg : defaultArMsg;
-  const message = rawMsg.replace(/{title}/g, titleText).replace(/{name}/g, titleText);
+  const message = rawMsg.replace(/\{title\}|\{name\}|\btitle\b/gi, () => titleText);
 
   const labelAr = b.opportunityInquiryLabelAr || b.opportunityContactLabelAr || "تواصل معنا للاستفسار 💬";
   const labelEn = b.opportunityInquiryLabelEn || b.opportunityContactLabelEn || "Contact us for inquiries 💬";
@@ -592,6 +592,7 @@ export function getOpportunityInquiryLink(
       "966562159258"
     ).trim();
     let cleanNum = rawVal.replace(/[^\d+]/g, "").replace(/^\+/, "");
+    if (cleanNum.startsWith("00")) cleanNum = cleanNum.slice(2);
     if (cleanNum.startsWith("05") && cleanNum.length === 10) {
       cleanNum = "966" + cleanNum.substring(1);
     }
@@ -643,14 +644,19 @@ export function getOpportunityInquiryLink(
     let displayValue = `@${cleanUsername}`;
 
     if (isUrl) {
-      href = rawTg;
+      let telegramUrl: URL;
+      try { telegramUrl = new URL(rawTg); } catch { return null; }
+      if (!["https:", "http:"].includes(telegramUrl.protocol) || telegramUrl.hostname !== "t.me" ||
+          telegramUrl.username || telegramUrl.password) return null;
+      telegramUrl.searchParams.set("text", message);
+      href = telegramUrl.toString();
       displayValue = "Telegram";
     } else if (isPhoneNumber) {
       let cleanDigits = cleanUsername.replace(/[^\d]/g, "");
       if (cleanDigits.startsWith("05") && cleanDigits.length === 10) {
         cleanDigits = "966" + cleanDigits.substring(1);
       }
-      href = `tg://resolve?phone=${cleanDigits}`;
+      href = `https://t.me/+${cleanDigits}?text=${encodeURIComponent(message)}`;
       displayValue = `+${cleanDigits}`;
     } else {
       href = `https://t.me/${cleanUsername}?text=${encodeURIComponent(message)}`;
@@ -692,9 +698,14 @@ export function getOpportunityInquiryLink(
       b.contactUsValue ||
       ""
     ).trim();
+    if (!urlVal) return null;
+    let url: URL;
+    try { url = new URL(/^https?:\/\//i.test(urlVal) ? urlVal : `https://${urlVal}`); }
+    catch { return null; }
+    if (!["https:", "http:"].includes(url.protocol) || url.username || url.password) return null;
     return {
       channel: "custom_url",
-      href: urlVal.startsWith("http") ? urlVal : `https://${urlVal}`,
+      href: url.toString(),
       isExternal: true,
       labelAr: b.opportunityInquiryLabelAr || "رابط الاستفسار والتواصل 🔗",
       labelEn: b.opportunityInquiryLabelEn || "Inquiry & Contact Link 🔗",

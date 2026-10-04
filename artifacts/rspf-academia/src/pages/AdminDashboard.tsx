@@ -731,6 +731,8 @@ export default function AdminDashboard() {
   const [contentSettings, setContentSettings] = useState<SiteContentSettings>(DEFAULT_SITE_CONTENT_SETTINGS);
   const [contentSettingsSaving, setContentSettingsSaving] = useState(false);
   const [contentSettingsMessage, setContentSettingsMessage] = useState("");
+  const [inquirySaving, setInquirySaving] = useState(false);
+  const [inquiryMessage, setInquiryMessage] = useState("");
   const [importOpen, setImportOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [bulkEditOpen, setBulkEditOpen] = useState(false);
@@ -1051,6 +1053,27 @@ export default function AdminDashboard() {
     } finally {
       setPortalSettingsSaving(false);
     }
+  };
+
+  const saveInquirySettings = async () => {
+    setInquirySaving(true);
+    setInquiryMessage("");
+    try {
+      const patch = Object.fromEntries(Object.entries(contentSettings.brand).filter(([key]) => key.startsWith("opportunityInquiry")));
+      const response = await apiFetch("/api/site-content-settings/opportunity-inquiry", {
+        method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(patch),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "تعذر حفظ إعدادات الاستفسار.");
+      const saved = result as SiteContentSettings;
+      const savedInquiry = Object.fromEntries(Object.entries(saved.brand).filter(([key]) => key.startsWith("opportunityInquiry")));
+      setContentSettings(current => ({ ...current, brand: { ...current.brand, ...savedInquiry } }));
+      queryClient.setQueryData(["site-content-settings"], saved);
+      await queryClient.invalidateQueries({ queryKey: ["site-content-settings"] });
+      setInquiryMessage("تم حفظ إعدادات زر الاستفسار فقط، دون تغيير رابط الفرصة أو بقية إعدادات الموقع.");
+    } catch (error) {
+      setInquiryMessage(error instanceof Error ? error.message : "تعذر حفظ إعدادات الاستفسار.");
+    } finally { setInquirySaving(false); }
   };
 
   const saveContentSettings = async () => {
@@ -1599,7 +1622,8 @@ export default function AdminDashboard() {
           )}
           {view === "content-settings" && canManage && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <ContentControlPanel settings={contentSettings} onChange={setContentSettings} onSave={() => void saveContentSettings()} saving={contentSettingsSaving} message={contentSettingsMessage} />
+              <ContentControlPanel settings={contentSettings} onChange={setContentSettings} onSave={() => void saveContentSettings()} saving={contentSettingsSaving || inquirySaving} message={contentSettingsMessage}
+                onSaveInquiry={() => void saveInquirySettings()} inquirySaving={inquirySaving} inquiryMessage={inquiryMessage} />
             </div>
           )}
 

@@ -3,7 +3,8 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import sharp from "sharp";
 import { requireOwner } from "../middlewares/coordinatorAuth";
-import { getSiteContentSettings, sanitizeSiteContentSettings, saveSiteContentSettings } from "../lib/siteContentSettings";
+import { getSiteContentSettings, sanitizeSiteContentSettings, saveSiteContentSettings, saveOpportunityInquirySettings } from "../lib/siteContentSettings";
+import { validateInquiryPatch } from "../lib/opportunityInquiryPatch";
 
 const router = Router();
 
@@ -59,6 +60,13 @@ router.put("/site-content-settings", requireOwner, async (req, res): Promise<voi
   const settings = sanitizeSiteContentSettings(req.body);
   await saveSiteContentSettings(settings);
   res.json(settings);
+});
+
+router.patch("/site-content-settings/opportunity-inquiry", requireOwner, async (req, res): Promise<void> => {
+  let patch: Record<string, string | boolean>;
+  try { patch = validateInquiryPatch(req.body); }
+  catch (error) { res.status(400).json({ error: (error as Error).message }); return; }
+  res.json(await saveOpportunityInquirySettings(patch));
 });
 
 export default router;

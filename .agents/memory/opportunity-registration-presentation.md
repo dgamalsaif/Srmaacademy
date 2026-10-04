@@ -26,3 +26,9 @@ Research-title protection must keep full titles accessible to all visitors. The 
 **Why:** the user explicitly selected public visibility after being told that public titles, metadata and images cannot be made completely uncopyable.
 
 **How to apply:** use truthful copy deterrents and attribution while preserving public English titles, announcement sharing and registration. Do not introduce a title-access gate or block clipboard use in form fields. Do not claim screenshots or OCR can be prevented.
+
+Inquiry-button customization must be independent of opportunity sharing and other site settings. Edit and save only its contact channel, destination, labels, messages and enabled state.
+
+**Why:** the user requested changes to “المعلومات الخاصة بالتواصل فقط وليست كل” and explicitly said the opportunity link works.
+
+**How to apply:** preserve opportunity links and announcements. Do not sync inquiry edits into separate contact-channel settings or save unrelated site-wide drafts when saving inquiry preferences.
