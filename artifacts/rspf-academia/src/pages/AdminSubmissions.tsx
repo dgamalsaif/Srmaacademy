@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useClerk } from "@clerk/react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { ChevronRight, LogOut, RefreshCw, Users, FileText, Check, X, Clock, Mail, Phone, Download, Pencil, Trash2, Save, Loader2 } from "lucide-react";
 import Footer from "@/components/Footer";
@@ -365,6 +366,7 @@ export default function AdminSubmissions() {
   const [selectedResearchId, setSelectedResearchId] = useState<number | "all">("all");
   const [location, setLocation] = useLocation();
   const { signOut } = useClerk();
+  const queryClient = useQueryClient();
   const [authorized, setAuthorized] = useState<boolean | null>(null);
   const [role, setRole] = useState<"owner" | "coordinator" | null>(null);
   const [editingRegistration, setEditingRegistration] = useState<Registration | null>(null);
@@ -372,6 +374,8 @@ export default function AdminSubmissions() {
   const [editingService, setEditingService] = useState<ServiceRequest | null>(null);
   const [deletingService, setDeletingService] = useState<ServiceRequest | null>(null);
   const [mutationError, setMutationError] = useState("");
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   useEffect(() => {
     const workspace = location.startsWith("/coordinator/") ? "coordinator" : "owner";
@@ -528,18 +532,43 @@ export default function AdminSubmissions() {
 
   const deleteRegistration = async () => {
     if (!deletingRegistration) return;
+    if (role !== "owner" && deletingRegistration.coordinatorId === null) return;
+    if (role === "owner" && deletingRegistration.status !== "rejected") { setMutationError("يمكن للمالك حذف التسجيلات المرفوضة فقط."); return; }
     setMutationError("");
     try {
-      const response = await fetch(`${API_BASE}/registrations/${deletingRegistration.id}`, { method: "DELETE" });
+      const response = await fetch(`${API_BASE}/registrations/${deletingRegistration.id}${role === "owner" ? "?rejectedOnly=true" : ""}`, { method: "DELETE", credentials: "include" });
       if (!response.ok) {
         const result = await response.json().catch(() => ({})) as { error?: string };
         throw new Error(result.error || "تعذر حذف الطالب.");
       }
       setRegistrations((items) => items.filter((item) => item.id !== deletingRegistration.id));
       setDeletingRegistration(null);
+      void queryClient.invalidateQueries();
+      void fetchData();
     } catch (deleteError) {
       setMutationError(deleteError instanceof Error ? deleteError.message : "تعذر حذف الطالب.");
     }
+  };
+
+  const rejectedInView = filteredRegistrations.filter((item) => item.status === "rejected");
+  const bulkDeleteRejected = async () => {
+    if (role !== "owner") return;
+    setBulkDeleting(true);
+    setMutationError("");
+    const failed: string[] = [];
+    const removed = new Set<number>();
+    for (const item of rejectedInView) {
+      try {
+        const response = await fetch(`${API_BASE}/registrations/${item.id}?rejectedOnly=true`, { method: "DELETE", credentials: "include" });
+        if (response.ok) removed.add(item.id); else failed.push(item.fullName);
+      } catch { failed.push(item.fullName); }
+    }
+    setRegistrations((items) => items.filter((item) => !removed.has(item.id)));
+    setBulkDeleting(false);
+    if (failed.length) setMutationError(`تعذر حذف ${failed.length} تسجيل (ربما تغيّرت حالتها): ${failed.slice(0, 3).join("، ")}`);
+    else setBulkDeleteOpen(false);
+    void queryClient.invalidateQueries();
+    void fetchData();
   };
 
   const saveEditedService = (saved: ServiceRequest) => {
@@ -626,6 +655,9 @@ export default function AdminSubmissions() {
           <div className="flex items-center gap-3 w-full md:w-auto justify-end">
             {tab === "registrations" && (
               <div className="flex items-center gap-3">
+              {role === "owner" && rejectedInView.length > 0 && (
+                <button onClick={() => { setMutationError(""); setBulkDeleteOpen(true); }} className="flex items-center gap-2 rounded-xl border border-red-200 px-4 py-2 text-sm font-bold text-red-600 transition hover:bg-red-50"><Trash2 size={16} /> حذف المرفوضين ({rejectedInView.length})</button>
+              )}
               <button onClick={() => exportRegistrations()} disabled={exporting || filteredRegistrations.length === 0}
                 className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm disabled:cursor-not-allowed disabled:opacity-50">
                 <Download size={16} className={exporting ? "animate-pulse" : "text-slate-400"} />
@@ -739,11 +771,15 @@ export default function AdminSubmissions() {
                           </td>
                           <td className="px-6 py-5">
                             {canManageCoordinatorRequests ? (
-                              <StatusActions id={reg.id} current={reg.status} onUpdate={fetchData} endpoint="registrations" />
+                              <div className="flex items-center gap-1">
+                                <StatusActions id={reg.id} current={reg.status} onUpdate={fetchData} endpoint="registrations" />
+                                {reg.status === "rejected" && (
+                                  <button onClick={() => { setMutationError(""); setDeletingRegistration(reg); }} title="حذف التسجيل المرفوض نهائياً" className="rounded-lg p-2 text-red-600 transition hover:bg-red-50"><Trash2 size={16} /></button>
+                                )}
+                              </div>
                             ) : (
                               <div className="flex items-center gap-1">
                                 <button onClick={() => exportRegistrations([reg], `srma-student-${reg.id}.xls`)} title="تنزيل Excel للطالب" className="rounded-lg p-2 text-[#117b59] transition hover:bg-[#e6f5ef]"><Download size={16} /></button>
-                                <button onClick={() => setEditingRegistration(reg)} title="تعديل بيانات الطالب" className="rounded-lg p-2 text-blue-600 transition hover:bg-blue-50"><Pencil size={16} /></button>
                                 <button onClick={() => { setMutationError(""); setDeletingRegistration(reg); }} title="حذف الطالب" className="rounded-lg p-2 text-red-600 transition hover:bg-red-50"><Trash2 size={16} /></button>
                               </div>
                             )}
@@ -852,9 +888,23 @@ export default function AdminSubmissions() {
         )}
       </div>
       <Footer />
-      {editingRegistration && <StudentEditModal registration={editingRegistration} onClose={() => setEditingRegistration(null)} onSaved={saveEditedRegistration} />}
-      {editingService && <ServiceRequestEditModal service={editingService} onClose={() => setEditingService(null)} onSaved={saveEditedService} />}
-      {deletingService && <ServiceRequestDeleteModal service={deletingService} onClose={() => setDeletingService(null)} onConfirm={deleteService} />}
+      {role === "owner" && editingRegistration && <StudentEditModal registration={editingRegistration} onClose={() => setEditingRegistration(null)} onSaved={saveEditedRegistration} />}
+      {role === "owner" && editingService && <ServiceRequestEditModal service={editingService} onClose={() => setEditingService(null)} onSaved={saveEditedService} />}
+      {role === "owner" && deletingService && <ServiceRequestDeleteModal service={deletingService} onClose={() => setDeletingService(null)} onConfirm={deleteService} />}
+      {role === "owner" && bulkDeleteOpen && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" onClick={() => !bulkDeleting && setBulkDeleteOpen(false)}>
+          <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm" />
+          <div className="relative w-full max-w-md rounded-3xl bg-white p-6 text-right shadow-2xl" dir="rtl" onClick={(event) => event.stopPropagation()}>
+            <h2 className="text-lg font-black text-slate-800">حذف التسجيلات المرفوضة</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-500">سيتم حذف <strong className="text-slate-800">{rejectedInView.length}</strong> تسجيل مرفوض في العرض الحالي نهائياً ولا يمكن استرجاعها، وسيتم إرجاع المقاعد المحجوزة إلى الفرص.</p>
+            {mutationError && <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">{mutationError}</p>}
+            <div className="mt-6 flex justify-end gap-3">
+              <button type="button" disabled={bulkDeleting} onClick={() => setBulkDeleteOpen(false)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50">إلغاء</button>
+              <button type="button" disabled={bulkDeleting} onClick={() => void bulkDeleteRejected()} className="rounded-xl bg-red-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-red-700 disabled:opacity-60">{bulkDeleting ? "جارٍ الحذف..." : "حذف نهائياً"}</button>
+            </div>
+          </div>
+        </div>
+      )}
       {deletingRegistration && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center p-4" onClick={() => setDeletingRegistration(null)}>
           <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm" />
@@ -863,7 +913,7 @@ export default function AdminSubmissions() {
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600"><Trash2 size={21} /></div>
               <div>
                 <h2 className="text-lg font-black text-slate-800">حذف تسجيل الطالب</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-500">هل تريد حذف تسجيل <strong className="text-slate-800">{deletingRegistration.fullName}</strong> نهائياً؟ لا يمكن استرجاعه بعد الحذف.</p>
+                <p className="mt-2 text-sm leading-6 text-slate-500">هل تريد حذف تسجيل <strong className="text-slate-800">{deletingRegistration.fullName}</strong> نهائياً؟ سيُحذف التسجيل بشكل دائم ولا يمكن استرجاعه، وسيتم إرجاع المقعد المحجوز إلى الفرصة.</p>
               </div>
             </div>
             {mutationError && <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">{mutationError}</p>}

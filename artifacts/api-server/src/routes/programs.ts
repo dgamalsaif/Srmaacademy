@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import sharp from "sharp";
 import { db, insertResearchProgramSchema, programCatalogBootstrapTable, registrationsTable, researchProgramsTable } from "@workspace/db";
 import { desc, eq, sql } from "drizzle-orm";
-import { readSession, requireCoordinator, requireOwner } from "../middlewares/coordinatorAuth";
+import { readSession, requireOwner } from "../middlewares/coordinatorAuth";
 import { getManagedOwner } from "../middlewares/ownerAuth";
 import { getSiteContentSettings, OpportunityFieldId } from "../lib/siteContentSettings";
 import { getEnglishOpportunityTitle, getOpportunityShareSummary } from "../lib/opportunityDisplay";
@@ -12,6 +12,7 @@ import { addImportedSpecialties, importResearchOpportunities, PROGRAM_CATALOG_LO
 import { getResearchImageBytes, getResearchImageUrl, ResearchImageStorageError, ResearchImageValidationError, resolveResearchImageUploadToken, uploadResearchImage } from "../lib/researchImageStorage";
 import { ensureProgramCapacityModel, PROGRAM_CAPACITY_LOCK_NAMESPACE, type DatabaseTransaction } from "../lib/programCapacity";
 import { applyResearchCatalogSeatSnapshot, researchCatalogDisplayOrder } from "../lib/researchCatalogSeatSnapshot";
+import { getOpportunityVisibility, saveOpportunityVisibility, validateHiddenFields } from "../lib/opportunityVisibility";
 
 const router = Router();
 
@@ -95,10 +96,11 @@ async function listPrograms() {
   });
 }
 
-function toClient(row: typeof researchProgramsTable.$inferSelect, includeOwnerFields = false) {
+function toClient(row: typeof researchProgramsTable.$inferSelect, includeOwnerFields = false, hiddenFields: string[] = []) {
   const imageVersion = row.updatedAt?.getTime?.() ?? row.createdAt.getTime();
   return {
     id: row.id,
+    hiddenFields,
     category: row.category,
     title: row.titleEn,
     titleAr: row.titleAr,
@@ -175,14 +177,16 @@ router.get("/programs", async (req, res) => {
     const rows = await listPrograms();
     const isOwner = Boolean(await getManagedOwner(req).catch(() => null));
     const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session)) || isOwner;
-    res.json((isStaff ? rows : rows.filter(isPublicProgram)).map((row) => toClient(row, isOwner)));
+    const visibleRows = isStaff ? rows : rows.filter(isPublicProgram);
+    const visibility = await getOpportunityVisibility(visibleRows.map((row: typeof researchProgramsTable.$inferSelect) => row.id));
+    res.json(visibleRows.map(row => toClient(row, isOwner, visibility.get(row.id) ?? [])));
   } catch (err) {
     req.log.error({ err }, "Failed listing programs");
     res.status(500).json({ error: "تعذر تحميل الفرص البحثية حالياً." });
   }
 });
 
-router.post("/program-images/upload", requireCoordinator, raw({
+router.post("/program-images/upload", requireOwner, raw({
   type: [
     "image/jpeg",
     "image/jpg",
@@ -298,7 +302,8 @@ router.get("/programs/:id/image", async (req, res) => {
 
   // 2. Generate a high-resolution 1200x630 social card PNG using sharp
   try {
-    const cardSvg = buildOpportunitySocialCardSvg(program);
+    const hiddenFields = (await getOpportunityVisibility([id])).get(id) ?? [];
+    const cardSvg = buildOpportunitySocialCardSvg(program, hiddenFields);
     const pngBuffer = await sharp(Buffer.from(cardSvg))
       .resize(1200, 630, { fit: "cover" })
       .png({ quality: 90 })
@@ -362,7 +367,8 @@ router.get("/programs/:id/poster.svg", async (req, res) => {
   res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Content-Disposition", "inline; filename=\"research-opportunity-poster.svg\"");
-  res.type("image/svg+xml").send(buildOpportunityPoster(program));
+  const hiddenFields = (await getOpportunityVisibility([id])).get(id) ?? [];
+  res.type("image/svg+xml").send(buildOpportunityPoster(program, hiddenFields));
 });
 
 router.get("/programs/:id/share", async (req, res) => {
@@ -395,14 +401,16 @@ router.get("/programs/:id/share", async (req, res) => {
   const siteSettings = await getSiteContentSettings().catch(() => null);
   const siteName = siteSettings?.brand?.siteNameEn || "SRMA Research Academy";
   const showDetails = siteSettings?.showOpportunityDetails === true;
+  const hiddenFields = (await getOpportunityVisibility([id])).get(id) ?? [];
+  const visible = (field: string) => !hiddenFields.includes(field);
 
-  const journal = program.journalTarget ? (english ? `Journal: ${program.journalTarget}` : `المجلة: ${program.journalTarget}`) : "";
-  const seatsInfo = english
+  const journal = visible("journal") && program.journalTarget ? (english ? `Journal: ${program.journalTarget}` : `المجلة: ${program.journalTarget}`) : "";
+  const seatsInfo = !visible("seats") ? "" : english
     ? `${program.seatsLeft} of ${program.totalSeats} seats available`
     : `المقاعد المتاحة: ${program.seatsLeft} من أصل ${program.totalSeats}`;
   
   const detailDescription = showDetails ? [
-    rawDescription ? rawDescription.slice(0, 120) : (english ? "Medical research opportunity for physicians and board applicants." : "فرصة بحثية ونشر علمي طبي للأطباء والريزيدنت لدعم البورد والزمالات."),
+    !visible("description") ? "" : rawDescription ? rawDescription.slice(0, 120) : (english ? "Medical research opportunity for physicians and board applicants." : "فرصة بحثية ونشر علمي طبي للأطباء والريزيدنت لدعم البورد والزمالات."),
     journal,
     seatsInfo,
     english ? "Click to view full details and register." : "انقر لمعاينة التفاصيل والتسجيل مباشرة."
@@ -410,9 +418,9 @@ router.get("/programs/:id/share", async (req, res) => {
     ? `Register for this research opportunity at ${siteName}.`
     : `سجل في هذه الفرصة البحثية لدى ${siteName}.`);
 
-  const metaDesc = [specialtyLine, detailDescription].filter(Boolean).join(" • ");
+  const metaDesc = [visible("specialty") ? specialtyLine : "", detailDescription].filter(Boolean).join(" • ");
   const imageVersion = program.updatedAt?.getTime?.() ?? program.createdAt.getTime();
-  const image = `${origin}/api/programs/${program.id}/image?v=${imageVersion}`;
+  const image = `${origin}/api/programs/${program.id}/${visible("image") ? "image" : "poster.svg"}?v=${imageVersion}`;
 
   res.setHeader("Cache-Control", "no-store");
   res.type("html").send(`<!doctype html>
@@ -453,8 +461,8 @@ router.get("/programs/:id/share", async (req, res) => {
        ${escapeHtml(heading)}
     </div>
     <h1 style="margin:0 0 12px 0;font-size:18px;font-weight:800;color:#0f2744;line-height:1.4;">${escapeHtml(title)}</h1>
-     ${specialty ? `<p style="font-weight:700;">${escapeHtml(specialtyLine)}</p>` : ""}
-     <img src="${escapeHtml(image)}" alt="${escapeHtml(title)}" style="display:block;width:100%;height:auto;border-radius:12px;margin:16px 0;">
+     ${visible("specialty") && specialty ? `<p style="font-weight:700;">${escapeHtml(specialtyLine)}</p>` : ""}
+     ${visible("image") ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(title)}" style="display:block;width:100%;height:auto;border-radius:12px;margin:16px 0;">` : ""}
     <p style="margin:0 0 24px 0;color:#64748b;font-size:14px;line-height:1.6;">${english ? "Redirecting you to the research opportunity on the website..." : "جارٍ توجيهك إلى تفاصيل الفرصة البحثية على الموقع..."}</p>
     <a href="${escapeHtml(destination)}" style="display:inline-block;background:#0c3156;color:#ffffff;text-decoration:none;font-weight:700;padding:12px 28px;border-radius:12px;font-size:14px;box-shadow:0 4px 12px rgba(12,49,86,0.25);">
        ${english ? "Register now" : "سجل الآن"}
@@ -465,6 +473,9 @@ router.get("/programs/:id/share", async (req, res) => {
 });
 
 router.post("/programs", requireOwner, async (req, res) => {
+  let hiddenFields: string[];
+  try { hiddenFields = validateHiddenFields(req.body?.hiddenFields ?? []); }
+  catch (error) { res.status(400).json({ error: (error as Error).message }); return; }
   const researchGroupUrl = normalizeResearchGroupUrl(req.body?.researchGroupUrl);
   if (researchGroupUrl === null) {
     res.status(400).json({ error: "رابط القروب يجب أن يبدأ بـ https:// أو يترك فارغاً." });
@@ -497,8 +508,12 @@ router.post("/programs", requireOwner, async (req, res) => {
     res.status(400).json({ error: "يرجى تعبئة الحقول الإلزامية للفرصة", fields: missingFields });
     return;
   }
-  const [row] = await db.insert(researchProgramsTable).values({ ...parsed.data, status: programStatus, priceOriginalSar, priceDiscountedSar }).returning();
-  res.status(201).json(toClient(row, true));
+  const row = await db.transaction(async (tx: Pick<typeof db, "insert">) => {
+    const [created] = await tx.insert(researchProgramsTable).values({ ...parsed.data, status: programStatus, priceOriginalSar, priceDiscountedSar }).returning();
+    await saveOpportunityVisibility(tx, created.id, hiddenFields);
+    return created;
+  });
+  res.status(201).json(toClient(row, true, hiddenFields));
 });
 
 router.post("/programs/import", requireOwner, async (req, res) => {
@@ -522,6 +537,12 @@ router.post("/programs/import", requireOwner, async (req, res) => {
 
 router.patch("/programs/:id", requireOwner, async (req, res) => {
   const id = Number(req.params["id"]);
+  let hiddenFields: string[] | undefined;
+  try {
+    if (Object.prototype.hasOwnProperty.call(req.body ?? {}, "hiddenFields")) {
+      hiddenFields = validateHiddenFields(req.body.hiddenFields);
+    }
+  } catch (error) { res.status(400).json({ error: (error as Error).message }); return; }
   const researchGroupUrl = normalizeResearchGroupUrl(req.body?.researchGroupUrl);
   if (researchGroupUrl === null) {
     res.status(400).json({ error: "رابط القروب يجب أن يبدأ بـ https:// أو يترك فارغاً." });
@@ -564,9 +585,11 @@ router.patch("/programs/:id", requireOwner, async (req, res) => {
         // validation so every saved replacement gets a fresh image URL.
         .set({ ...parsed.data, ...seatOverride.value, totalSeats: 15, firstAuthorSeats: 1, coAuthorSeats: 14, updatedAt: new Date(Math.max(Date.now(), current.updatedAt.getTime() + 1)) })
         .where(eq(researchProgramsTable.id, id)).returning();
+      if (hiddenFields !== undefined) await saveOpportunityVisibility(tx, id, hiddenFields);
       return row;
     });
-    res.json(toClient(row, true));
+    const visibility = hiddenFields ?? (await getOpportunityVisibility([id])).get(id) ?? [];
+    res.json(toClient(row, true, visibility));
   } catch (error) {
     if (error instanceof ProgramUpdateError) {
       res.status(error.status).json({ error: error.message, ...(error.fields?.length ? { fields: error.fields } : {}) });
@@ -652,7 +675,8 @@ router.post("/programs/batch-update", requireOwner, async (req, res) => {
       }
     }
     const freshRows = await db.select().from(researchProgramsTable).orderBy(desc(researchProgramsTable.createdAt));
-    res.json({ success: true, affected, programs: freshRows.map((r) => toClient(r, true)) });
+    const visibility = await getOpportunityVisibility(freshRows.map((row: typeof researchProgramsTable.$inferSelect) => row.id));
+    res.json({ success: true, affected, programs: freshRows.map((r) => toClient(r, true, visibility.get(r.id) ?? [])) });
   } catch (error) {
     req.log.error({ err: error }, "Failed to batch update programs");
     res.status(500).json({ error: "تعذر تحديث البرامج المحددة" });
@@ -781,13 +805,13 @@ async function getSeatsLeftOverride(value: unknown, current: typeof researchProg
   };
 }
 
-function buildOpportunityPoster(program: typeof researchProgramsTable.$inferSelect) {
+function buildOpportunityPoster(program: typeof researchProgramsTable.$inferSelect, hiddenFields: string[] = []) {
   const title = getEnglishOpportunityTitle(program);
   const specialty = program.specialtyAr || program.specialtyEn || "SRMA Research Academy";
   const titleLines = splitPosterText(title, 39, 3);
   const specialtyLines = splitPosterText(specialty, 30, 2);
   const titleSvg = titleLines.map((line, index) => `<text x="90" y="${365 + index * 58}" fill="#ffffff" font-family="Arial, sans-serif" font-size="38" font-weight="700">${escapeXml(line)}</text>`).join("");
-  const specialtySvg = specialtyLines.map((line, index) => `<text x="90" y="${245 + index * 42}" fill="#83e6c4" font-family="Arial, sans-serif" font-size="27" font-weight="700">${escapeXml(line)}</text>`).join("");
+  const specialtySvg = hiddenFields.includes("specialty") ? "" : specialtyLines.map((line, index) => `<text x="90" y="${245 + index * 42}" fill="#83e6c4" font-family="Arial, sans-serif" font-size="27" font-weight="700">${escapeXml(line)}</text>`).join("");
   return `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" role="img" aria-label="${escapeXml(title)}">
     <defs>
       <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#061b31"/><stop offset=".55" stop-color="#0c3156"/><stop offset="1" stop-color="#092640"/></linearGradient>
@@ -800,9 +824,9 @@ function buildOpportunityPoster(program: typeof researchProgramsTable.$inferSele
     <rect x="70" y="70" width="430" height="74" rx="20" fill="#0f725a" fill-opacity=".88"/><text x="105" y="118" fill="#ffffff" font-family="Arial, sans-serif" font-size="30" font-weight="800">SRMA RESEARCH ACADEMY</text>
     <text x="90" y="195" fill="#d8f7ed" font-family="Arial, sans-serif" font-size="22" font-weight="700">RESEARCH OPPORTUNITY</text>
     ${specialtySvg}${titleSvg}
-    <rect x="90" y="650" width="430" height="118" rx="24" fill="#0b503f" stroke="#8ee0c3" stroke-opacity=".65" stroke-width="2"/>
+    ${hiddenFields.includes("seats") ? "" : `<rect x="90" y="650" width="430" height="118" rx="24" fill="#0b503f" stroke="#8ee0c3" stroke-opacity=".65" stroke-width="2"/>
     <text x="126" y="699" fill="#c8f7e8" font-family="Arial, sans-serif" font-size="24" font-weight="700">AVAILABLE SEATS</text>
-    <text x="126" y="747" fill="#ffffff" font-family="Arial, sans-serif" font-size="42" font-weight="800">${program.seatsLeft} / 15</text>
+    <text x="126" y="747" fill="#ffffff" font-family="Arial, sans-serif" font-size="42" font-weight="800">${program.seatsLeft} / 15</text>`}
     <text x="90" y="840" fill="#8ee0c3" font-family="Arial, sans-serif" font-size="20">SRMA • Research Academy</text>
   </svg>`;
 }
@@ -825,7 +849,7 @@ function splitPosterText(value: string, maxLength: number, maxLines: number) {
   return lines;
 }
 
-function buildOpportunitySocialCardSvg(program: typeof researchProgramsTable.$inferSelect) {
+function buildOpportunitySocialCardSvg(program: typeof researchProgramsTable.$inferSelect, hiddenFields: string[] = []) {
   const title = getEnglishOpportunityTitle(program);
   const specialty = program.specialtyAr || program.specialtyEn || "أكاديمية SRMA للأبحاث";
   const journal = program.journalTarget || "Scopus / PubMed Q1 & Q2";
@@ -856,17 +880,17 @@ function buildOpportunitySocialCardSvg(program: typeof researchProgramsTable.$in
     <rect x="80" y="55" width="340" height="44" rx="12" fill="#047857" fill-opacity=".9"/>
     <text x="100" y="84" fill="#ffffff" font-family="'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="800" letter-spacing="1">SRMA RESEARCH ACADEMY</text>
 
-    <rect x="80" y="125" width="380" height="40" rx="20" fill="#10b981" fill-opacity=".2" stroke="#34d399" stroke-width="1.5"/>
-    <text x="105" y="151" fill="#a7f3d0" font-family="'Segoe UI', Roboto, sans-serif" font-size="18" font-weight="700">${escapeXml(specialty)}</text>
+    ${hiddenFields.includes("specialty") ? "" : `<rect x="80" y="125" width="380" height="40" rx="20" fill="#10b981" fill-opacity=".2" stroke="#34d399" stroke-width="1.5"/>
+    <text x="105" y="151" fill="#a7f3d0" font-family="'Segoe UI', Roboto, sans-serif" font-size="18" font-weight="700">${escapeXml(specialty)}</text>`}
 
     ${titleSvg}
 
     <rect x="80" y="470" width="1040" height="95" rx="16" fill="#072033" stroke="#34d399" stroke-opacity=".35" stroke-width="1.5"/>
-    <text x="115" y="515" fill="#94a3b8" font-family="'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="600">المجلة المستهدفة / الفهرسة</text>
-    <text x="115" y="545" fill="#f8fafc" font-family="'Segoe UI', Roboto, sans-serif" font-size="19" font-weight="700">${escapeXml(journal)}</text>
+    ${hiddenFields.includes("journal") ? "" : `<text x="115" y="515" fill="#94a3b8" font-family="'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="600">المجلة المستهدفة / الفهرسة</text>
+    <text x="115" y="545" fill="#f8fafc" font-family="'Segoe UI', Roboto, sans-serif" font-size="19" font-weight="700">${escapeXml(journal)}</text>`}
 
-    <text x="760" y="515" fill="#94a3b8" font-family="'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="600">المقاعد المتاحة</text>
-    <text x="760" y="547" fill="#34d399" font-family="'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="800">${program.seatsLeft} من ${program.totalSeats} متاح للتسجيل</text>
+    ${hiddenFields.includes("seats") ? "" : `<text x="760" y="515" fill="#94a3b8" font-family="'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="600">المقاعد المتاحة</text>
+    <text x="760" y="547" fill="#34d399" font-family="'Segoe UI', Roboto, sans-serif" font-size="22" font-weight="800">${program.seatsLeft} من ${program.totalSeats} متاح للتسجيل</text>`}
 
     <text x="80" y="598" fill="#64748b" font-family="'Segoe UI', Roboto, sans-serif" font-size="14">srmaacademy.com • المنصة المعتمدة لدعم الأبحاث والنشر العلمي الطبي للأطباء</text>
   </svg>`;

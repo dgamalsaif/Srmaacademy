@@ -1,3 +1,4 @@
+import { isFieldVisible } from "@/lib/opportunityVisibility";
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "wouter";
 import {
@@ -260,7 +261,7 @@ export default function Home() {
                     <div className="relative z-10 flex-1">
                       {showDetails && (
                         <div className="mb-3 flex flex-wrap items-center gap-2">
-                          {spec && <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-800">{spec}</span>}
+                          {spec && isFieldVisible(op, "specialty") && <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-800">{spec}</span>}
                           <span className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700">
                             <Lock size={10} />
                             {localize("محمي", "Protected")}
@@ -270,26 +271,26 @@ export default function Home() {
                       <AntiCaptureResearchTitle title={title} titleHref={`/research/${op.id}`} />
                       {showDetails && (
                         <>
-                          {desc && <p className="mb-3 line-clamp-3 text-sm leading-relaxed text-slate-600">{desc}</p>}
+                          {desc && isFieldVisible(op, "description") && <p className="mb-3 line-clamp-3 text-sm leading-relaxed text-slate-600">{desc}</p>}
                           <div className="mb-3 space-y-1 text-xs text-slate-500">
-                            {op.journalTarget && (
+                            {op.journalTarget && isFieldVisible(op, "journal") && (
                               <p className="flex items-start gap-1.5">
                                 <BookOpen size={13} className="mt-0.5 shrink-0 text-[#0C3156]" />
                                 <span className="font-semibold text-slate-700">{op.journalTarget}</span>
                               </p>
                             )}
-                            {op.duration && (
+                            {op.duration && isFieldVisible(op, "duration") && (
                               <p>
                                 <span>{localize("المدة:", "Duration:")}</span> <span className="font-semibold text-slate-700">{op.duration}</span>
                               </p>
                             )}
-                            {typeof op.seatsLeft === "number" && typeof op.totalSeats === "number" && (
+                            {isFieldVisible(op, "seats") && typeof op.seatsLeft === "number" && typeof op.totalSeats === "number" && (
                               <p>
                                 {localize(`المقاعد المتبقية ${op.seatsLeft} من ${op.totalSeats}`, `${op.seatsLeft} of ${op.totalSeats} seats left`)}
                               </p>
                             )}
                           </div>
-                          <OpportunityPrice originalSar={op.priceOriginalSar} discountedSar={op.priceDiscountedSar} compact />
+                          {isFieldVisible(op, "price") && <OpportunityPrice originalSar={op.priceOriginalSar} discountedSar={op.priceDiscountedSar} compact />}
                         </>
                       )}
                     </div>

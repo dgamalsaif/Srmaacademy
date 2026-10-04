@@ -8,6 +8,7 @@ import BrandLogo from "@/components/BrandLogo";
 import { useLanguage } from "@/lib/i18n";
 import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
 import { getEnglishOpportunityTitle } from "@/lib/opportunityDisplay";
+import { getPublicImageUrl, isFieldVisible } from "@/lib/opportunityVisibility";
 
 function OpportunityMetadata({ research, className = "" }: { research: ResearchOpportunity; className?: string }) {
   const { direction, language, localize } = useLanguage();
@@ -27,26 +28,31 @@ function OpportunityMetadata({ research, className = "" }: { research: ResearchO
   const coAuthorSeats = typeof research.coAuthorSeatsLeft === "number"
     ? research.coAuthorSeatsLeft
     : undefined;
+  const showJournal = isFieldVisible(research, "journal");
+  const showIndexed = isFieldVisible(research, "indexedIn");
+  const showDuration = isFieldVisible(research, "duration");
+  const showPrice = isFieldVisible(research, "price");
+  const showSeats = isFieldVisible(research, "seats");
 
   return (
     <div className={`srma-media-info rounded-xl border border-white/20 bg-[#061f35]/90 p-2.5 text-white shadow-xl backdrop-blur-md ${className}`} dir={direction}>
-      <div className="flex items-center gap-1.5 border-b border-white/15 pb-1.5">
+      {showJournal && <div className="flex items-center gap-1.5 border-b border-white/15 pb-1.5">
         <LibraryBig size={13} className="shrink-0 text-[#8ee0c3]" />
         <p className="min-w-0 truncate text-[11px] font-black">{research.journalTarget || localize("المجلة المستهدفة", "Target journal")}</p>
-      </div>
+      </div>}
       <div className="mt-1.5 flex flex-wrap items-center gap-1">
-        {journalDetails.map((detail) => (
+        {showIndexed && journalDetails.map((detail) => (
           <span key={detail} className="srma-media-detail-chip">{detail}</span>
         ))}
-        {research.indexedIn?.map((index) => (
+        {showIndexed && research.indexedIn?.map((index) => (
           <span key={`index-${index}`} className="srma-media-detail-chip">{localize("مفهرسة في", "Indexed in")} {index}</span>
         ))}
-        {research.duration && (
+        {showDuration && research.duration && (
           <span className="srma-media-detail-chip inline-flex items-center gap-1"><Clock3 size={10} /> {research.duration}</span>
         )}
       </div>
       <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-[1.15fr_1fr] sm:items-center">
-        {hasPrice && <div className="flex items-center gap-2 rounded-lg border border-[#8ee0c3]/30 bg-[#07634e]/55 px-2 py-1.5">
+        {showPrice && hasPrice && <div className="flex items-center gap-2 rounded-lg border border-[#8ee0c3]/30 bg-[#07634e]/55 px-2 py-1.5">
           <BadgePercent size={16} className="shrink-0 text-[#8ee0c3]" />
           <div className="min-w-0">
             <p className="text-[9px] font-bold text-white/70">{discount > 0 ? localize("السعر بعد الخصم", "Discounted price") : localize("رسوم المشاركة", "Participation fee")}</p>
@@ -61,18 +67,18 @@ function OpportunityMetadata({ research, className = "" }: { research: ResearchO
             </span>
           )}
         </div>}
-        <div className="flex items-center justify-between gap-2 rounded-lg border border-white/15 bg-white/10 px-2 py-1.5">
-          {discount > 0 && <div>
+        {(showPrice || showSeats) && <div className="flex items-center justify-between gap-2 rounded-lg border border-white/15 bg-white/10 px-2 py-1.5">
+          {showPrice && discount > 0 && <div>
             <p className="text-[9px] font-bold text-white/65">{localize("السعر الأصلي", "Original price")}</p>
             <p dir="ltr" className="text-[11px] font-black text-white/85 line-through">{formatOpportunityMoney(originalSar, "SAR", language)}</p>
           </div>}
-          <div className="text-left">
+          {showSeats && <div className="text-left">
             <p className="text-[9px] font-bold text-white/65">{localize("المقاعد", "Seats")}</p>
             <p className="inline-flex items-center gap-1 text-[11px] font-black text-white"><UsersRound size={11} /> {localize(`${research.seatsLeft} متاح من ${research.totalSeats}`, `${research.seatsLeft} of ${research.totalSeats} available`)}</p>
-          </div>
-        </div>
+          </div>}
+        </div>}
       </div>
-      {(firstAuthorSeats !== undefined || coAuthorSeats !== undefined) && (
+      {showSeats && (firstAuthorSeats !== undefined || coAuthorSeats !== undefined) && (
         <div className="mt-1.5 flex flex-wrap justify-end gap-1">
           {firstAuthorSeats !== undefined && <span className="srma-media-seat-chip">{localize("الكاتب الأول", "First author")}: {firstAuthorSeats} {localize("متاح", "available")}</span>}
           {coAuthorSeats !== undefined && <span className="srma-media-seat-chip">{localize("المؤلفون المشاركون", "Co-authors")}: {coAuthorSeats} {localize("متاح", "available")}</span>}
@@ -94,9 +100,10 @@ export default function OpportunityMedia({ research, className = "aspect-[4/3] m
   const [imageFailed, setImageFailed] = useState(false);
   const [isPanoramaOpen, setIsPanoramaOpen] = useState(false);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const canShowImage = Boolean(research.imageUrl) && !imageFailed;
+  const imageUrl = getPublicImageUrl(research);
+  const canShowImage = Boolean(imageUrl) && !imageFailed;
 
-  useEffect(() => setImageFailed(false), [research.imageUrl]);
+  useEffect(() => setImageFailed(false), [imageUrl]);
   useEffect(() => {
     if (!isPanoramaOpen) return;
     const previousOverflow = document.body.style.overflow;
@@ -123,12 +130,14 @@ export default function OpportunityMedia({ research, className = "aspect-[4/3] m
     setIsPanoramaOpen(false);
   };
 
+  if (!isFieldVisible(research, "image")) return null;
+
   return (
     <>
       <div className={`srma-protected-image relative min-w-0 max-w-full overflow-hidden rounded-2xl border border-slate-200 bg-[#082c4a] ${className}`} dir={direction} onContextMenu={(event) => event.preventDefault()} onDragStart={(event) => event.preventDefault()}>
         {canShowImage ? (
           <button type="button" data-testid={`button-expand-image-${research.id}`} onClick={() => setIsPanoramaOpen(true)} className="absolute inset-0 h-full w-full cursor-zoom-in focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-emerald-400" aria-label={localize(`عرض صورة ${title} بالحجم الكامل`, `View ${title} full size`)}>
-            <img loading="lazy" decoding="async" data-testid={`img-opportunity-${research.id}`} src={research.imageUrl} alt={localize(`صورة ${title}`, `Image of ${title}`)} draggable={false} onError={handleImageFailure} className="h-full w-full object-contain" />
+            <img loading="lazy" decoding="async" data-testid={`img-opportunity-${research.id}`} src={imageUrl} alt={localize(`صورة ${title}`, `Image of ${title}`)} draggable={false} onError={handleImageFailure} className="h-full w-full object-contain" />
             <span className="absolute bottom-2 end-2 flex h-9 w-9 items-center justify-center rounded-xl border border-white/25 bg-[#082c4a]/90 text-white"><Expand size={17} aria-hidden="true" /></span>
           </button>
         ) : (
@@ -138,14 +147,14 @@ export default function OpportunityMedia({ research, className = "aspect-[4/3] m
           </div>
         )}
         <BrandLogo src={brandLogo} alt={localize(`شعار ${brandName}`, `${brandName} logo`)} animationEnabled={false} decorative className="pointer-events-none absolute start-2 top-2 h-8 w-8 rounded-lg border border-white/25 object-cover" />
-        {discount > 0 && <span data-testid={`discount-badge-${research.id}`} className="pointer-events-none absolute end-2 top-2 inline-flex items-center gap-1 rounded-lg bg-emerald-700 px-2 py-1 text-[11px] font-bold text-white"><BadgePercent size={12} /> {localize("خصم", "Save")} {discount.toFixed(0)}%</span>}
+        {isFieldVisible(research, "price") && discount > 0 && <span data-testid={`discount-badge-${research.id}`} className="pointer-events-none absolute end-2 top-2 inline-flex items-center gap-1 rounded-lg bg-emerald-700 px-2 py-1 text-[11px] font-bold text-white"><BadgePercent size={12} /> {localize("خصم", "Save")} {discount.toFixed(0)}%</span>}
       </div>
       {isPanoramaOpen && canShowImage && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#041829]/[.94] p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={localize(`صورة ${title}`, `Image of ${title}`)} onClick={() => setIsPanoramaOpen(false)}>
           <div className="relative flex h-[min(94vh,980px)] w-full max-w-7xl flex-col gap-3" onClick={(event) => event.stopPropagation()} onContextMenu={(event) => event.preventDefault()}>
             <div className="relative flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-2xl border border-white/15 bg-[#082c4a] shadow-2xl">
-              <img src={research.imageUrl} alt="" aria-hidden="true" draggable={false} onError={handleImageFailure} className="absolute inset-0 h-full w-full scale-110 object-cover opacity-35 blur-2xl" />
-              <img src={research.imageUrl} alt={localize(`صورة ${title}`, `Image of ${title}`)} draggable={false} onError={handleImageFailure} className="srma-protected-image relative max-h-full max-w-full object-contain shadow-2xl" />
+              <img src={imageUrl} alt="" aria-hidden="true" draggable={false} onError={handleImageFailure} className="absolute inset-0 h-full w-full scale-110 object-cover opacity-35 blur-2xl" />
+              <img src={imageUrl} alt={localize(`صورة ${title}`, `Image of ${title}`)} draggable={false} onError={handleImageFailure} className="srma-protected-image relative max-h-full max-w-full object-contain shadow-2xl" />
             </div>
              <button ref={closeButtonRef} type="button" data-testid={`button-close-image-${research.id}`} onClick={() => setIsPanoramaOpen(false)} className="absolute right-1 top-1 inline-flex h-11 w-11 items-center justify-center rounded-full border border-white/30 bg-[#0b3657] text-white transition-colors hover:bg-[#15486d] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white" aria-label={localize("إغلاق عرض الصورة", "Close image viewer")}><X size={20} /></button>
             <OpportunityMetadata research={research} className="mx-auto w-full max-w-4xl shrink-0" />

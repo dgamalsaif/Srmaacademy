@@ -106,6 +106,7 @@ async function createRegistration(req: Request, res: Response, coordinatorId: nu
       const researchTitle = program.titleAr || program.titleEn;
       const registration = await insertCompatibleRegistration(tx, registrationsTable, {
         ...parsed.data,
+        status: "pending",
         authorRole,
         researchTitle,
         coordinatorId,
@@ -200,24 +201,14 @@ router.get("/registrations", requireCoordinator, async (req, res) => {
   }));
 });
 
-/* ── PATCH /api/registrations/:id ──
- * Coordinators may edit only registrations they created. The owner is
- * intentionally kept on the status-only endpoint below.
- */
-router.patch("/registrations/:id", requireCoordinator, async (req, res) => {
-  const staff = res.locals.staff as StaffSession;
-
+/* ── PATCH /api/registrations/:id ── owner only; coordinators add/remove only. */
+router.patch("/registrations/:id", requireOwner, async (req, res) => {
   const id = Number(req.params["id"]);
   const [current] = await db.select().from(registrationsTable).where(eq(registrationsTable.id, id)).limit(1);
   if (!current) {
     res.status(404).json({ error: "الطالب غير موجود" });
     return;
   }
-  if (staff.role === "coordinator" && current.coordinatorId !== staff.coordinatorId) {
-    res.status(403).json({ error: "لا يمكنك تعديل تسجيل لا يخصك" });
-    return;
-  }
-
   const source = req.body && typeof req.body === "object" ? req.body as Record<string, unknown> : {};
   const editableKeys = [
     "fullName", "specialization", "email", "whatsapp", "affiliation", "country", "city", "orcid", "customFields",
@@ -261,10 +252,13 @@ router.delete("/registrations/:id", requireCoordinator, async (req, res) => {
       if (!candidate) throw new RegistrationCapacityError("الطالب غير موجود", 404);
       await ensureProgramCapacityModel(tx);
       await tx.execute(sql`SELECT pg_advisory_xact_lock(${PROGRAM_CAPACITY_LOCK_NAMESPACE + candidate.researchId})`);
-      const [current] = await tx.select().from(registrationsTable).where(eq(registrationsTable.id, id)).limit(1);
+      const [current] = await tx.select().from(registrationsTable).where(eq(registrationsTable.id, id)).limit(1).for("update");
       if (!current) throw new RegistrationCapacityError("الطالب غير موجود", 404);
       if (staff.role === "coordinator" && current.coordinatorId !== staff.coordinatorId) {
         throw new RegistrationCapacityError("لا يمكنك حذف تسجيل لا يخصك", 403);
+      }
+      if (req.query["rejectedOnly"] === "true" && (staff.role !== "owner" || current.status !== "rejected")) {
+        throw new RegistrationCapacityError("الحذف بهذا الخيار مخصص للمالك وللتسجيلات المرفوضة فقط. أعد تحميل القائمة.", 409);
       }
 
       const [program] = await tx.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, current.researchId)).limit(1);

@@ -7,6 +7,8 @@
 - [Installable PWA identity](installable-pwa-identity.md) — Admin controls site/app identity; installed apps always fetch live opportunities and check for shell updates on return.
 - [GitHub tree publishing](github-tree-publishing.md) — connector-based tree updates must normalize Git output and omit deletes for paths already absent remotely.
 - [Cloudflare deployment access](cloudflare-deployment-access.md) — Worker upload and zone route permissions are separate; connector multipart uploads may hit an HTML challenge.
-- [Opportunity registration presentation](opportunity-registration-presentation.md) — English-only study titles; shared links open details and registration together, with one global details toggle.
+- [Opportunity registration presentation](opportunity-registration-presentation.md) — English-only titles; shared registration/details flow; per-opportunity field visibility plus the global details toggle.
+- [Coordinator permissions](coordinator-permissions.md) — coordinators only add/remove their students; owner-only editing and confirmed rejected-registration deletion.
+- [Persistence test isolation](persistence-test-isolation.md) — inject transaction/read doubles; global database method overrides may not isolate imported helpers.
 - [Public content policy](public-content-policy.md) — keep real tools and admin content; do not restore fabricated promotional sections or conceal empty/error states with invented data.
 - [Image cache invalidation](image-cache-invalidation.md) — persist cache versions after validation; successful deletion can conceal a replacement-cache defect.

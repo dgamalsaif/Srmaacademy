@@ -20,6 +20,7 @@ import OwnerSecurityPanel from "@/components/OwnerSecurityPanel";
 import OwnerDataManagementPanel from "@/components/OwnerDataManagementPanel";
 import OpportunityImportModal from "@/components/OpportunityImportModal";
 import { apiFetch } from "@/lib/api";
+import { OPPORTUNITY_DISPLAY_FIELDS, normalizeHiddenFields } from "@/lib/opportunityVisibility";
 
 const EMPTY_FORM: Omit<ResearchOpportunity, "id" | "createdAt"> = {
   category: "active",
@@ -52,12 +53,13 @@ const EMPTY_FORM: Omit<ResearchOpportunity, "id" | "createdAt"> = {
   duration: "",
   supervisor: "",
   researchGroupUrl: "",
+  hiddenFields: [],
 };
 
 type FormData = Omit<ResearchOpportunity, "id" | "createdAt">;
 
 function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, settings }: { initial: FormData; onSave: (data: FormData, imageToken: string | null) => Promise<{ error?: string } | void> | void; onClose: () => void; isEdit: boolean; requiredFields: OpportunityFieldId[]; settings: SiteContentSettings; }) {
-  const [form, setForm] = useState<FormData>({ ...initial, benefits: [...(initial.benefits || ["", "", ""])] });
+  const [form, setForm] = useState<FormData>({ ...initial, hiddenFields: normalizeHiddenFields(initial.hiddenFields), benefits: [...(initial.benefits || ["", "", ""])] });
   const [indexedStr, setIndexedStr] = useState((initial.indexedIn || []).join("، "));
   const [benefitsArr, setBenefitsArr] = useState<string[]>(initial.benefits?.length ? [...initial.benefits] : ["", "", ""]);
   const [formError, setFormError] = useState("");
@@ -315,6 +317,25 @@ function ResearchFormModal({ initial, onSave, onClose, isEdit, requiredFields, s
               <button type="button" onClick={() => setBenefitsArr((prev) => [...prev, ""])} className="text-sm text-[#117b59] font-bold hover:bg-[#117b59]/5 px-4 py-2 rounded-xl transition-colors flex items-center gap-1 mt-2 border border-transparent hover:border-[#117b59]/20">
                 <Plus size={16} /> إضافة ميزة
               </button>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-slate-50/60 p-4 text-right" data-testid="display-fields-section">
+            <p className="font-black text-slate-800">العناصر الظاهرة للزوار</p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">حدّد ما يُعرض علناً لهذه الفرصة. عند إلغاء التحديد يُخفى العنصر في البطاقات وصفحة التفاصيل والتسجيل. العنوان وأزرار التسجيل تبقى ظاهرة دائماً.</p>
+            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {OPPORTUNITY_DISPLAY_FIELDS.map((field) => {
+                const shown = !(form.hiddenFields || []).includes(field.id);
+                return (
+                  <label key={field.id} className="flex cursor-pointer items-center justify-end gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700">
+                    <span>{field.label}</span>
+                    <input type="checkbox" checked={shown} data-testid={`checkbox-show-${field.id}`} onChange={(e) => setForm((current) => {
+                      const rest = (current.hiddenFields || []).filter((id) => id !== field.id);
+                      return { ...current, hiddenFields: e.target.checked ? rest : [...rest, field.id] };
+                    })} className="h-4 w-4 accent-[#117b59]" />
+                  </label>
+                );
+              })}
             </div>
           </div>
 
@@ -808,6 +829,7 @@ export default function AdminDashboard() {
   }, [role]);
 
   const toPayload = (form: FormData, imageToken: string | null) => ({
+    hiddenFields: normalizeHiddenFields(form.hiddenFields),
     category: form.category || "active",
     titleAr: form.titleAr || form.title,
     titleEn: form.titleEn || form.title,
@@ -1293,7 +1315,7 @@ export default function AdminDashboard() {
             </button>
           )}
 
-          <button
+{canManage && (<button
             onClick={() => setView('settings')}
             className={`flex shrink-0 whitespace-nowrap items-center gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black transition-all ${
               view === 'settings'
@@ -1303,7 +1325,7 @@ export default function AdminDashboard() {
           >
             <Settings size={16} />
             <span>الإعدادات</span>
-          </button>
+          </button>)}
 
           {canManage && (
             <button
@@ -1604,7 +1626,7 @@ export default function AdminDashboard() {
           )}
 
           {/* SETTINGS VIEW */}
-          {view === "settings" && (
+          {view === "settings" && canManage && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
               <SettingsPanel role={role} accountName={accountName} onNameUpdated={setAccountName} />
             </div>
@@ -1636,7 +1658,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {formOpen && (
+      {canManage && formOpen && (
         <ResearchFormModal
           isEdit={false}
           initial={{ ...EMPTY_FORM, category: newCategory, status: newCategory === "completed" ? "seats_full" : "open", totalSeats: 15, seatsLeft: newCategory === "completed" ? 0 : 15 }}
@@ -1647,7 +1669,7 @@ export default function AdminDashboard() {
         />
       )}
 
-      {editItem && (
+      {canManage && editItem && (
         <ResearchFormModal
           isEdit={true}
           initial={editItem}
@@ -1761,7 +1783,7 @@ export default function AdminDashboard() {
       )}
 
       {/* Bulk Edit Modal */}
-      {bulkEditOpen && (
+      {canManage && bulkEditOpen && (
         <BulkEditModal
           isOpen={bulkEditOpen}
           onClose={() => setBulkEditOpen(false)}

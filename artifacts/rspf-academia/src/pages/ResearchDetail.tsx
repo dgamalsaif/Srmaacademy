@@ -3,6 +3,7 @@ import { useParams, Link } from "wouter";
 import { ChevronLeft, Users, Clock, BookOpen, CheckCircle2, ArrowLeft, ExternalLink, MessageCircle, Send, Mail, Phone, Copy, Lock, ShieldCheck, Share2, Check } from "lucide-react";
 import { ResearchOpportunity } from "@/lib/researchData";
 import { DEFAULT_SITE_CONTENT_SETTINGS, SiteContentSettings, getContactUsHref, getOpportunityContactLinks, getOpportunityInquiryLink } from "@/lib/siteContentSettings";
+import { isFieldVisible, type OpportunityDisplayFieldId } from "@/lib/opportunityVisibility";
 import OpportunityMedia from "@/components/OpportunityMedia";
 import OpportunityPrice from "@/components/OpportunityPrice";
 import { OpportunityCurrency, RESEARCH_STATUS_LABELS, useCurrency } from "@/lib/opportunityPricing";
@@ -69,6 +70,7 @@ export default function ResearchDetail() {
   } as Record<string, string>)[research.status], research.status);
   const title = getEnglishOpportunityTitle(research);
   const specialty = localize(research.specialtyAr, research.specialtyEn, research.specialty);
+  const vis = (field: OpportunityDisplayFieldId) => isFieldVisible(research, field);
   const description = localize(research.descriptionAr, research.descriptionEn, research.description);
   const contentFlow = direction === "rtl" ? "flex-row-reverse" : "flex-row";
   const siteName = language === "ar" ? contentSettings.brand.siteNameAr : contentSettings.brand.siteNameEn;
@@ -182,7 +184,7 @@ export default function ResearchDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* MAIN CONTENT */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Header */}
+            {/* Header: title and image do not depend on description visibility. */}
             <div
               data-protected="research"
               className="protected-research-content research-detail-content relative overflow-hidden select-none rounded-2xl bg-gradient-to-br from-[#0C3156] to-[#1A5FAE] p-7 text-start text-white shadow-md"
@@ -194,14 +196,15 @@ export default function ResearchDetail() {
               <ProtectedResearchWatermark />
 
               <div className={`mb-4 flex items-center gap-3 relative z-10 ${contentFlow}`}>
-                <span className={`text-xs font-bold px-3 py-1 rounded-full bg-white/20 text-white`}>
+                {vis("specialty") && <span className={`text-xs font-bold px-3 py-1 rounded-full bg-white/20 text-white`}>
                   {specialty}
-                </span>
+                </span>}
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
                   <ShieldCheck size={12} className="text-emerald-300" />
                   <span>{localize("محمي بالملكية الفكرية", "IP Protected")}</span>
                 </span>
-                {isCompletedResearch || research.status === "ethics_approved" || research.status === "under_review" ? (
+                {vis("status") && (<>
+{isCompletedResearch || research.status === "ethics_approved" || research.status === "under_review" ? (
                   <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-400 text-[#0C3156]">
                     {statusLabel}
                   </span>
@@ -220,6 +223,7 @@ export default function ResearchDetail() {
                     {localize("مسودة", "Draft")}
                   </span>
                 )}
+</>)}
               </div>
               <div className="relative z-10 mb-2">
                 <AntiCaptureResearchTitle
@@ -228,7 +232,7 @@ export default function ResearchDetail() {
                 />
               </div>
               <div className="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-white/15 relative z-10">
-                <p className="text-blue-200 text-xs">{localize("تاريخ الإضافة:", "Date added:")} {research.createdAt}</p>
+                {vis("createdAt") ? <p className="text-blue-200 text-xs">{localize("تاريخ الإضافة:", "Date added:")} {research.createdAt}</p> : <span />}
                 <button
                   type="button"
                   onClick={handleShareLink}
@@ -243,6 +247,7 @@ export default function ResearchDetail() {
             <OpportunityMedia research={research} className="aspect-[4/3] min-h-[240px]" />
 
             {/* Description */}
+            {vis("description") && (
             <div
               data-protected="research"
               className="protected-research-content research-detail-content relative overflow-hidden select-none rounded-2xl border border-slate-200 bg-white p-6 text-start shadow-sm"
@@ -266,7 +271,9 @@ export default function ResearchDetail() {
               </div>
             </div>
 
+            )}
             {/* Benefits */}
+{vis("benefits") && (<>
             <div className="rounded-2xl border border-[#0C3156]/12 bg-[#EFF6FF] p-6 text-start shadow-sm">
               <h2 className="text-lg font-black text-slate-900 mb-4">{isCompletedResearch ? localize("تفاصيل ومخرجات الدراسة", "Study details and outcomes") : localize("مزايا وقيمة المشاركة 💡", "Benefits and participation value 💡")}</h2>
               <ul className="space-y-3">
@@ -279,8 +286,9 @@ export default function ResearchDetail() {
               </ul>
             </div>
 
+</>)}
             {/* Indexed in */}
-            {research.indexedIn.length > 0 && (
+            {vis("indexedIn") && research.indexedIn.length > 0 && (
               <div className="rounded-2xl border border-slate-200 bg-white p-6 text-start shadow-sm">
                 <h2 className="text-lg font-black text-slate-900 mb-4">{localize("مفهرسة في", "Indexed in")}</h2>
                 <div className={`flex flex-wrap gap-2 ${contentFlow}`}>
@@ -298,6 +306,7 @@ export default function ResearchDetail() {
               <h3 className="text-lg font-black text-slate-900 mb-4">{isCompletedResearch ? localize("تفاصيل الدراسة", "Study details") : localize("تفاصيل الفرصة", "Opportunity details")}</h3>
 
               <div className="space-y-3 mb-5">
+{vis("seats") && (<>
                 <div className={`flex items-center justify-between border-b border-slate-100 py-2 ${contentFlow}`}>
                   <span className="text-sm text-slate-500 flex items-center gap-1.5">
                     <Users size={14} />
@@ -311,6 +320,8 @@ export default function ResearchDetail() {
                   <div className="flex justify-between gap-2 font-bold text-amber-700"><span>{localize("الكاتب الأول", "First author")}</span><span>{localize(`${research.firstAuthorSeatsLeft ?? 1} متاح من ${research.firstAuthorSeats ?? 1}`, `${research.firstAuthorSeatsLeft ?? 1} available of ${research.firstAuthorSeats ?? 1}`)}</span></div>
                   <div className="mt-1.5 flex justify-between gap-2 font-bold text-emerald-700"><span>{localize("المؤلفون المشاركون", "Co-authors")}</span><span>{localize(`${research.coAuthorSeatsLeft ?? 14} متاح من ${research.coAuthorSeats ?? 14}`, `${research.coAuthorSeatsLeft ?? 14} available of ${research.coAuthorSeats ?? 14}`)}</span></div>
                 </div>
+</>)}
+{vis("duration") && (<>
                 <div className={`flex items-center justify-between border-b border-slate-100 py-2 ${contentFlow}`}>
                   <span className="text-sm text-slate-500 flex items-center gap-1.5">
                     <Clock size={14} />
@@ -318,12 +329,15 @@ export default function ResearchDetail() {
                   </span>
                   <span className="font-bold text-slate-900">{research.duration}</span>
                 </div>
+</>)}
+{vis("journal") && (<>
                 <div className="border-b border-slate-100 py-2 text-start">
                   <span className="text-sm text-slate-500 block mb-1">{isCompletedResearch ? localize("المجلة أو جهة النشر", "Journal or publishing venue") : localize("المجلة المستهدفة", "Target journal")}</span>
                   <span className="font-semibold text-slate-800 text-sm">{research.journalTarget || "—"}</span>
                   {research.journalIssn && <span className="mt-1 block text-xs font-medium text-slate-500" dir="ltr">ISSN: {research.journalIssn}</span>}
                 </div>
-                {(research.journalPubmed || research.journalScopus || research.journalWos) && <div className="border-b border-slate-100 py-2 text-start">
+</>)}
+                {vis("indexedIn") && (research.journalPubmed || research.journalScopus || research.journalWos) && <div className="border-b border-slate-100 py-2 text-start">
                   <span className="text-sm text-slate-500 block mb-2">{localize("الفهرسة والتصنيف", "Indexing and ranking")}</span>
                   <div className="flex flex-wrap justify-start gap-2">
                     {research.journalPubmed && <span className="rounded-lg bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">PubMed: {research.journalPubmed}</span>}
@@ -331,15 +345,18 @@ export default function ResearchDetail() {
                     {research.journalWos && <span className="rounded-lg bg-violet-50 px-2 py-1 text-xs font-bold text-violet-700">WOS: {research.journalWos}</span>}
                   </div>
                 </div>}
+{vis("supervisor") && (<>
                 <div className="py-2 text-start">
                   <span className="text-sm text-slate-500 block mb-1">{localize("المشرف", "Supervisor")}</span>
                   <span className="font-semibold text-[#0C3156] text-sm">{research.supervisor || "—"}</span>
                 </div>
+</>)}
               </div>
 
-              {!isCompletedResearch && <div className="mb-5"><OpportunityPrice originalSar={research.priceOriginalSar} discountedSar={research.priceDiscountedSar} currency={currency} onCurrencyChange={setCurrency} /></div>}
+              {!isCompletedResearch && vis("price") && <div className="mb-5"><OpportunityPrice originalSar={research.priceOriginalSar} discountedSar={research.priceDiscountedSar} currency={currency} onCurrencyChange={setCurrency} /></div>}
 
-              {/* Progress */}
+              {vis("seats") && (<>
+{/* Progress */}
               <div className="mb-5">
                 <div className={`mb-2 flex justify-between text-xs text-slate-500 ${contentFlow}`}>
                   <span>{localize(`تبقى ${research.seatsLeft} من أصل ${research.totalSeats}`, `${research.seatsLeft} of ${research.totalSeats} remain`)}</span>
@@ -349,6 +366,7 @@ export default function ResearchDetail() {
                   <div className="h-full bg-gradient-to-l from-[#0C3156] to-[#1A5FAE] rounded-full transition-all" style={{ width: `${pct}%` }} />
                 </div>
               </div>
+</>)}
 
               {research.status === "open" ? (
                 <Link
@@ -503,12 +521,12 @@ export default function ResearchDetail() {
               {allResearch.filter((r) => r.id !== research.id && r.status === "open").slice(0, 3).map((r) => (
                 <Link key={r.id} href={`/research/${r.id}`} data-testid={`card-related-${r.id}`}
                   className="bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-md transition-shadow hover:border-[#0C3156]/25 block">
-                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full inline-block mb-3 ${r.specialtyColor}`}>
+                  {isFieldVisible(r, "specialty") && <span className={`text-xs font-bold px-2.5 py-1 rounded-full inline-block mb-3 ${r.specialtyColor}`}>
                     {localize(r.specialtyAr, r.specialtyEn, r.specialty)}
-                  </span>
+                  </span>}
                    <p className="mb-3 text-left text-sm font-semibold text-slate-800 line-clamp-2" dir="ltr">{getEnglishOpportunityTitle(r)}</p>
                   <div className={`flex items-center justify-between text-xs text-slate-500 ${contentFlow}`}>
-                    <span>{localize(`${r.seatsLeft} مقعد متبقي`, `${r.seatsLeft} seats remaining`)}</span>
+                    {isFieldVisible(r, "seats") ? <span>{localize(`${r.seatsLeft} مقعد متبقي`, `${r.seatsLeft} seats remaining`)}</span> : <span />}
                     <span className="text-[#0C3156] font-semibold flex items-center gap-1">
                       {localize("عرض التفاصيل", "View details")} <ChevronLeft size={12} />
                     </span>

@@ -5,6 +5,7 @@ import OpportunityPrice from "@/components/OpportunityPrice";
 import { useLanguage } from "@/lib/i18n";
 import { getResearchStatusLabel } from "@/lib/opportunityPricing";
 import type { ResearchOpportunity } from "@/lib/researchData";
+import { isFieldVisible } from "@/lib/opportunityVisibility";
 import { getEnglishOpportunityTitle } from "../lib/opportunityDisplay";
 import { ProtectedResearchWatermark } from "./ResearchProtection";
 
@@ -30,14 +31,15 @@ export default function OpportunityRegistrationOverview({ opportunity, showDetai
   const { direction, language, localize } = useLanguage();
   const englishTitle = getEnglishOpportunityTitle(opportunity);
   const code = `RES-2026-${opportunity.id}`;
-  const specialty = localize(opportunity.specialtyAr, opportunity.specialtyEn, opportunity.specialty);
+  const vis = (f: Parameters<typeof isFieldVisible>[1]) => isFieldVisible(opportunity, f);
+  const specialty = vis("specialty") ? localize(opportunity.specialtyAr, opportunity.specialtyEn, opportunity.specialty) : "";
 
   const header = (
     <div className="p-5 sm:p-7">
       <div className="flex flex-wrap items-center gap-2">
         <span className="rounded-lg bg-[#0c3156] px-2.5 py-1 text-xs font-black text-white">{brandName}</span>
-        <span dir="ltr" className="rounded-lg bg-emerald-100 px-2.5 py-1 font-mono text-xs font-black text-[#117b59]">{code}</span>
-        {showDetails && (
+        {vis("code") && <span dir="ltr" className="rounded-lg bg-emerald-100 px-2.5 py-1 font-mono text-xs font-black text-[#117b59]">{code}</span>}
+        {showDetails && vis("status") && (
           <span className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs font-black text-[#0c3156]">
             {getResearchStatusLabel(opportunity.status, language)}
           </span>
@@ -73,32 +75,32 @@ export default function OpportunityRegistrationOverview({ opportunity, showDetai
     );
   }
 
-  const description = localize(opportunity.descriptionAr, opportunity.descriptionEn, opportunity.description);
-  const issnLines = [
+  const description = !vis("description") ? "" : localize(opportunity.descriptionAr, opportunity.descriptionEn, opportunity.description);
+  const issnLines = !vis("indexedIn") ? [] : [
     opportunity.journalIssn && `ISSN: ${opportunity.journalIssn}`,
     opportunity.journalPubmed && `PubMed: ${opportunity.journalPubmed}`,
     opportunity.journalScopus && `Scopus: ${opportunity.journalScopus}`,
     opportunity.journalWos && `WOS: ${opportunity.journalWos}`,
   ].filter(Boolean) as string[];
-  const indexed = (opportunity.indexedIn || []).filter(Boolean);
-  const benefits = (opportunity.benefits || []).filter(Boolean);
+  const indexed = vis("indexedIn") ? (opportunity.indexedIn || []).filter(Boolean) : [];
+  const benefits = vis("benefits") ? (opportunity.benefits || []).filter(Boolean) : [];
   const first = typeof opportunity.firstAuthorSeatsLeft === "number" ? opportunity.firstAuthorSeatsLeft : undefined;
   const co = typeof opportunity.coAuthorSeatsLeft === "number" ? opportunity.coAuthorSeatsLeft : undefined;
-  const hasSeats = typeof opportunity.seatsLeft === "number" && typeof opportunity.totalSeats === "number";
+  const hasSeats = vis("seats") && typeof opportunity.seatsLeft === "number" && typeof opportunity.totalSeats === "number";
   const original = opportunity.priceOriginalSar;
   const discounted = opportunity.priceDiscountedSar;
-  const hasPrice = typeof original === "number" || typeof discounted === "number";
+  const hasPrice = vis("price") && typeof original === "number" || typeof discounted === "number";
   const created = opportunity.createdAt ? new Date(opportunity.createdAt) : null;
-  const dateText = created && !Number.isNaN(created.getTime())
+  const dateText = vis("createdAt") && created && !Number.isNaN(created.getTime())
     ? created.toLocaleDateString(language === "ar" ? "ar-SA" : "en-GB", { year: "numeric", month: "long", day: "numeric" })
     : "";
 
   return (
     <section aria-labelledby="opp-overview-title" className={shell} dir={direction} data-testid="section-opportunity-overview">
-      <div className="grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-        <div className="bg-slate-900">
+      <div className={vis("image") ? "grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]" : "grid"}>
+        {vis("image") && <div className="bg-slate-900">
           <OpportunityMedia research={opportunity} className="aspect-[4/3] w-full lg:h-full lg:min-h-[300px]" />
-        </div>
+        </div>}
         <div className="border-b border-emerald-100 lg:border-b-0 lg:border-s">
           {header}
           {specialty && (
@@ -126,7 +128,7 @@ export default function OpportunityRegistrationOverview({ opportunity, showDetai
         <div>
           <h2 className="sr-only">{localize("تفاصيل الدراسة", "Study details")}</h2>
           <div className="grid gap-3 sm:grid-cols-2">
-            {opportunity.journalTarget && (
+            {vis("journal") && opportunity.journalTarget && (
               <Fact icon={<LibraryBig size={16} aria-hidden="true" />} label={localize("المجلة المستهدفة", "Target journal")}>
                 <span>{opportunity.journalTarget}</span>
                 {(issnLines.length > 0 || indexed.length > 0) && (
@@ -141,10 +143,10 @@ export default function OpportunityRegistrationOverview({ opportunity, showDetai
                 )}
               </Fact>
             )}
-            {opportunity.duration && (
+            {vis("duration") && opportunity.duration && (
               <Fact icon={<Clock3 size={16} aria-hidden="true" />} label={localize("المدة", "Duration")}>{opportunity.duration}</Fact>
             )}
-            {opportunity.supervisor && (
+            {vis("supervisor") && opportunity.supervisor && (
               <Fact icon={<UserRound size={16} aria-hidden="true" />} label={localize("المشرف", "Supervisor")}>{opportunity.supervisor}</Fact>
             )}
             {dateText && (
