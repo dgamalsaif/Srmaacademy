@@ -27,10 +27,16 @@ Treat Render's logged build command as authoritative for an existing service; th
 
 **Why:** the repository specified pnpm, but the supplied failed-deployment log showed Render executing npm instead and failing during dependency installation, before the API build.
 
-**How to apply:** compare the command in the actual deployment log with the repository configuration before changing application code or blaming the database. An existing service's build settings may need correction separately.
+**How to apply:** compare the command in the actual deployment log with the repository configuration before changing application code or blaming the database. An existing service's build settings may need correction separately. A GitHub deployment status marked successful is not proof that Render completed its build; check the provider's actual logs for the matching release.
 
 External Render PostgreSQL connections require verified TLS even when the supplied URL has no SSL parameter. Keep internal private-network hostname handling separate; never disable certificate verification to make an external connection work.
 
 **Why:** a read-only check against the authorized Render database was rejected with PostgreSQL code `28000` without TLS and succeeded with verified TLS, without changing credentials.
 
 **How to apply:** use verified TLS for Render external database connections and report connection failures separately from migration or build failures.
+
+Do not assume external changes are unpublished merely because the agent did not invoke a publish operation. Repository synchronization and connected hosting can deploy changes independently.
+
+**Why:** inquiry-control fixes appeared in GitHub and the public frontend bundle despite earlier reporting that they existed only in the workspace. GitHub also reported a successful deployment, but the user's actual Render log showed an installation failure; that status did not establish backend release success.
+
+**How to apply:** check GitHub release activity and the actual public frontend's build before reporting publication state. Verify frontend and backend separately; a backend deployment does not establish the frontend version, and an already-open browser tab may still run an older bundle.
