@@ -2,7 +2,8 @@
 
 Production is hosted externally. Replit is used only to prepare the project; no Replit database, hosting, or managed authentication connection is required.
 
-- Cloudflare Worker + Static Assets: React frontend and same-origin `/api/*` proxy
+- Cloudflare Pages: React frontend
+- Cloudflare `srma-api-proxy` Worker: same-origin `/api/*` proxy and research share previews
 - Render Web Service: Express API
 - Existing Render PostgreSQL: application database, connected to the Render API through `DATABASE_URL`
 - Cloudflare R2: private research images
@@ -47,7 +48,8 @@ Create a private bucket named `srma-research-images`, then create an R2 API toke
 
 When all four required R2 values exist, the API uses R2. `R2_BUCKET` by itself does not enable R2. Development may use the local fallback; production rejects uploads without R2 credentials rather than saving a broken image reference. Render's filesystem is not durable across redeploys, so configure all three R2 credentials on the Render service for production image persistence.
 
-## 3. Cloudflare Worker and frontend
+
+## 3. Cloudflare Pages frontend and routed Worker
 
 Build the frontend with the external Clerk publishable key:
 
@@ -58,13 +60,17 @@ PORT=19514 BASE_PATH=/ VITE_CLERK_PUBLISHABLE_KEY=pk_live_REPLACE_ME \
 
 Do not set `VITE_CLERK_PROXY_URL` for the external deployment.
 
-Edit `deploy/cloudflare/wrangler.jsonc` and replace `API_ORIGIN` with the HTTPS Render service origin. Then deploy:
+The existing `srmaacademy` Pages project builds the frontend from GitHub `main`. Keep its custom domains and existing build configuration; set the external Clerk publishable key in the Pages production build environment.
+
+Edit `deploy/cloudflare/wrangler.jsonc` and replace `API_ORIGIN` with the HTTPS Render service origin if it changes. Then deploy the existing API-only Worker:
 
 ```bash
 pnpm dlx wrangler@latest deploy --config deploy/cloudflare/wrangler.jsonc
 ```
 
-Attach `srmaacademy.com` and `www.srmaacademy.com` as Worker custom domains. Remove old Cloudflare Pages projects, Workers routes, redirects, or DNS records that still serve the previous static build.
+Keep Worker routes for `/api/*`, `/research/*`, and `/share/research/*` on both `srmaacademy.com` and `www.srmaacademy.com`. The Worker sends crawler requests to the API share endpoint and passes ordinary browser requests through to the existing Pages origin; it does not send visitors directly to registration.
+
+Do not attach these domains as Worker custom domains or remove the existing Pages project/DNS. They remain Pages custom domains with the above Worker routes layered over them.
 
 ## 4. Clerk
 

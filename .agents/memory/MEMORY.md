@@ -5,3 +5,4 @@
 - [Research group link privacy](research-group-link-privacy.md) — group links are owner-managed per opportunity and disclosed only by successful public participant registration.
 - [Installable PWA identity](installable-pwa-identity.md) — Admin controls site/app identity; installed apps always fetch live opportunities and check for shell updates on return.
 - [GitHub tree publishing](github-tree-publishing.md) — connector-based tree updates must normalize Git output and omit deletes for paths already absent remotely.
+- [Cloudflare deployment access](cloudflare-deployment-access.md) — Worker upload and zone route permissions are separate; connector multipart uploads may hit an HTML challenge.
