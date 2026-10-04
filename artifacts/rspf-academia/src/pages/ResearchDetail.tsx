@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { PageSeo } from "@/lib/seo";
 import { ProtectedResearchWatermark, AntiCaptureResearchTitle } from "@/components/ResearchProtection";
 import { apiFetch } from "@/lib/api";
+import { getEnglishOpportunityTitle, getOpportunityRegistrationPath } from "@/lib/opportunityDisplay";
 
 export default function ResearchDetail() {
   const { direction, language, localize, t } = useLanguage();
@@ -66,7 +67,7 @@ export default function ResearchDetail() {
   const statusLabel = localize(RESEARCH_STATUS_LABELS[research.status] || "دراسة منجزة", ({
     ethics_approved: "Ethics approved", under_review: "Under review", completed: "Completed study",
   } as Record<string, string>)[research.status], research.status);
-  const title = localize(research.titleAr, research.titleEn, research.title);
+  const title = getEnglishOpportunityTitle(research);
   const specialty = localize(research.specialtyAr, research.specialtyEn, research.specialty);
   const description = localize(research.descriptionAr, research.descriptionEn, research.description);
   const contentFlow = direction === "rtl" ? "flex-row-reverse" : "flex-row";
@@ -77,7 +78,7 @@ export default function ResearchDetail() {
   ).toString();
 
   const handleCopyLink = async () => {
-    const url = `${window.location.origin}/research/${research.id}`;
+    const url = `${window.location.origin}${getOpportunityRegistrationPath(research.id)}`;
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(url);
@@ -94,8 +95,8 @@ export default function ResearchDetail() {
       toast({
         title: localize("تم نسخ رابط الفرصة البحثية 🔗", "Opportunity link copied 🔗"),
         description: localize(
-          "يفتح الرابط تفاصيل الفرصة وعنوانها، ثم يمكن التسجيل وإدخال بيانات المشارك.",
-          "This link opens the opportunity details first, where applicants can continue to the participant form."
+          "يفتح الرابط عنوان الفرصة وبياناتها واستمارة التسجيل في أكاديمية SRMA.",
+          "This link opens the opportunity and registration form at SRMA Research Academy."
         ),
       });
     } catch {
@@ -105,12 +106,12 @@ export default function ResearchDetail() {
   };
 
   const handleShareLink = async () => {
-    const url = `${window.location.origin}/research/${research.id}`;
+    const url = `${window.location.origin}${getOpportunityRegistrationPath(research.id)}`;
     if (navigator.share) {
       try {
         await navigator.share({
           title,
-          text: `${title}\n${specialty ? `${specialty} — ` : ""}${description.slice(0, 100)}...`,
+          text: contentSettings.showOpportunityDetails === false ? title : `${title}\n${specialty ? `${specialty} — ` : ""}${description.slice(0, 100)}...`,
           url,
         });
         return;
@@ -118,6 +119,24 @@ export default function ResearchDetail() {
     }
     handleCopyLink();
   };
+
+  if (contentSettings.showOpportunityDetails === false) {
+    return (
+      <>
+        <PageSeo pathname={`/research/${research.id}`} language={language} title={`${title} | SRMA Research Academy`} description={localize("سجل في هذه الفرصة البحثية لدى أكاديمية SRMA.", "Register for this research opportunity at SRMA Research Academy.")} image={oppImageUrl} />
+        <div className="min-h-screen bg-slate-50 px-4 py-12" dir={direction}>
+          <section className="mx-auto max-w-3xl space-y-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10">
+            <p className="text-sm font-bold text-[#0C3156]" lang="en" dir="ltr">SRMA Research Academy · RES-2026-{research.id}</p>
+            <h1 className="text-left text-xl font-black leading-relaxed text-slate-900 sm:text-2xl" lang="en" dir="ltr">{title}</h1>
+            {research.status === "open"
+              ? <Link href={getOpportunityRegistrationPath(research.id)} className="block rounded-xl bg-[#0C3156] px-5 py-3 text-center font-bold text-white" data-testid="button-detail-register">{t("common.registerNow")}</Link>
+              : <p className="text-slate-500">{localize("التسجيل مغلق", "Registration closed")}</p>}
+            <Link href="/participant-portal" className="block text-center text-sm text-[#0C3156]">{t("common.backToOpportunities")}</Link>
+          </section>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
@@ -480,7 +499,7 @@ export default function ResearchDetail() {
                   <span className={`text-xs font-bold px-2.5 py-1 rounded-full inline-block mb-3 ${r.specialtyColor}`}>
                     {localize(r.specialtyAr, r.specialtyEn, r.specialty)}
                   </span>
-                  <p className="mb-3 text-left text-sm font-semibold text-slate-800 line-clamp-2" dir="ltr">{r.titleEn || r.title}</p>
+                   <p className="mb-3 text-left text-sm font-semibold text-slate-800 line-clamp-2" dir="ltr">{getEnglishOpportunityTitle(r)}</p>
                   <div className={`flex items-center justify-between text-xs text-slate-500 ${contentFlow}`}>
                     <span>{localize(`${r.seatsLeft} مقعد متبقي`, `${r.seatsLeft} seats remaining`)}</span>
                     <span className="text-[#0C3156] font-semibold flex items-center gap-1">

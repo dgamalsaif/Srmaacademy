@@ -7,6 +7,7 @@ import { desc, eq, sql } from "drizzle-orm";
 import { readSession, requireCoordinator, requireOwner } from "../middlewares/coordinatorAuth";
 import { getManagedOwner } from "../middlewares/ownerAuth";
 import { getSiteContentSettings, OpportunityFieldId } from "../lib/siteContentSettings";
+import { getEnglishOpportunityTitle } from "../lib/opportunityDisplay";
 import { addImportedSpecialties, importResearchOpportunities, PROGRAM_CATALOG_LOCK_ID, type ResearchOpportunityImportRow } from "../lib/researchOpportunityImport";
 import { getResearchImageBytes, getResearchImageUrl, ResearchImageStorageError, ResearchImageValidationError, resolveResearchImageUploadToken, uploadResearchImage } from "../lib/researchImageStorage";
 import { ensureProgramCapacityModel, PROGRAM_CAPACITY_LOCK_NAMESPACE, type DatabaseTransaction } from "../lib/programCapacity";
@@ -386,39 +387,40 @@ router.get("/programs/:id/share", async (req, res) => {
 
   const origin = requestOrigin(req);
   const english = req.query.lang === "en";
-  const destination = `${origin}/research/${program.id}${english ? "?lang=en" : ""}`;
-  const title = (english ? program.titleEn : program.titleAr) || program.titleEn || program.titleAr || "فرصة بحثية طبية | SRMA";
+  const destination = `${origin}/survey?rid=RES-2026-${program.id}${english ? "&lang=en" : ""}`;
+  const title = getEnglishOpportunityTitle(program);
   const specialty = (english ? program.specialtyEn : program.specialtyAr) || program.specialtyEn || program.specialtyAr || "";
   const rawDescription = (english ? program.descriptionEn : program.descriptionAr) || program.descriptionEn || program.descriptionAr || "";
   
   const siteSettings = await getSiteContentSettings().catch(() => null);
-  const siteName = english
-    ? siteSettings?.brand?.siteNameEn || "SRMA Research Academy"
-    : siteSettings?.brand?.siteNameAr || "أكاديمية SRMA للأبحاث والنشر العلمي";
+  const siteName = siteSettings?.brand?.siteNameEn || "SRMA Research Academy";
+  const showDetails = siteSettings?.showOpportunityDetails === true;
 
   const journal = program.journalTarget ? (english ? `Journal: ${program.journalTarget}` : `المجلة: ${program.journalTarget}`) : "";
   const seatsInfo = english
     ? `${program.seatsLeft} of ${program.totalSeats} seats available`
     : `المقاعد المتاحة: ${program.seatsLeft} من أصل ${program.totalSeats}`;
   
-  const metaDesc = [
+  const metaDesc = showDetails ? [
     specialty ? `[${specialty}]` : "",
     rawDescription ? rawDescription.slice(0, 120) : (english ? "Medical research opportunity for physicians and board applicants." : "فرصة بحثية ونشر علمي طبي للأطباء والريزيدنت لدعم البورد والزمالات."),
     journal,
     seatsInfo,
     english ? "Click to view full details and register." : "انقر لمعاينة التفاصيل والتسجيل مباشرة."
-  ].filter(Boolean).join(" • ");
+  ].filter(Boolean).join(" • ") : (english
+    ? `Register for this research opportunity at ${siteName}.`
+    : `سجل في هذه الفرصة البحثية لدى ${siteName}.`);
 
   const imageVersion = program.updatedAt?.getTime?.() ?? program.createdAt.getTime();
   const image = `${origin}/api/programs/${program.id}/image?v=${imageVersion}`;
 
-  res.setHeader("Cache-Control", "public, max-age=3600, stale-while-revalidate=86400");
+  res.setHeader("Cache-Control", "no-store");
   res.type("html").send(`<!doctype html>
 <html lang="${english ? "en" : "ar"}" dir="${english ? "ltr" : "rtl"}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>${escapeHtml(title)}${specialty ? ` | ${escapeHtml(specialty)}` : ""} | ${escapeHtml(siteName)}</title>
+  <title>${escapeHtml(title)} | ${escapeHtml(siteName)}</title>
   <meta name="description" content="${escapeHtml(metaDesc)}">
   <link rel="canonical" href="${escapeHtml(destination)}">
 
@@ -450,7 +452,7 @@ router.get("/programs/:id/share", async (req, res) => {
 <body style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;background:#f8fafc;color:#0f2744;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;text-align:center;">
   <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:20px;padding:32px;max-width:520px;box-shadow:0 10px 25px -5px rgba(0,0,0,0.08);">
     <div style="display:inline-block;padding:4px 12px;background:#ecfdf5;color:#047857;border-radius:999px;font-size:12px;font-weight:700;margin-bottom:12px;">
-      ${escapeHtml(specialty || (english ? "Research Opportunity" : "فرصة بحثية"))}
+      ${escapeHtml((showDetails && specialty) || (english ? "Research Opportunity" : "فرصة بحثية"))}
     </div>
     <h1 style="margin:0 0 12px 0;font-size:18px;font-weight:800;color:#0f2744;line-height:1.4;">${escapeHtml(title)}</h1>
     <p style="margin:0 0 24px 0;color:#64748b;font-size:14px;line-height:1.6;">${english ? "Redirecting you to the research opportunity on the website..." : "جارٍ توجيهك إلى تفاصيل الفرصة البحثية على الموقع..."}</p>
@@ -779,7 +781,7 @@ async function getSeatsLeftOverride(value: unknown, current: typeof researchProg
 }
 
 function buildOpportunityPoster(program: typeof researchProgramsTable.$inferSelect) {
-  const title = program.titleEn || program.titleAr || "Research opportunity";
+  const title = getEnglishOpportunityTitle(program);
   const specialty = program.specialtyAr || program.specialtyEn || "SRMA Research Academy";
   const titleLines = splitPosterText(title, 39, 3);
   const specialtyLines = splitPosterText(specialty, 30, 2);
@@ -823,7 +825,7 @@ function splitPosterText(value: string, maxLength: number, maxLines: number) {
 }
 
 function buildOpportunitySocialCardSvg(program: typeof researchProgramsTable.$inferSelect) {
-  const title = program.titleEn || program.titleAr || "Research Opportunity";
+  const title = getEnglishOpportunityTitle(program);
   const specialty = program.specialtyAr || program.specialtyEn || "أكاديمية SRMA للأبحاث";
   const journal = program.journalTarget || "Scopus / PubMed Q1 & Q2";
   const titleLines = splitPosterText(title, 44, 3);

@@ -8,6 +8,8 @@
     { "pattern": "www.srmaacademy.com/api/*", "zone_name": "srmaacademy.com" },
     { "pattern": "srmaacademy.com/research/*", "zone_name": "srmaacademy.com" },
     { "pattern": "www.srmaacademy.com/research/*", "zone_name": "srmaacademy.com" },
+    { "pattern": "srmaacademy.com/survey*", "zone_name": "srmaacademy.com" },
+    { "pattern": "www.srmaacademy.com/survey*", "zone_name": "srmaacademy.com" },
     { "pattern": "srmaacademy.com/share/research/*", "zone_name": "srmaacademy.com" },
     { "pattern": "www.srmaacademy.com/share/research/*", "zone_name": "srmaacademy.com" }
   ],

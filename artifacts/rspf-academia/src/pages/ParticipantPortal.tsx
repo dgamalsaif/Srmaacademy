@@ -10,6 +10,7 @@ import { OpportunityCurrency, useCurrency } from "@/lib/opportunityPricing";
 import { useLanguage } from "@/lib/i18n";
 import SpecialtyFilter, { buildSpecialtyOptions, canonicalSpecialty, specialtyMatches } from "@/components/SpecialtyFilter";
 import { ResearchProtectionBanner, ProtectedResearchWatermark, AntiCaptureResearchTitle } from "@/components/ResearchProtection";
+import { getEnglishOpportunityTitle, getOpportunityRegistrationPath } from "@/lib/opportunityDisplay";
 import { apiFetch } from "@/lib/api";
 
 const hallOfFame = [
@@ -27,7 +28,7 @@ export default function ParticipantPortal() {
   const [copiedOppId, setCopiedOppId] = useState<number | null>(null);
 
   const handleCopyOppLink = (oppId: number) => {
-    const url = `${window.location.origin}/survey?rid=RES-2026-${oppId}`;
+    const url = `${window.location.origin}${getOpportunityRegistrationPath(oppId)}`;
     if (navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(url);
     } else {
@@ -85,7 +86,7 @@ export default function ParticipantPortal() {
   };
 
   const openModal = (research: ResearchOpportunity) => { setSelectedResearch(research); setModalOpen(true); };
-  const displayTitle = (research: ResearchOpportunity) => research.titleEn || research.title;
+  const displayTitle = getEnglishOpportunityTitle;
   const participantTitle = language === "en" ? contentSettings.pages.participant.titleEn : contentSettings.pages.participant.titleAr;
   const participantDescription = language === "en" ? contentSettings.pages.participant.descriptionEn : contentSettings.pages.participant.descriptionAr;
   const siteName = language === "en" ? contentSettings.brand.siteNameEn : contentSettings.brand.siteNameAr;
@@ -362,7 +363,7 @@ export default function ParticipantPortal() {
                         {/* Dynamic Anti-Camera Watermark */}
                         <ProtectedResearchWatermark />
 
-                        <div className={`flex items-center justify-between gap-3 mb-3 relative z-10 ${contentFlow}`}>
+                         {contentSettings.showOpportunityDetails !== false && <div className={`flex items-center justify-between gap-3 mb-3 relative z-10 ${contentFlow}`}>
                           <div className="flex items-center gap-1.5 flex-wrap">
                             {contentSettings.visibleParticipantCardParts.includes("specialty") && <span className={`text-xs font-bold px-3 py-1 rounded-full ${opp.specialtyColor}`}>{localize(displaySpecialty(opp).nameAr, displaySpecialty(opp).nameEn, opp.specialty)}</span>}
                             <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -373,7 +374,7 @@ export default function ParticipantPortal() {
                           <span className="flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 border border-red-100 px-3 py-1 rounded-full">
                             <Flame size={11} /> {localize("مقاعد محدودة متبقية", "Limited seats remaining")}
                           </span>
-                        </div>
+                         </div>}
 
                         <div className="relative z-10 mb-2">
                           <AntiCaptureResearchTitle
@@ -382,7 +383,8 @@ export default function ParticipantPortal() {
                             titleClassName="mb-1 cursor-pointer text-left font-bold leading-snug text-slate-900 transition-colors select-none text-base"
                           />
                         </div>
-                        <div className="mb-4"><OpportunityMedia research={opp} className="aspect-[4/3] min-h-[172px]" /></div>
+                         {contentSettings.showOpportunityDetails !== false && <>
+                         <div className="mb-4"><OpportunityMedia research={opp} className="aspect-[4/3] min-h-[172px]" /></div>
 
                         <p className="mb-3 text-start text-sm font-medium italic text-[#0C3156]">
                            🏆 {localize(`نحن في ${siteName} – نبني ملفك البحثي ونصنع الفارق`, `At ${siteName}, we build your research profile and make the difference.`)}
@@ -424,7 +426,8 @@ export default function ParticipantPortal() {
                               </li>
                             ))}
                           </ul>
-                        )}</>}
+                         )}</>}
+                         </>}
 
                         {/* Actions block: Register Now, Contact Us, Copy Link */}
                         <div className="mt-auto pt-4 border-t border-slate-100 flex flex-col gap-2.5">
@@ -439,7 +442,7 @@ export default function ParticipantPortal() {
                               <span>{t("common.registerNow")}</span>
                               <span>👤</span>
                             </button>
-                            <Link
+                            {contentSettings.showOpportunityDetails !== false && <Link
                               href={`/research/${opp.id}`}
                               data-testid={`button-detail-${opp.id}`}
                               className="flex items-center justify-center gap-1 border font-bold px-4 py-3 rounded-xl transition-colors text-sm bg-white hover:bg-slate-50"
@@ -447,7 +450,7 @@ export default function ParticipantPortal() {
                             >
                               <span>{t("common.details")}</span>
                               <ChevronLeft size={14} />
-                            </Link>
+                            </Link>}
                           </div>
 
                           {/* 2. Inquiry Contact Button (تحت زر سجل الآن مباشرة بتخصيص الأدمن) */}

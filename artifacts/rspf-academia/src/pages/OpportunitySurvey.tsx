@@ -14,13 +14,11 @@ import {
   Sparkles,
 } from "lucide-react";
 import { ResearchOpportunity } from "@/lib/researchData";
-import OpportunityMedia from "@/components/OpportunityMedia";
-import OpportunityPrice from "@/components/OpportunityPrice";
+import OpportunityRegistrationOverview from "@/components/OpportunityRegistrationOverview";
 import CountrySelector from "@/components/CountrySelector";
 import {
   DEFAULT_SITE_CONTENT_SETTINGS,
   RegistrationFieldId,
-  SiteContentSettings,
   buildForwardingUrl,
   ForwardingType,
   DEFAULT_ACADEMIC_DEGREE_SETTINGS,
@@ -28,22 +26,22 @@ import {
   DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS,
 } from "@/lib/siteContentSettings";
 import { useLanguage } from "@/lib/i18n";
-import { useCurrency, formatOpportunityMoney } from "@/lib/opportunityPricing";
 import { PageSeo } from "@/lib/seo";
 import { useToast } from "@/hooks/use-toast";
 import { apiFetch } from "@/lib/api";
+import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
+import { getEnglishOpportunityTitle, getOpportunityRegistrationPath } from "@/lib/opportunityDisplay";
 
 const API_BASE = "/api";
 
 export default function OpportunitySurvey() {
   const { direction, language, localize } = useLanguage();
-  const { currency, setCurrency } = useCurrency();
   const { toast } = useToast();
 
   const [opportunities, setOpportunities] = useState<ResearchOpportunity[]>([]);
   const [selectedOpp, setSelectedOpp] = useState<ResearchOpportunity | null>(null);
   const [loadingOpp, setLoadingOpp] = useState(true);
-  const [contentSettings, setContentSettings] = useState<SiteContentSettings>(DEFAULT_SITE_CONTENT_SETTINGS);
+  const { data: contentSettings = DEFAULT_SITE_CONTENT_SETTINGS } = useSiteContentSettings();
 
   // Form states
   const [form, setForm] = useState({
@@ -77,11 +75,6 @@ export default function OpportunitySurvey() {
   const numericId = matchId ? parseInt(matchId[1], 10) : parseInt(rawRid.replace(/\D/g, ""), 10);
 
   useEffect(() => {
-    apiFetch("/api/site-content-settings")
-      .then((res) => (res.ok ? res.json() : Promise.reject()))
-      .then((settings: SiteContentSettings) => setContentSettings(settings))
-      .catch(() => setContentSettings(DEFAULT_SITE_CONTENT_SETTINGS));
-
     apiFetch("/api/programs", { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then((data: ResearchOpportunity[]) => {
@@ -132,7 +125,7 @@ export default function OpportunitySurvey() {
 
   const handleCopySurveyLink = async () => {
     if (!selectedOpp) return;
-    const link = `${window.location.origin}/survey?rid=RES-2026-${selectedOpp.id}`;
+    const link = `${window.location.origin}${getOpportunityRegistrationPath(selectedOpp.id)}`;
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(link);
@@ -162,6 +155,10 @@ export default function OpportunitySurvey() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedOpp) return;
+    if (selectedOpp.status !== "open") {
+      setError(localize("التسجيل مغلق لهذه الفرصة.", "Registration is closed for this opportunity."));
+      return;
+    }
 
     if (visible("academicDegree") && required("academicDegree") && degreeSettings.enabled && !academicDegree) {
       setError(localize("يرجى اختيار الدرجة العلمية", "Please select your academic degree"));
@@ -199,7 +196,7 @@ export default function OpportunitySurvey() {
           city: form.city.trim(),
           orcid: form.orcid.trim(),
           researchId: selectedOpp.id,
-          researchTitle: selectedOpp.titleEn || selectedOpp.title,
+          researchTitle: getEnglishOpportunityTitle(selectedOpp),
           academicDegree: academicDegree || undefined,
           hasResearchExp: hasResearchExp || undefined,
           researchExpDetails: researchExpDetails || undefined,
@@ -229,7 +226,7 @@ export default function OpportunitySurvey() {
         hasResearchExperience: expSettings.enabled ? hasResearchExp || undefined : undefined,
         researchExpDetails: expSettings.enabled ? researchExpDetails || undefined : undefined,
         agreeFeesAndTasks: agreementSettings.enabled ? agreeFeesAndTasks || undefined : undefined,
-        researchTitle: selectedOpp.titleEn || selectedOpp.title,
+        researchTitle: getEnglishOpportunityTitle(selectedOpp),
         language,
       });
       setForwardUrl(fUrl);
@@ -242,7 +239,7 @@ export default function OpportunitySurvey() {
     }
   };
 
-  const title = selectedOpp ? selectedOpp.titleAr || selectedOpp.titleEn || selectedOpp.title : "";
+  const title = selectedOpp ? getEnglishOpportunityTitle(selectedOpp) : "";
   const oppImageUrl = selectedOpp
     ? new URL(
         selectedOpp.imageUrl || `/api/programs/${selectedOpp.id}/image`,
@@ -253,10 +250,10 @@ export default function OpportunitySurvey() {
   return (
     <>
       <PageSeo
-        pathname="/survey"
+        pathname={selectedOpp ? getOpportunityRegistrationPath(selectedOpp.id) : "/survey"}
         language={language}
-        title={selectedOpp ? `استمارة التسجيل: ${title} | SRMA` : "استمارة التسجيل في الفرص البحثية"}
-        description={selectedOpp?.descriptionAr || selectedOpp?.descriptionEn || "استمارة تسجيل الانضمام إلى الفرصة البحثية في منصة SRMA"}
+        title={selectedOpp ? `${title} | SRMA Research Academy` : "Research Registration | SRMA Research Academy"}
+        description={contentSettings.showOpportunityDetails === false ? "Research registration at SRMA Research Academy" : selectedOpp?.descriptionAr || selectedOpp?.descriptionEn || "Research registration at SRMA Research Academy"}
         image={oppImageUrl}
       />
 
@@ -321,8 +318,8 @@ export default function OpportunitySurvey() {
 
               <p className="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-600">
                 {localize(
-                  `شكراً لك د. ${form.fullName}. تم تسجيل بياناتك في الفرصة البحثية (${selectedOpp.titleAr || selectedOpp.titleEn || selectedOpp.title}).`,
-                  `Thank you Dr. ${form.fullName}. Your registration in (${selectedOpp.titleEn || selectedOpp.title}) is confirmed.`
+                  `شكراً لك د. ${form.fullName}. تم تسجيل بياناتك في الفرصة البحثية (${title}).`,
+                  `Thank you Dr. ${form.fullName}. Your registration in (${title}) is confirmed.`
                 )}
               </p>
 
@@ -371,63 +368,14 @@ export default function OpportunitySurvey() {
           ) : (
             /* REGISTRATION SURVEY VIEW */
             <div className="space-y-6">
-              {/* 1. OPPORTUNITY CARD & IMAGE PREVIEW */}
-              <div className="overflow-hidden rounded-3xl border border-emerald-100 bg-white shadow-md">
-                <div className="relative border-b border-slate-100 bg-slate-900">
-                  {/* Research Opportunity Image Preview */}
-                  <OpportunityMedia research={selectedOpp} className="h-64 sm:h-80 w-full object-cover" />
-                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent" />
-                  
-                  <div className="absolute bottom-4 left-4 right-4 text-white">
-                    <div className="flex flex-wrap items-center gap-2 mb-1.5">
-                      <span className="rounded-lg bg-[#117b59] px-2.5 py-0.5 text-xs font-black text-white">
-                        RES-2026-{selectedOpp.id}
-                      </span>
-                      <span className="rounded-lg bg-white/20 backdrop-blur-md px-2.5 py-0.5 text-xs font-bold text-white">
-                        {localize(selectedOpp.specialtyAr, selectedOpp.specialtyEn, selectedOpp.specialty)}
-                      </span>
-                      {selectedOpp.journalTarget && (
-                        <span className="rounded-lg bg-white/20 backdrop-blur-md px-2.5 py-0.5 text-xs font-bold text-white">
-                          {selectedOpp.journalTarget}
-                        </span>
-                      )}
-                    </div>
-                    <h1 className="text-xl sm:text-2xl font-black text-white leading-snug drop-shadow-md">
-                      {selectedOpp.titleAr || selectedOpp.titleEn || selectedOpp.title}
-                    </h1>
-                  </div>
-                </div>
-
-                {/* Details Bar */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-emerald-50/40 text-center border-b border-emerald-100">
-                  <div className="rounded-xl bg-white p-2.5 shadow-2xs border border-emerald-100/60">
-                    <p className="text-[11px] font-bold text-slate-500">{localize("المقاعد المتبقية", "Seats Left")}</p>
-                    <p className="text-sm font-black text-[#117b59]">{selectedOpp.seatsLeft} / {selectedOpp.totalSeats}</p>
-                  </div>
-                  <div className="rounded-xl bg-white p-2.5 shadow-2xs border border-emerald-100/60">
-                    <p className="text-[11px] font-bold text-slate-500">{localize("مقاعد الكاتب الأول", "First Author Seats")}</p>
-                    <p className="text-sm font-black text-slate-800">{selectedOpp.firstAuthorSeatsLeft ?? 1}</p>
-                  </div>
-                  <div className="rounded-xl bg-white p-2.5 shadow-2xs border border-emerald-100/60">
-                    <p className="text-[11px] font-bold text-slate-500">{localize("مقاعد المؤلف المشارك", "Co-Author Seats")}</p>
-                    <p className="text-sm font-black text-slate-800">{selectedOpp.coAuthorSeatsLeft ?? 14}</p>
-                  </div>
-                  <div className="rounded-xl bg-white p-2.5 shadow-2xs border border-emerald-100/60">
-                    <p className="text-[11px] font-bold text-slate-500">{localize("الرسوم التقديرية", "Fee")}</p>
-                    <p dir="ltr" className="text-sm font-black text-emerald-700">
-                      {formatOpportunityMoney(selectedOpp.priceDiscountedSar || selectedOpp.priceOriginalSar || 1000, currency, language)}
-                    </p>
-                    {Boolean(selectedOpp.priceOriginalSar && selectedOpp.priceOriginalSar > (selectedOpp.priceDiscountedSar || 0)) && (
-                      <p dir="ltr" className="text-[10px] text-slate-400 line-through">
-                        {formatOpportunityMoney(selectedOpp.priceOriginalSar!, currency, language)}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </div>
+              <OpportunityRegistrationOverview
+                opportunity={selectedOpp}
+                showDetails={contentSettings.showOpportunityDetails !== false}
+                brandName={contentSettings.brand.siteNameEn || "SRMA Research Academy"}
+              />
 
               {/* 2. REGISTRATION SURVEY FORM */}
-              <form onSubmit={handleSubmit} className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-md space-y-6">
+               {selectedOpp.status === "open" ? <form onSubmit={handleSubmit} className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-md space-y-6">
                 <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                   <div>
                     <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
@@ -751,7 +699,10 @@ export default function OpportunitySurvey() {
                     <span>{localize("تأكيد التسجيل في الفرصة البحثية ✓", "Confirm Opportunity Registration ✓")}</span>
                   )}
                 </button>
-              </form>
+               </form> : <div className="rounded-3xl border border-slate-200 bg-white p-6 text-center text-slate-700" data-testid="registration-closed">
+                 <p className="font-bold">{localize("التسجيل مغلق لهذه الفرصة حاليًا.", "Registration is currently closed for this opportunity.")}</p>
+                 <Link href="/participant-portal" className="mt-3 inline-block text-[#117b59] underline">{localize("تصفح الفرص المتاحة", "Browse available opportunities")}</Link>
+               </div>}
             </div>
           )}
         </div>

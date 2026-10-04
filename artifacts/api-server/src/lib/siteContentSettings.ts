@@ -183,6 +183,7 @@ export interface SiteContentSettings {
   accentColor: string;
   cardBackgroundColor: string;
   opportunityDisplayMode: OpportunityDisplayMode;
+  showOpportunityDetails: boolean;
   participantCardOrder: string[];
   coordinatorCardOrder: string[];
   visibleParticipantCardParts: string[];
@@ -289,11 +290,12 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
   coordinatorFormDescription: "أدخل بيانات الطالب كما تظهر في مستنداته الأكاديمية.",
   coordinatorFormDescriptionEn: "Enter the student's details exactly as they appear in their academic documents.",
   participantTitleLanguage: "english",
-  coordinatorTitleLanguage: "arabic",
+  coordinatorTitleLanguage: "english",
   primaryColor: "#0C3156",
   accentColor: "#117b59",
   cardBackgroundColor: "#ffffff",
   opportunityDisplayMode: "grid",
+  showOpportunityDetails: true,
   participantCardOrder: [...PARTS],
   coordinatorCardOrder: ["specialty", "supervisor", "seats", "duration", "journal", "benefits", "description"],
   visibleParticipantCardParts: [...PARTS],
@@ -593,8 +595,8 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
     coordinatorFormTitleEn: translatedText("coordinatorFormTitleEn", "coordinatorFormTitle", 120),
     coordinatorFormDescription: text("coordinatorFormDescription", 600),
     coordinatorFormDescriptionEn: translatedText("coordinatorFormDescriptionEn", "coordinatorFormDescription", 600),
-    participantTitleLanguage: input.participantTitleLanguage === "arabic" || input.participantTitleLanguage === "both" || input.participantTitleLanguage === "english" ? input.participantTitleLanguage : DEFAULT_SITE_CONTENT_SETTINGS.participantTitleLanguage,
-    coordinatorTitleLanguage: input.coordinatorTitleLanguage === "arabic" || input.coordinatorTitleLanguage === "both" || input.coordinatorTitleLanguage === "english" ? input.coordinatorTitleLanguage : DEFAULT_SITE_CONTENT_SETTINGS.coordinatorTitleLanguage,
+    participantTitleLanguage: "english",
+    coordinatorTitleLanguage: "english",
     primaryColor: color("primaryColor"),
     accentColor: color("accentColor"),
     cardBackgroundColor: color("cardBackgroundColor"),
@@ -604,6 +606,9 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
     participantCardOrder: parts("participantCardOrder"),
     coordinatorCardOrder: parts("coordinatorCardOrder"),
     visibleParticipantCardParts: parts("visibleParticipantCardParts"),
+    showOpportunityDetails: typeof input.showOpportunityDetails === "boolean"
+      ? input.showOpportunityDetails
+      : DEFAULT_SITE_CONTENT_SETTINGS.showOpportunityDetails,
     visibleCoordinatorCardParts: parts("visibleCoordinatorCardParts"),
     requiredOpportunityFields,
     specialtyOptions,

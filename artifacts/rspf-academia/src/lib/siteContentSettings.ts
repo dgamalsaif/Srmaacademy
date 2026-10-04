@@ -167,6 +167,7 @@ export interface SiteContentSettings {
   accentColor: string;
   cardBackgroundColor: string;
   opportunityDisplayMode: OpportunityDisplayMode;
+  showOpportunityDetails: boolean;
   participantCardOrder: string[];
   coordinatorCardOrder: string[];
   visibleParticipantCardParts: string[];
@@ -299,11 +300,12 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
   coordinatorFormDescription: "أدخل بيانات الطالب كما تظهر في مستنداته الأكاديمية.",
   coordinatorFormDescriptionEn: "Enter the student's details exactly as they appear in their academic documents.",
   participantTitleLanguage: "english",
-  coordinatorTitleLanguage: "arabic",
+  coordinatorTitleLanguage: "english",
   primaryColor: "#0C3156",
   accentColor: "#117b59",
   cardBackgroundColor: "#ffffff",
   opportunityDisplayMode: "grid",
+  showOpportunityDetails: true,
   participantCardOrder: ["description", "specialty", "seats", "duration", "supervisor", "journal", "benefits"],
   coordinatorCardOrder: ["specialty", "supervisor", "seats", "duration", "journal", "benefits", "description"],
   visibleParticipantCardParts: ["description", "specialty", "seats", "duration", "supervisor", "journal", "benefits"],

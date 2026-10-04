@@ -37,10 +37,13 @@ export default {
     const isBot = BOT_USER_AGENTS.test(userAgent) || incomingUrl.searchParams.get("crawler") === "1" || incomingUrl.searchParams.get("preview") === "1";
     const researchMatch = incomingUrl.pathname.match(/^\/research\/(\d+)\/?$/);
     const shareMatch = incomingUrl.pathname.match(/^\/share\/research\/(\d+)\/?$/);
+    const surveyId = incomingUrl.pathname === "/survey"
+      ? incomingUrl.searchParams.get("rid")?.match(/^(?:RES-2026-)?(\d+)$/)?.[1]
+      : undefined;
 
     // If it's a social media bot requesting an opportunity or an explicit share path, proxy to API share endpoint
-    if ((researchMatch && isBot) || shareMatch) {
-      const oppId = (researchMatch || shareMatch)![1];
+    if ((researchMatch && isBot) || (surveyId && isBot) || shareMatch) {
+      const oppId = surveyId || (researchMatch || shareMatch)![1];
       const apiOrigin = env.API_ORIGIN.replace(/\/+$/, "");
       const upstreamUrl = new URL(`/api/programs/${oppId}/share${incomingUrl.search}`, apiOrigin);
       const headers = new Headers(request.headers);

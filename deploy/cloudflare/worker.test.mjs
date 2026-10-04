@@ -14,7 +14,7 @@ test("Cloudflare routes both public hostnames through the share-aware Worker", (
   assert.equal(config.name, "srma-api-proxy");
   assert.equal(config.assets, undefined, "Keep the existing Pages frontend");
   for (const hostname of ["srmaacademy.com", "www.srmaacademy.com"]) {
-    for (const route of ["/api/*", "/research/*", "/share/research/*"]) {
+    for (const route of ["/api/*", "/research/*", "/survey*", "/share/research/*"]) {
       assert.ok(config.routes.some(r => r.pattern === `${hostname}${route}`), `Missing route: ${hostname}${route}`);
     }
   }
@@ -61,11 +61,23 @@ test("social crawlers receive opportunity metadata while visitors receive the SP
       assert.equal(call.options.headers.get("x-forwarded-proto"), "https");
     }
     assert.equal(assetCalls, 0);
+    for (const agent of ["WhatsApp/2.0", "TelegramBot", "facebookexternalhit/1.1", "Twitterbot/1.0"]) {
+      const response = await worker.fetch(new Request("https://academy.example.com/survey?rid=RES-2026-302", {
+        headers: { "User-Agent": agent },
+      }), env);
+      assert.equal(await response.text(), "opportunity metadata");
+      assert.equal(calls.at(-1).url, "https://api.example.com/api/programs/302/share?rid=RES-2026-302");
+    }
+    const form = await worker.fetch(new Request("https://academy.example.com/survey?rid=RES-2026-302", {
+      headers: { "User-Agent": "Mozilla/5.0" },
+    }), env);
+    assert.equal(await form.text(), "frontend");
+    assert.equal(assetCalls, 1);
     const browser = await worker.fetch(new Request("https://academy.example.com/research/302", {
       headers: { "User-Agent": "Mozilla/5.0" },
     }), env);
     assert.equal(await browser.text(), "frontend");
-    assert.equal(assetCalls, 1);
+    assert.equal(assetCalls, 2);
 
     for (const path of ["/share/research/302", "/research/302?preview=1", "/research/302/?crawler=1"]) {
       const response = await worker.fetch(new Request(`https://academy.example.com${path}`, {

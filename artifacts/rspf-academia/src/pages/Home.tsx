@@ -33,6 +33,7 @@ import {
 import { apiFetch } from "@/lib/api";
 import { useLanguage } from "@/lib/i18n";
 import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
+import { getEnglishOpportunityTitle } from "@/lib/opportunityDisplay";
 import {
   DEFAULT_SITE_CONTENT_SETTINGS,
   SiteContentSettings,
@@ -608,7 +609,7 @@ export default function Home() {
           {/* Opportunities Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredOpportunities.map((op) => {
-              const displayTitle = (language === "ar" ? op.titleAr : op.titleEn) || op.title;
+              const displayTitle = getEnglishOpportunityTitle(op);
               const displayDesc = (language === "ar" ? op.descriptionAr : op.descriptionEn) || op.description;
               const displaySpec = (language === "ar" ? op.specialtyAr : op.specialtyEn) || op.specialty;
               const seatsLeft = op.seatsLeft ?? 2;
@@ -628,7 +629,7 @@ export default function Home() {
 
                   {/* Top Bar: Specialty + Urgent Badge */}
                   <div className="relative z-10">
-                    <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                    {settings?.showOpportunityDetails !== false && <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="inline-flex items-center rounded-lg bg-slate-100 px-3 py-1 text-xs font-bold text-slate-800">
                           {displaySpec}
@@ -644,7 +645,7 @@ export default function Home() {
                           {localize(`متبقي ${seatsLeft} مقاعد فقط!`, `Only ${seatsLeft} seats left!`)}
                         </span>
                       )}
-                    </div>
+                    </div>}
 
                     {/* Protected Title with Anti-Capture Blur & Anti-OCR Mesh */}
                     <AntiCaptureResearchTitle
@@ -652,6 +653,7 @@ export default function Home() {
                       titleHref={`/research/${op.id}`}
                     />
 
+                    {settings?.showOpportunityDetails !== false && <>
                     {/* Description */}
                     <p className="text-xs sm:text-sm text-slate-600 line-clamp-3 leading-relaxed mb-4 select-none">
                       {displayDesc}
@@ -706,6 +708,7 @@ export default function Home() {
                         compact
                       />
                     </div>
+                    </>}
                   </div>
 
                   {/* Bottom Action Buttons */}
@@ -720,14 +723,14 @@ export default function Home() {
                     </button>
 
                     <div className="grid grid-cols-2 gap-2">
-                      <Link
+                      {settings?.showOpportunityDetails !== false && <Link
                         href={`/research/${op.id}`}
                         data-testid={`link-detail-opportunity-${op.id}`}
                         className="inline-flex items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 py-2 text-xs font-bold text-slate-700 transition-colors"
                       >
                         <span>{localize("التفاصيل الكاملة", "Full Details")}</span>
                         <ExternalLink size={12} />
-                      </Link>
+                      </Link>}
 
                       <a
                         href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(
@@ -1457,7 +1460,7 @@ export default function Home() {
         <RegistrationModal
           isOpen={registrationModalOpen}
           onClose={() => setRegistrationModalOpen(false)}
-          researchTitle={(language === "ar" ? selectedOpportunity.titleAr : selectedOpportunity.titleEn) || selectedOpportunity.title}
+          researchTitle={getEnglishOpportunityTitle(selectedOpportunity)}
           researchId={selectedOpportunity.id}
           firstAuthorSeatsLeft={selectedOpportunity.firstAuthorSeatsLeft ?? 1}
           coAuthorSeatsLeft={selectedOpportunity.coAuthorSeatsLeft ?? (selectedOpportunity.seatsLeft ?? 2)}

@@ -1217,8 +1217,7 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
               <TextField label="Coordinator form title (English)" value={settings.coordinatorFormTitleEn} onChange={(value) => update("coordinatorFormTitleEn", value)} />
             </div>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <LanguageField label="لغة عناوين الفرص للمشترك" value={settings.participantTitleLanguage} onChange={(value) => update("participantTitleLanguage", value)} />
-              <LanguageField label="لغة عناوين الفرص للمنسق" value={settings.coordinatorTitleLanguage} onChange={(value) => update("coordinatorTitleLanguage", value)} />
+              <p className="text-sm text-slate-600">تظهر عناوين الفرص باللغة الإنجليزية فقط للمشارك والمنسق وفي روابط المشاركة. لغة بقية المحتوى لا تتغير.</p>
             </div>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <TextArea label="وصف بوابة المشارك (عربي)" value={settings.participantDescription} onChange={(value) => update("participantDescription", value)} />
@@ -1799,7 +1798,22 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                <option value="scroll">شريط تمرير أفقي</option>
              </select>
            </Panel>
-          <CardParts title="بطاقة المشارك" audience="participant" settings={settings} onToggle={togglePart} onMove={movePart} />
+          <Panel title="إظهار تفاصيل جميع الفرص البحثية" icon={Eye}>
+            <p className="mb-4 text-sm leading-6 text-slate-600">مفتاح موحد للموقع العام وصفحات الفرص والتسجيل. عند الإخفاء يبقى العنوان الإنجليزي ورقم الفرصة والتسجيل متاحًا، وتختفي الصورة والتخصص والوصف وبقية التفاصيل من الصفحة. معاينة الرابط تبقى بعنوان الفرصة وصورتها.</p>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={settings.showOpportunityDetails !== false}
+              data-testid="switch-show-opportunity-details"
+              onClick={() => update("showOpportunityDetails", settings.showOpportunityDetails === false)}
+              className={`flex w-full items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-bold transition ${settings.showOpportunityDetails !== false ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-slate-300 bg-slate-50 text-slate-700"}`}
+            >
+              {settings.showOpportunityDetails !== false ? <Eye size={18} /> : <EyeOff size={18} />}
+              {settings.showOpportunityDetails !== false ? "التفاصيل ظاهرة لجميع الفرص" : "التفاصيل مخفية لجميع الفرص"}
+            </button>
+            <p className="mt-3 text-xs text-slate-500">اضغط حفظ الإعدادات لتطبيق الاختيار. هذا إعداد عرض وليس وسيلة لحماية بيانات سرية.</p>
+          </Panel>
+           <CardParts title="بطاقة المشارك" audience="participant" settings={settings} onToggle={togglePart} onMove={movePart} />
           <CardParts title="بطاقة المنسق" audience="coordinator" settings={settings} onToggle={togglePart} onMove={movePart} />
         </div>
       </div>

@@ -90,8 +90,10 @@ function setLink(rel: string, href: string, language?: string) {
 }
 
 export function buildPublicUrl(pathname: string, language: SiteLanguage) {
-  const path = pathname === "/" ? "/" : pathname.replace(/\/$/, "");
-  return `${SITE_URL}${path}?lang=${language}`;
+  const url = new URL(pathname, SITE_URL);
+  url.pathname = url.pathname === "/" ? "/" : url.pathname.replace(/\/$/, "");
+  url.searchParams.set("lang", language);
+  return url.toString();
 }
 
 export function PageSeo({ pathname, language, title, description, image, jsonLd, noIndex = false }: {

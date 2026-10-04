@@ -12,9 +12,10 @@ export function useSiteContentSettings() {
       }
       return response.json();
     },
-    initialData: DEFAULT_SITE_CONTENT_SETTINGS,
+    initialData: { ...DEFAULT_SITE_CONTENT_SETTINGS, showOpportunityDetails: false },
     staleTime: 0,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
+    refetchInterval: 30000,
   });
 }
