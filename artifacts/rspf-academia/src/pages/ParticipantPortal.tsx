@@ -5,7 +5,7 @@ import { ResearchOpportunity } from "@/lib/researchData";
 import RegistrationModal from "@/components/RegistrationModal";
 import SiteAnnouncement from "@/components/SiteAnnouncement";
 import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
-import { getContactUsHref, getOpportunityInquiryLink } from "@/lib/siteContentSettings";
+import { getContactUsHref, buildOpportunityInquiryLinks } from "@/lib/siteContentSettings";
 import OpportunityMedia from "@/components/OpportunityMedia";
 import OpportunityPrice from "@/components/OpportunityPrice";
 import { OpportunityCurrency, useCurrency } from "@/lib/opportunityPricing";
@@ -384,15 +384,15 @@ export default function ParticipantPortal() {
 
                           {/* 2. Inquiry Contact Button (تحت زر سجل الآن مباشرة بتخصيص الأدمن) */}
                           {(() => {
-                            const inquiry = getOpportunityInquiryLink(
+                            const inquiries = buildOpportunityInquiryLinks(
                               contentSettings.brand,
                               displayTitle(opp),
                               language as "ar" | "en"
                             );
-                            if (!inquiry) return null;
+                            if (!inquiries.length) return null;
 
-                            return (
-                              <a
+                            return (<div className="space-y-2 mb-2">{inquiries.map((inquiry) => (
+<a key={inquiry.channel}
                                 href={inquiry.href}
                                 target={inquiry.isExternal && inquiry.channel !== "email" && inquiry.channel !== "phone" ? "_blank" : undefined}
                                 rel={inquiry.isExternal && inquiry.channel !== "email" && inquiry.channel !== "phone" ? "noopener noreferrer" : undefined}
@@ -417,8 +417,7 @@ export default function ParticipantPortal() {
                                 <span className="truncate">
                                   {language === "ar" ? inquiry.labelAr : inquiry.labelEn}
                                 </span>
-                              </a>
-                            );
+                              </a>)) }</div>);
                           })()}
 
                           {/* 3. Copy Opportunity Link (زر نسخ الرابط) */}

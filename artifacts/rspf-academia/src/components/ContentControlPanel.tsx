@@ -1,8 +1,8 @@
 import { ChevronDown, ChevronUp, Eye, EyeOff, Palette, Save, SlidersHorizontal, Image, Phone, Mail, Link as LinkIcon, FileText, Send, Share2, ExternalLink, MessageCircle, Check, GraduationCap, ShieldCheck, Plus, Trash2, AlertTriangle } from "lucide-react";
 import { useState, useRef, useId } from "react";
 import BrandLogo from "@/components/BrandLogo";
-import { getOpportunityInquiryLink } from "@/lib/siteContentSettings";
-import { CARD_PARTS, OPPORTUNITY_FIELDS, OpportunityDisplayMode, OpportunityFieldId, RegistrationFieldSetting, SiteContentSettings, SpecialtyOption, JournalOption, PublicPageId, BrandContactSettings, PublicPageContent, SOCIAL_ICON_OPTIONS, SocialIconId, FloatingIconPosition, ForwardingType, ContactUsType, AcademicDegreeOption, DEFAULT_ACADEMIC_DEGREE_SETTINGS, DEFAULT_RESEARCH_EXPERIENCE_SETTINGS, DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS } from "@/lib/siteContentSettings";
+import { buildOpportunityInquiryLinks, getSelectedInquiryChannels, getInquiryOwnTarget } from "@/lib/siteContentSettings";
+import { CARD_PARTS, OPPORTUNITY_FIELDS, OpportunityDisplayMode, OpportunityFieldId, RegistrationFieldSetting, SiteContentSettings, SpecialtyOption, JournalOption, PublicPageId, BrandContactSettings, PublicPageContent, SOCIAL_ICON_OPTIONS, SocialIconId, FloatingIconPosition, ForwardingType, OpportunityInquiryChannel, ContactUsType, AcademicDegreeOption, DEFAULT_ACADEMIC_DEGREE_SETTINGS, DEFAULT_RESEARCH_EXPERIENCE_SETTINGS, DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS } from "@/lib/siteContentSettings";
 
 interface Props {
   settings: SiteContentSettings;
@@ -22,8 +22,10 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
   const [activePageTab, setActivePageTab] = useState<PublicPageId>("home");
   const [inquiryPreviewTitle, setInquiryPreviewTitle] = useState("Research opportunity — preview");
   const [inquiryPreviewLanguage, setInquiryPreviewLanguage] = useState<"ar" | "en">("ar");
-  const previewInquiry = getOpportunityInquiryLink(settings.brand, inquiryPreviewTitle, inquiryPreviewLanguage);
+  const previewInquiries = buildOpportunityInquiryLinks(settings.brand, inquiryPreviewTitle, inquiryPreviewLanguage);
   const [activeForwardTab, setActiveForwardTab] = useState<"participant" | "coordinator">("participant");
+  const selectedInquiryChannels = getSelectedInquiryChannels({ ...settings.brand, opportunityInquiryEnabled: true });
+  const missingInquiryTargets = Array.isArray(settings.brand.opportunityInquiryChannels) && settings.brand.opportunityInquiryEnabled !== false ? selectedInquiryChannels.filter((c) => !getInquiryOwnTarget(settings.brand, c)) : [];
   const latestSettings = useRef(settings);
   latestSettings.current = settings;
   const update = <K extends keyof SiteContentSettings>(key: K, value: SiteContentSettings[K]) => {
@@ -94,6 +96,12 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
   const toggleOpportunityFieldRequired = (fieldId: OpportunityFieldId) => {
     const fields = settings.requiredOpportunityFields;
     update("requiredOpportunityFields", fields.includes(fieldId) ? fields.filter((id) => id !== fieldId) : [...fields, fieldId]);
+  };
+  const toggleInquiryChannel = (channel: OpportunityInquiryChannel) => {
+    const b = latestSettings.current.brand;
+    const cur = getSelectedInquiryChannels({ ...b, opportunityInquiryEnabled: true });
+    const next = cur.includes(channel) ? cur.filter((c) => c !== channel) : [...cur, channel];
+    update("brand", { ...b, opportunityInquiryChannels: next, opportunityInquiryChannel: next[0] || b.opportunityInquiryChannel });
   };
   const updateBrand = <K extends keyof BrandContactSettings>(key: K, value: BrandContactSettings[K]) => {
     update("brand", { ...latestSettings.current.brand, [key]: value });
@@ -540,10 +548,10 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                         <button
                           type="button"
                           onClick={() => {
-                            updateBrand("opportunityInquiryChannel", "whatsapp");
+                            toggleInquiryChannel("whatsapp");
                           }}
                           className={`p-3 rounded-xl border-2 text-start transition-all relative flex flex-col gap-1 ${
-                            (settings.brand.opportunityInquiryChannel || "whatsapp") === "whatsapp"
+                            selectedInquiryChannels.includes("whatsapp")
                               ? "border-emerald-500 bg-emerald-50/80 shadow-xs"
                               : "border-slate-200 bg-white hover:border-slate-300"
                           }`}
@@ -552,7 +560,7 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                             <span className="flex items-center gap-1.5 text-xs font-black text-emerald-800">
                               <MessageCircle size={15} className="text-emerald-600" /> واتساب
                             </span>
-                            {(settings.brand.opportunityInquiryChannel || "whatsapp") === "whatsapp" && (
+                            {selectedInquiryChannels.includes("whatsapp") && (
                               <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-600 text-white text-[9px] font-bold">✓</span>
                             )}
                           </div>
@@ -562,10 +570,10 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                         <button
                           type="button"
                           onClick={() => {
-                            updateBrand("opportunityInquiryChannel", "email");
+                            toggleInquiryChannel("email");
                           }}
                           className={`p-3 rounded-xl border-2 text-start transition-all relative flex flex-col gap-1 ${
-                            settings.brand.opportunityInquiryChannel === "email"
+                            selectedInquiryChannels.includes("email")
                               ? "border-amber-500 bg-amber-50/80 shadow-xs"
                               : "border-slate-200 bg-white hover:border-slate-300"
                           }`}
@@ -574,7 +582,7 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                             <span className="flex items-center gap-1.5 text-xs font-black text-amber-800">
                               <Mail size={15} className="text-amber-600" /> بريد إلكتروني
                             </span>
-                            {settings.brand.opportunityInquiryChannel === "email" && (
+                            {selectedInquiryChannels.includes("email") && (
                               <span className="flex h-4 w-4 items-center justify-center rounded-full bg-amber-600 text-white text-[9px] font-bold">✓</span>
                             )}
                           </div>
@@ -584,10 +592,10 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                         <button
                           type="button"
                           onClick={() => {
-                            updateBrand("opportunityInquiryChannel", "telegram");
+                            toggleInquiryChannel("telegram");
                           }}
                           className={`p-3 rounded-xl border-2 text-start transition-all relative flex flex-col gap-1 ${
-                            settings.brand.opportunityInquiryChannel === "telegram"
+                            selectedInquiryChannels.includes("telegram")
                               ? "border-sky-500 bg-sky-50/80 shadow-xs"
                               : "border-slate-200 bg-white hover:border-slate-300"
                           }`}
@@ -596,7 +604,7 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                             <span className="flex items-center gap-1.5 text-xs font-black text-sky-800">
                               <Send size={15} className="text-sky-600" /> تيليجرام
                             </span>
-                            {settings.brand.opportunityInquiryChannel === "telegram" && (
+                            {selectedInquiryChannels.includes("telegram") && (
                               <span className="flex h-4 w-4 items-center justify-center rounded-full bg-sky-600 text-white text-[9px] font-bold">✓</span>
                             )}
                           </div>
@@ -606,10 +614,10 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                         <button
                           type="button"
                           onClick={() => {
-                            updateBrand("opportunityInquiryChannel", "phone");
+                            toggleInquiryChannel("phone");
                           }}
                           className={`p-3 rounded-xl border-2 text-start transition-all relative flex flex-col gap-1 ${
-                            settings.brand.opportunityInquiryChannel === "phone"
+                            selectedInquiryChannels.includes("phone")
                               ? "border-blue-500 bg-blue-50/80 shadow-xs"
                               : "border-slate-200 bg-white hover:border-slate-300"
                           }`}
@@ -618,7 +626,7 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                             <span className="flex items-center gap-1.5 text-xs font-black text-blue-800">
                               <Phone size={15} className="text-blue-600" /> اتصال هاتفي
                             </span>
-                            {settings.brand.opportunityInquiryChannel === "phone" && (
+                            {selectedInquiryChannels.includes("phone") && (
                               <span className="flex h-4 w-4 items-center justify-center rounded-full bg-blue-600 text-white text-[9px] font-bold">✓</span>
                             )}
                           </div>
@@ -628,10 +636,10 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                         <button
                           type="button"
                           onClick={() => {
-                            updateBrand("opportunityInquiryChannel", "custom_url");
+                            toggleInquiryChannel("custom_url");
                           }}
                           className={`p-3 rounded-xl border-2 text-start transition-all relative flex flex-col gap-1 ${
-                            settings.brand.opportunityInquiryChannel === "custom_url"
+                            selectedInquiryChannels.includes("custom_url")
                               ? "border-purple-500 bg-purple-50/80 shadow-xs"
                               : "border-slate-200 bg-white hover:border-slate-300"
                           }`}
@@ -640,7 +648,7 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                             <span className="flex items-center gap-1.5 text-xs font-black text-purple-800">
                               <ExternalLink size={15} className="text-purple-600" /> رابط مخصص
                             </span>
-                            {settings.brand.opportunityInquiryChannel === "custom_url" && (
+                            {selectedInquiryChannels.includes("custom_url") && (
                               <span className="flex h-4 w-4 items-center justify-center rounded-full bg-purple-600 text-white text-[9px] font-bold">✓</span>
                             )}
                           </div>
@@ -650,7 +658,7 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                     </div>
 
                     <div className="bg-white rounded-xl p-4 border border-slate-200 space-y-4">
-                      {(settings.brand.opportunityInquiryChannel || "whatsapp") === "whatsapp" && (
+                      {selectedInquiryChannels.includes("whatsapp") && (
                         <div className="space-y-2">
                           <TextField
                             label="رقم الواتساب للاستفسارات عن الفرص"
@@ -698,7 +706,7 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                         </div>
                       )}
 
-                      {settings.brand.opportunityInquiryChannel === "email" && (() => {
+                      {selectedInquiryChannels.includes("email") && (() => {
                         const currentEmail = (settings.brand.opportunityInquiryEmail || settings.brand.opportunityContactEmail || settings.brand.email || "srmaacademy@gmail.com").trim();
                         const testSub = "استفسار بخصوص الفرصة البحثية: فرصة تجريبية";
                         const testBody = (settings.brand.opportunityInquiryMessageAr || "مرحباً، أود الاستفسار والتسجيل بخصوص الفرصة البحثية: {title}").replace(/{title}/g, "فرصة تجريبية");
@@ -765,7 +773,7 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                         );
                       })()}
 
-                      {settings.brand.opportunityInquiryChannel === "telegram" && (() => {
+                      {selectedInquiryChannels.includes("telegram") && (() => {
                         const tgVal = (settings.brand.opportunityInquiryTelegram ?? settings.brand.opportunityContactTelegram ?? "").trim();
                         const isUrl = tgVal.startsWith("http");
                         const clean = tgVal.replace(/^@/, "").replace(/^https?:\/\/t\.me\//, "").replace(/\/$/, "");
@@ -855,7 +863,7 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                         );
                       })()}
 
-                      {settings.brand.opportunityInquiryChannel === "phone" && (
+                      {selectedInquiryChannels.includes("phone") && (
                         <div className="space-y-2">
                           <TextField
                             label="رقم الهاتف للاتصال الهاتفي المباشر"
@@ -893,7 +901,7 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                         </div>
                       )}
 
-                      {settings.brand.opportunityInquiryChannel === "custom_url" && (
+                      {selectedInquiryChannels.includes("custom_url") && (
                         <div className="space-y-2">
                           <TextField
                             label="الرابط المخصص بالكامل (URL)"
@@ -968,43 +976,22 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                           </div>
                         </div>
 
-                        <a href={previewInquiry?.href}
-                          target={previewInquiry?.isExternal ? "_blank" : undefined}
-                          rel={previewInquiry?.isExternal ? "noopener noreferrer" : undefined}
-                          aria-disabled={!previewInquiry}
-                          data-testid="link-inquiry-preview"
+                        {previewInquiries.length === 0 && <p className="text-center text-[11px] font-bold text-slate-400">لا توجد وسائل تواصل محددة؛ لن يظهر زر الاستفسار.</p>}
+                        {previewInquiries.map((q) => (
+                        <div key={q.channel} className="space-y-1">
+                        <a href={q.href} target={q.isExternal ? "_blank" : undefined} rel={q.isExternal ? "noopener noreferrer" : undefined}
+                          data-testid={`link-inquiry-preview-${q.channel}`}
                           className={`w-full font-bold py-2.5 rounded-xl text-xs text-center flex items-center justify-center gap-1.5 border transition-all ${
-                            (settings.brand.opportunityInquiryChannel || "whatsapp") === "whatsapp"
-                              ? "border-emerald-500/40 bg-emerald-50 text-emerald-800"
-                              : settings.brand.opportunityInquiryChannel === "telegram"
-                              ? "border-sky-500/40 bg-sky-50 text-sky-800"
-                              : settings.brand.opportunityInquiryChannel === "email"
-                              ? "border-amber-500/40 bg-amber-50 text-amber-800"
-                              : settings.brand.opportunityInquiryChannel === "phone"
-                              ? "border-blue-500/40 bg-blue-50 text-blue-800"
-                              : "border-purple-500/40 bg-purple-50 text-purple-800"
-                          }`}
-                        >
-                          {(settings.brand.opportunityInquiryChannel || "whatsapp") === "whatsapp" && (
-                            <MessageCircle size={15} className="text-emerald-600 shrink-0" />
-                          )}
-                          {settings.brand.opportunityInquiryChannel === "telegram" && (
-                            <Send size={14} className="text-sky-600 shrink-0" />
-                          )}
-                          {settings.brand.opportunityInquiryChannel === "email" && (
-                            <Mail size={14} className="text-amber-600 shrink-0" />
-                          )}
-                          {settings.brand.opportunityInquiryChannel === "phone" && (
-                            <Phone size={14} className="text-blue-600 shrink-0" />
-                          )}
-                          {settings.brand.opportunityInquiryChannel === "custom_url" && (
-                            <ExternalLink size={14} className="text-purple-600 shrink-0" />
-                          )}
-                          <span className="truncate">{inquiryPreviewLanguage === "ar"
-                            ? previewInquiry?.labelAr || "تواصل معنا للاستفسار"
-                            : previewInquiry?.labelEn || "Contact us for inquiries"}</span>
+                            q.channel === "whatsapp" ? "border-emerald-500/40 bg-emerald-50 text-emerald-800"
+                            : q.channel === "telegram" ? "border-sky-500/40 bg-sky-50 text-sky-800"
+                            : q.channel === "email" ? "border-amber-500/40 bg-amber-50 text-amber-800"
+                            : q.channel === "phone" ? "border-blue-500/40 bg-blue-50 text-blue-800"
+                            : "border-purple-500/40 bg-purple-50 text-purple-800"}`}>
+                          <span className="truncate">{inquiryPreviewLanguage === "ar" ? q.labelAr : q.labelEn}</span>
                         </a>
-                        {previewInquiry && <p dir="ltr" className="break-all text-[10px] text-slate-500">{previewInquiry.href}</p>}
+                        <p dir="ltr" className="break-all text-[10px] text-slate-500">{q.href}</p>
+                        </div>))}
+
 
                         <div className="text-[11px] text-slate-400 py-0.5 text-center font-medium">
                           🔗 نسخ رابط الفرصة
@@ -1016,10 +1003,10 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
               </div>
 
               {onSaveInquiry && <div className="md:col-span-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4 space-y-2">
-                <button type="button" onClick={onSaveInquiry} disabled={inquirySaving || saving}
+                <button type="button" onClick={onSaveInquiry} disabled={inquirySaving || saving || missingInquiryTargets.length > 0}
                   data-testid="button-save-opportunity-inquiry"
                   className="inline-flex items-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">
-                  <Save size={16} />{inquirySaving ? "جارٍ حفظ إعدادات الاستفسار…" : "حفظ إعدادات الاستفسار فقط"}
+                  {missingInquiryTargets.length > 0 && <span className="text-xs font-bold text-rose-600">أدخل بيانات التواصل لكل وسيلة محددة قبل الحفظ.</span>}<Save size={16} />{inquirySaving ? "جارٍ حفظ إعدادات الاستفسار…" : "حفظ إعدادات الاستفسار فقط"}
                 </button>
                 <p className="text-xs text-slate-600">يحفظ وسيلة التواصل وبياناتها ونصوص زر الاستفسار فقط، دون تغيير إعدادات الموقع أو رابط الفرصة.</p>
                 {inquiryMessage && <p role="status" className="text-sm font-bold">{inquiryMessage}</p>}
@@ -1306,8 +1293,12 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
                         : "رقم الواتساب المستهدف (مع رمز الدولة بدون +)"
                     }
                     value={settings.brand.participantForwardTarget || ""}
-                    onChange={(v) => updateBrand("participantForwardTarget", v)}
+                    onChange={(v) => {
+                      const b = latestSettings.current.brand;
+                      update("brand", { ...b, participantForwardTarget: v, ...((b.participantForwardType || "whatsapp") === "whatsapp" ? { participantWhatsapp: v } : {}) });
+                    }}
                   />
+                  <p className="mt-1 text-[11px] leading-5 text-slate-500">هذا هو الوجهة التي يُحوَّل إليها المشارك بعد إتمام التسجيل، وهي مستقلة عن وسائل الاستفسار في صفحة الفرصة. يُحفظ بزر «حفظ التغييرات» أعلى الصفحة.</p>
                 </div>
 
                 <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3.5">

@@ -152,6 +152,7 @@ export interface BrandContactSettings {
   // Opportunity Inquiry Button directly under Register Button
   opportunityInquiryEnabled: boolean;
   opportunityInquiryChannel: "whatsapp" | "email" | "telegram" | "phone" | "custom_url";
+  opportunityInquiryChannels?: BrandContactSettings["opportunityInquiryChannel"][];
   opportunityInquiryValue: string;
   opportunityInquiryWhatsapp: string;
   opportunityInquiryTelegram: string;
@@ -472,7 +473,7 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
     ? input[key] as Record<string, unknown>
     : {};
   const brandInput = object("brand");
-  type BrandTextKey = { [K in keyof BrandContactSettings]: BrandContactSettings[K] extends string ? K : never }[keyof BrandContactSettings];
+type BrandTextKey = { [K in keyof BrandContactSettings]-?: BrandContactSettings[K] extends string ? K : never }[keyof BrandContactSettings];
   const brandText = (key: BrandTextKey, max = 200): string => typeof brandInput[key] === "string"
     ? (brandInput[key] as string).trim().slice(0, max)
     : DEFAULT_SITE_CONTENT_SETTINGS.brand[key] as string;
@@ -667,6 +668,7 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
         : DEFAULT_SITE_CONTENT_SETTINGS.brand.participantForwardType,
       participantForwardTarget: (() => {
         const target = brandText("participantForwardTarget", 500);
+        if (typeof brandInput.participantForwardTarget === "string") return target;
         const fType = brandInput.participantForwardType as ForwardingType;
         if (fType === "email") {
           return target.includes("@") ? target : (brandText("email", 254) || "srmaacademy@gmail.com");
@@ -680,6 +682,7 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
         : DEFAULT_SITE_CONTENT_SETTINGS.brand.coordinatorForwardType,
       coordinatorForwardTarget: (() => {
         const target = brandText("coordinatorForwardTarget", 500);
+        if (typeof brandInput.coordinatorForwardTarget === "string") return target;
         const fType = brandInput.coordinatorForwardType as ForwardingType;
         if (fType === "email") {
           return target.includes("@") ? target : (brandText("email", 254) || "srmaacademy@gmail.com");
@@ -708,11 +711,23 @@ export function sanitizeSiteContentSettings(value: unknown): SiteContentSettings
       opportunityContactWhatsapp: (brandText("opportunityContactWhatsapp", 40) || globalWhatsapp || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityContactWhatsapp).replace(/[^\d+]/g, ""),
       opportunityInquiryEnabled: typeof brandInput.opportunityInquiryEnabled === "boolean" ? brandInput.opportunityInquiryEnabled : (typeof brandInput.opportunityContactEnabled === "boolean" ? brandInput.opportunityContactEnabled : DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryEnabled),
       opportunityInquiryChannel: (["whatsapp", "email", "telegram", "phone", "custom_url"] as const).includes(brandInput.opportunityInquiryChannel as any) ? (brandInput.opportunityInquiryChannel as any) : DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryChannel,
+      opportunityInquiryChannels: Array.isArray(brandInput.opportunityInquiryChannels)
+        ? [...new Set(brandInput.opportunityInquiryChannels.filter((channel): channel is BrandContactSettings["opportunityInquiryChannel"] =>
+          typeof channel === "string" && ["whatsapp", "email", "telegram", "phone", "custom_url"].includes(channel)))]
+        : undefined,
       opportunityInquiryValue: brandText("opportunityInquiryValue", 500) || brandText("opportunityContactWhatsapp", 200) || globalWhatsapp || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryValue,
-      opportunityInquiryWhatsapp: (brandText("opportunityInquiryWhatsapp", 40) || brandText("opportunityContactWhatsapp", 40) || globalWhatsapp || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryWhatsapp).replace(/[^\d+]/g, ""),
-      opportunityInquiryTelegram: (brandText("opportunityInquiryTelegram", 100) || brandText("opportunityContactTelegram", 100) || brandText("telegramUsername", 100) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryTelegram).replace(/^@/, "").replace(/^https?:\/\/t\.me\//, ""),
-      opportunityInquiryEmail: brandText("opportunityInquiryEmail", 254) || brandText("opportunityContactEmail", 254) || brandText("email", 254) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryEmail,
-      opportunityInquiryPhone: (brandText("opportunityInquiryPhone", 40) || brandText("opportunityContactPhone", 40) || brandText("phone", 40) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryPhone).replace(/[^\d+]/g, ""),
+      opportunityInquiryWhatsapp: (typeof brandInput.opportunityInquiryWhatsapp === "string"
+        ? brandText("opportunityInquiryWhatsapp", 40)
+        : brandText("opportunityContactWhatsapp", 40) || globalWhatsapp || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryWhatsapp).replace(/[^\d+]/g, ""),
+      opportunityInquiryTelegram: (typeof brandInput.opportunityInquiryTelegram === "string"
+        ? brandText("opportunityInquiryTelegram", 100)
+        : brandText("opportunityContactTelegram", 100) || brandText("telegramUsername", 100) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryTelegram).replace(/^@/, "").replace(/^https?:\/\/t\.me\//, ""),
+      opportunityInquiryEmail: typeof brandInput.opportunityInquiryEmail === "string"
+        ? brandText("opportunityInquiryEmail", 254)
+        : brandText("opportunityContactEmail", 254) || brandText("email", 254) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryEmail,
+      opportunityInquiryPhone: (typeof brandInput.opportunityInquiryPhone === "string"
+        ? brandText("opportunityInquiryPhone", 40)
+        : brandText("opportunityContactPhone", 40) || brandText("phone", 40) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryPhone).replace(/[^\d+]/g, ""),
       opportunityInquiryCustomUrl: safeUrl(brandText("opportunityInquiryCustomUrl", 1000), ""),
       opportunityInquiryLabelAr: brandText("opportunityInquiryLabelAr", 100) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryLabelAr,
       opportunityInquiryLabelEn: brandText("opportunityInquiryLabelEn", 100) || DEFAULT_SITE_CONTENT_SETTINGS.brand.opportunityInquiryLabelEn,
@@ -730,7 +745,7 @@ export async function saveSiteContentSettings(settings: SiteContentSettings) {
 }
 
 /** One atomic JSONB merge: unrelated settings and unknown stored fields remain intact. */
-export async function saveOpportunityInquirySettings(patch: Record<string, string | boolean>) {
+export async function saveOpportunityInquirySettings(patch: Record<string, string | boolean | string[]>) {
   const initial = { ...DEFAULT_SITE_CONTENT_SETTINGS, brand: { ...DEFAULT_SITE_CONTENT_SETTINGS.brand, ...patch } };
   const [record] = await db.insert(coordinatorPortalSettingsTable)
     .values({ key: SITE_CONTENT_KEY, value: initial as unknown as Record<string, unknown> })

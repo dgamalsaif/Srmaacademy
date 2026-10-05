@@ -4,7 +4,7 @@ import path from "node:path";
 import sharp from "sharp";
 import { requireOwner } from "../middlewares/coordinatorAuth";
 import { getSiteContentSettings, sanitizeSiteContentSettings, saveSiteContentSettings, saveOpportunityInquirySettings } from "../lib/siteContentSettings";
-import { validateInquiryPatch } from "../lib/opportunityInquiryPatch";
+import { INQUIRY_KEYS, validateInquiryPatch } from "../lib/opportunityInquiryPatch";
 
 const router = Router();
 
@@ -58,13 +58,27 @@ router.get("/pwa-icon/:size.png", async (req, res): Promise<void> => {
 
 router.put("/site-content-settings", requireOwner, async (req, res): Promise<void> => {
   const settings = sanitizeSiteContentSettings(req.body);
+  try {
+    const brandInput = req.body?.brand || {};
+    const existing = Object.fromEntries(INQUIRY_KEYS.filter(key => settings.brand[key] !== undefined).map(key => [key, settings.brand[key]]));
+    const supplied = Object.fromEntries(INQUIRY_KEYS.filter(key => key in brandInput).map(key => [key, brandInput[key]]));
+    validateInquiryPatch({ ...existing, ...supplied });
+  } catch (error) {
+    res.status(400).json({ error: (error as Error).message });
+    return;
+  }
   await saveSiteContentSettings(settings);
   res.json(settings);
 });
 
 router.patch("/site-content-settings/opportunity-inquiry", requireOwner, async (req, res): Promise<void> => {
-  let patch: Record<string, string | boolean>;
-  try { patch = validateInquiryPatch(req.body); }
+  let patch: ReturnType<typeof validateInquiryPatch>;
+  try {
+    patch = validateInquiryPatch(req.body);
+    const { brand } = await getSiteContentSettings();
+    const existing = Object.fromEntries(INQUIRY_KEYS.filter(key => brand[key] !== undefined).map(key => [key, brand[key]]));
+    validateInquiryPatch({ ...existing, ...patch });
+  }
   catch (error) { res.status(400).json({ error: (error as Error).message }); return; }
   res.json(await saveOpportunityInquirySettings(patch));
 });

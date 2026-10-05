@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+
 import { readFileSync } from "node:fs";
 import { validateInquiryPatch } from "./opportunityInquiryPatch";
 // Load the pure frontend helper at runtime without pulling a different artifact
@@ -9,6 +10,16 @@ const { DEFAULT_SITE_CONTENT_SETTINGS, getOpportunityInquiryLink } = await impor
 );
 
 const brand = DEFAULT_SITE_CONTENT_SETTINGS.brand;
+test("inquiry patch validates every selected target, not only the legacy primary channel", () => {
+  const input = { opportunityInquiryChannels: ["whatsapp", "email", "telegram"],
+    opportunityInquiryWhatsapp: "12025550122", opportunityInquiryEmail: "inquiry@example.org",
+    opportunityInquiryTelegram: "ExampleResearch" };
+  assert.deepEqual(validateInquiryPatch(input), input);
+  assert.throws(() => validateInquiryPatch({ ...input, opportunityInquiryEmail: "invalid" }));
+  assert.throws(() => validateInquiryPatch({ ...input, opportunityInquiryTelegram: "" }));
+  assert.throws(() => validateInquiryPatch({ opportunityInquiryChannels: ["unknown"] }));
+  assert.deepEqual(validateInquiryPatch({ opportunityInquiryChannels: [] }), { opportunityInquiryChannels: [] });
+});
 test("inquiry saves accept only their own fields, not global settings or sharing", () => {
   assert.deepEqual(validateInquiryPatch({opportunityInquiryEnabled:false}), {opportunityInquiryEnabled:false});
   for (const input of [{primaryColor:"#abcdef"}, {whatsapp:"966500000001"}, {brand:{}}, {showOpportunityDetails:true}, {opportunityContactType:"email"}]) {

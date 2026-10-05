@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "wouter";
 import { ChevronLeft, Users, Clock, BookOpen, CheckCircle2, ArrowLeft, ExternalLink, MessageCircle, Send, Mail, Phone, Copy, Lock, ShieldCheck, Share2, Check } from "lucide-react";
 import { ResearchOpportunity } from "@/lib/researchData";
-import { DEFAULT_SITE_CONTENT_SETTINGS, SiteContentSettings, getContactUsHref, getOpportunityContactLinks, getOpportunityInquiryLink } from "@/lib/siteContentSettings";
+import { DEFAULT_SITE_CONTENT_SETTINGS, SiteContentSettings, getContactUsHref, getOpportunityContactLinks, buildOpportunityInquiryLinks } from "@/lib/siteContentSettings";
 import { isFieldVisible, type OpportunityDisplayFieldId } from "@/lib/opportunityVisibility";
 import OpportunityMedia from "@/components/OpportunityMedia";
 import OpportunityPrice from "@/components/OpportunityPrice";
@@ -384,15 +384,15 @@ export default function ResearchDetail() {
 
               {/* Inquiry Button directly under Register Button */}
               {(() => {
-                const inquiry = getOpportunityInquiryLink(
+                const inquiries = buildOpportunityInquiryLinks(
                   contentSettings.brand,
                   research.titleAr || research.titleEn || research.title,
                   language as "ar" | "en"
                 );
-                if (!inquiry) return null;
+                if (!inquiries.length) return null;
 
-                return (
-                  <a
+                return (<div className="space-y-2 mb-2">{inquiries.map((inquiry) => (
+<a key={inquiry.channel}
                     href={inquiry.href}
                     target={inquiry.isExternal && inquiry.channel !== "email" && inquiry.channel !== "phone" ? "_blank" : undefined}
                     rel={inquiry.isExternal && inquiry.channel !== "email" && inquiry.channel !== "phone" ? "noopener noreferrer" : undefined}
@@ -415,8 +415,7 @@ export default function ResearchDetail() {
                     {inquiry.channel === "phone" && <Phone size={15} className="text-blue-600 shrink-0" />}
                     {inquiry.channel === "custom_url" && <ExternalLink size={15} className="text-purple-600 shrink-0" />}
                     <span>{language === "ar" ? inquiry.labelAr : inquiry.labelEn}</span>
-                  </a>
-                );
+                  </a>)) }</div>);
               })()}
 
               {(() => {

@@ -3,7 +3,7 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import sharp from "sharp";
 import { db, insertResearchProgramSchema, programCatalogBootstrapTable, registrationsTable, researchProgramsTable } from "@workspace/db";
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq, inArray, sql } from "drizzle-orm";
 import { readSession, requireOwner } from "../middlewares/coordinatorAuth";
 import { getManagedOwner } from "../middlewares/ownerAuth";
 import { getSiteContentSettings, OpportunityFieldId } from "../lib/siteContentSettings";
@@ -13,6 +13,7 @@ import { getResearchImageBytes, getResearchImageUrl, ResearchImageStorageError, 
 import { ensureProgramCapacityModel, PROGRAM_CAPACITY_LOCK_NAMESPACE, type DatabaseTransaction } from "../lib/programCapacity";
 import { applyResearchCatalogSeatSnapshot, researchCatalogDisplayOrder } from "../lib/researchCatalogSeatSnapshot";
 import { getOpportunityVisibility, saveOpportunityVisibility, validateHiddenFields } from "../lib/opportunityVisibility";
+import { BatchProgramValidationError, validateBatchProgramScope, validateBatchProgramUpdates } from "../lib/batchProgramUpdate";
 
 const router = Router();
 
@@ -611,73 +612,67 @@ router.delete("/programs/:id", requireOwner, async (req, res) => {
 });
 
 router.post("/programs/batch-update", requireOwner, async (req, res) => {
-  const { ids, all, category, updates } = req.body || {};
-  if (!updates || typeof updates !== "object") {
-    res.status(400).json({ error: "بيانات التحديث غير صالحة" });
-    return;
-  }
-  const patch: Record<string, unknown> = { updatedAt: new Date() };
-  if (typeof updates.status === "string" && isProgramStatus(updates.status)) {
-    patch.status = updates.status;
-  }
-  if (typeof updates.supervisor === "string") {
-    patch.supervisor = updates.supervisor.trim();
-  }
-  if (typeof updates.duration === "string") {
-    patch.duration = updates.duration.trim();
-  }
-  if (typeof updates.specialtyAr === "string") {
-    patch.specialtyAr = updates.specialtyAr.trim();
-  }
-  if (typeof updates.specialtyEn === "string") {
-    patch.specialtyEn = updates.specialtyEn.trim();
-  }
-  if (typeof updates.category === "string" && ["active", "completed", "training", "cme"].includes(updates.category)) {
-    patch.category = updates.category;
-  }
-  if (typeof updates.researchGroupUrl === "string") {
-    const norm = normalizeResearchGroupUrl(updates.researchGroupUrl);
-    if (norm !== null && norm !== undefined) patch.researchGroupUrl = norm;
-  }
-  if (typeof updates.priceOriginalSar === "number" && updates.priceOriginalSar > 0) {
-    patch.priceOriginalSar = Math.round(updates.priceOriginalSar);
-  }
-  if (typeof updates.priceDiscountedSar === "number" && updates.priceDiscountedSar >= 0) {
-    patch.priceDiscountedSar = Math.round(updates.priceDiscountedSar);
-  }
-  if (typeof updates.journalTarget === "string") {
-    patch.journalTarget = updates.journalTarget.trim();
-  }
-  if (typeof updates.indexedIn === "string") {
-    patch.indexedIn = updates.indexedIn.trim();
-  }
-  if (typeof updates.totalSeats === "number" && updates.totalSeats > 0) {
-    patch.totalSeats = Math.round(updates.totalSeats);
-  }
-  if (typeof updates.seatsLeft === "number" && updates.seatsLeft >= 0) {
-    patch.seatsLeft = Math.round(updates.seatsLeft);
-  }
-
   try {
-    let affected = 0;
-    if (all === true) {
-      if (category && typeof category === "string") {
-        await db.update(researchProgramsTable).set(patch).where(eq(researchProgramsTable.category, category));
-      } else {
-        await db.update(researchProgramsTable).set(patch);
-      }
-      affected = -1; // all affected
-    } else if (Array.isArray(ids) && ids.length > 0) {
-      const numIds = ids.map(Number).filter((n) => Number.isInteger(n) && n > 0);
-      for (const id of numIds) {
-        await db.update(researchProgramsTable).set(patch).where(eq(researchProgramsTable.id, id));
-        affected++;
-      }
+    const source = req.body || {};
+    const scope = validateBatchProgramScope(source);
+    const updates = validateBatchProgramUpdates(source.updates);
+    const hiddenFields = "hiddenFields" in updates ? validateHiddenFields(updates.hiddenFields) : undefined;
+    const groupUrl = normalizeResearchGroupUrl(updates.researchGroupUrl);
+    if (groupUrl === null) throw new ProgramUpdateError("رابط مجموعة البحث غير صحيح.");
+    if (updates.status !== undefined && (typeof updates.status !== "string" || !isProgramStatus(updates.status))) throw new ProgramUpdateError("حالة البحث غير معتمدة.");
+    if (updates.category !== undefined && !["active", "completed", "training", "cme"].includes(String(updates.category))) {
+      throw new ProgramUpdateError("نوع الفرصة غير صحيح.");
     }
+    const normalized = await normalizeProgramPayload({
+      ...updates, ...(groupUrl === undefined ? {} : { researchGroupUrl: groupUrl }),
+    }, "update");
+    const parsed = insertResearchProgramSchema.partial().safeParse(normalized);
+    if (!parsed.success) throw new ProgramUpdateError("بيانات الفرص غير صحيحة.");
+
+    const affected = await db.transaction(async (tx: DatabaseTransaction) => {
+      await ensureProgramCapacityModel(tx);
+      const targets: Array<typeof researchProgramsTable.$inferSelect> = scope.all
+        ? scope.category
+          ? await tx.select().from(researchProgramsTable).where(eq(researchProgramsTable.category, scope.category))
+          : await tx.select().from(researchProgramsTable)
+        : await tx.select().from(researchProgramsTable).where(inArray(researchProgramsTable.id, scope.ids));
+      if (!targets.length) throw new ProgramUpdateError("لا توجد فرص مطابقة للتعديل.", 404);
+      if (!scope.all && targets.length !== scope.ids.length) throw new ProgramUpdateError("بعض الفرص المحددة لم تعد موجودة. أعد تحميل القائمة.", 409);
+      for (const target of targets.sort((a, b) => a.id - b.id)) {
+        // Same lock order as registration/single editing; no partial bulk writes.
+        await tx.execute(sql`SELECT pg_advisory_xact_lock(${PROGRAM_CAPACITY_LOCK_NAMESPACE + target.id})`);
+        const [current] = await tx.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, target.id)).limit(1).for("update");
+        if (!current || (scope.category && current.category !== scope.category)) {
+          throw new ProgramUpdateError("تغيّرت قائمة الفرص أثناء التعديل. أعد المحاولة.", 409);
+        }
+        const original = parsed.data.priceOriginalSar ?? current.priceOriginalSar;
+        const discounted = parsed.data.priceDiscountedSar ?? current.priceDiscountedSar;
+        if (original < discounted || discounted < 0) throw new ProgramUpdateError(`الأسعار غير صحيحة للفرصة ${current.id}. لم يتم تعديل أي فرصة.`);
+        const missingFields = await validateRequiredProgramFields({ ...current, ...parsed.data });
+        if (missingFields.length) throw new ProgramUpdateError(`حقول إلزامية ناقصة للفرصة ${current.id}.`, 400, missingFields);
+        const seatOverride = await getSeatsLeftOverride(updates.seatsLeft, { ...current, ...parsed.data }, current.id, tx);
+        if (seatOverride.error) throw new ProgramUpdateError(seatOverride.error);
+        // Metadata-only changes must not overwrite a concurrent seat allocation.
+        await tx.update(researchProgramsTable).set({
+          ...parsed.data, ...seatOverride.value,
+          updatedAt: new Date(Math.max(Date.now(), current.updatedAt.getTime() + 1)),
+        }).where(eq(researchProgramsTable.id, current.id));
+        if (hiddenFields !== undefined) await saveOpportunityVisibility(tx, current.id, hiddenFields);
+      }
+      return targets.length;
+    });
     const freshRows = await db.select().from(researchProgramsTable).orderBy(desc(researchProgramsTable.createdAt));
     const visibility = await getOpportunityVisibility(freshRows.map((row: typeof researchProgramsTable.$inferSelect) => row.id));
     res.json({ success: true, affected, programs: freshRows.map((r) => toClient(r, true, visibility.get(r.id) ?? [])) });
   } catch (error) {
+    if (error instanceof ProgramUpdateError) {
+      res.status(error.status).json({ error: error.message, ...(error.fields?.length ? { fields: error.fields } : {}) });
+      return;
+    }
+    if (error instanceof BatchProgramValidationError || error instanceof ResearchImageValidationError) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
     req.log.error({ err: error }, "Failed to batch update programs");
     res.status(500).json({ error: "تعذر تحديث البرامج المحددة" });
   }
@@ -783,7 +778,7 @@ async function getSeatsLeftOverride(value: unknown, current: typeof researchProg
   if (!Number.isInteger(requested) || requested < 0 || requested > 15) {
     return { error: "المقاعد المتبقية يجب أن تكون رقماً صحيحاً بين 0 و15." };
   }
-  const registrations = await tx.select({ authorRole: registrationsTable.authorRole })
+  const registrations: Array<{ authorRole: string }> = await tx.select({ authorRole: registrationsTable.authorRole })
     .from(registrationsTable).where(eq(registrationsTable.researchId, programId));
   const firstAuthorUsed = registrations.filter((registration) => registration.authorRole === "first_author").length;
   const coAuthorUsed = registrations.length - firstAuthorUsed;
@@ -800,7 +795,9 @@ async function getSeatsLeftOverride(value: unknown, current: typeof researchProg
       seatsLeft,
       firstAuthorSeatsLeft,
       coAuthorSeatsLeft,
-      status: seatsLeft === 0 ? "seats_full" : current.status === "seats_full" && current.category !== "completed" ? "open" : current.status,
+      status: current.category === "active" && ["open", "seats_full"].includes(current.status)
+        ? seatsLeft === 0 ? "seats_full" : "open"
+        : current.status,
     },
   };
 }

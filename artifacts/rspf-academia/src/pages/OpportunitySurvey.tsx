@@ -29,6 +29,7 @@ import { useLanguage } from "@/lib/i18n";
 import { PageSeo } from "@/lib/seo";
 import { useToast } from "@/hooks/use-toast";
 import { apiFetch } from "@/lib/api";
+import { getRegistrationForwarding, loadLatestForwardingBrand } from "@/lib/registrationForwarding";
 import { useSiteContentSettings } from "@/hooks/use-site-content-settings";
 import { getEnglishOpportunityTitle, getOpportunityRegistrationPath, getOpportunitySharePath } from "@/lib/opportunityDisplay";
 
@@ -64,6 +65,7 @@ export default function OpportunitySurvey() {
   const [done, setDone] = useState(false);
   const [error, setError] = useState("");
   const [forwardUrl, setForwardUrl] = useState("");
+  const [forwardingUnavailable, setForwardingUnavailable] = useState(false);
   const [forwardType, setForwardType] = useState<ForwardingType>("whatsapp");
   const [researchGroupUrl, setResearchGroupUrl] = useState("");
   const [copiedLink, setCopiedLink] = useState(false);
@@ -214,12 +216,14 @@ export default function OpportunitySurvey() {
       }
 
       setResearchGroupUrl(resData.researchGroupUrl || selectedOpp.researchGroupUrl || "");
-      const forwarding = contentSettings.brand;
-      const forwardingType = forwarding.participantForwardType || "whatsapp";
+      const currentBrand = await loadLatestForwardingBrand();
+      setForwardingUnavailable(currentBrand === null);
+      const forwarding = getRegistrationForwarding(currentBrand);
+      const forwardingType = forwarding.type;
       const fUrl = buildForwardingUrl({
         type: forwardingType,
-        target: forwarding.participantForwardTarget || forwarding.participantWhatsapp || forwarding.whatsapp,
-        customMessage: forwarding.participantCustomMessage,
+        target: forwarding.target,
+        customMessage: forwarding.customMessage,
         studentName: form.fullName.trim(),
         specialization: form.specialization.trim(),
         email: form.email.trim(),
@@ -235,6 +239,12 @@ export default function OpportunitySurvey() {
       setForwardUrl(fUrl);
       setForwardType(forwardingType);
       setDone(true);
+      if (fUrl && forwarding.autoRedirect && forwardingType !== "none") {
+        window.setTimeout(() => {
+          if (forwardingType === "email") window.location.href = fUrl;
+          else window.open(fUrl, "_blank", "noopener,noreferrer");
+        }, 1200);
+      }
     } catch (err: any) {
       setError(err?.message || localize("حدث خطأ أثناء حفظ التسجيل", "Failed to save registration"));
     } finally {
@@ -346,6 +356,7 @@ export default function OpportunitySurvey() {
                   </a>
                 )}
 
+                {forwardingUnavailable && <p role="status" className="mb-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">{localize("تم حفظ تسجيلك، لكن تعذّر تحميل بيانات التواصل الحالية. حدّث الصفحة للاطلاع عليها؛ لا تعِد التسجيل.", "Your registration is saved, but current contact details could not be loaded. Refresh to view them; do not register again.")}</p>}
                 {forwardUrl && (
                   <a
                     href={forwardUrl}

@@ -996,7 +996,8 @@ export default function AdminDashboard() {
 
   const handleBatchSuccess = (freshPrograms: ResearchOpportunity[]) => {
     if (freshPrograms.length > 0) {
-      setResearch(freshPrograms);
+      const byId = new Map(freshPrograms.map((r) => [r.id, r]));
+      setResearch((prev) => prev.map((r) => byId.get(r.id) ?? r));
     }
     setSelectedIds(new Set());
   };
@@ -1486,6 +1487,11 @@ export default function AdminDashboard() {
                         </button>
                       )}
                     </div>
+                    {selectedIds.size === 0 && (
+                      <button type="button" onClick={() => setBulkEditOpen(true)} className="flex items-center gap-1.5 bg-[#117b59] text-white px-3.5 py-1.5 rounded-xl text-xs font-bold hover:bg-[#0c6549]">
+                        <Layers size={13} /><span>تعديل جماعي (الكل أو نوع)</span>
+                      </button>
+                    )}
                     {selectedIds.size > 0 && (
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-[#117b59]">
@@ -1789,6 +1795,7 @@ export default function AdminDashboard() {
           onClose={() => setBulkEditOpen(false)}
           selectedCount={selectedIds.size}
           selectedIds={Array.from(selectedIds)}
+          totalCount={research.length}
           specialtyOptions={contentSettings.specialtyOptions}
           onSuccess={handleBatchSuccess}
         />

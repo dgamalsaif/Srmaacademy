@@ -5,6 +5,7 @@ import OpportunityPrice from "./OpportunityPrice";
 import { DEFAULT_SITE_CONTENT_SETTINGS, RegistrationFieldId, SiteContentSettings, buildForwardingUrl, ForwardingType, DEFAULT_ACADEMIC_DEGREE_SETTINGS, DEFAULT_RESEARCH_EXPERIENCE_SETTINGS, DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS } from "@/lib/siteContentSettings";
 import { useLanguage } from "@/lib/i18n";
 import { apiFetch } from "@/lib/api";
+import { getRegistrationForwarding, loadLatestForwardingBrand } from "@/lib/registrationForwarding";
 
 interface RegistrationModalProps {
   isOpen: boolean;
@@ -46,6 +47,7 @@ export default function RegistrationModal({
   const [error, setError] = useState("");
   const [researchGroupUrl, setResearchGroupUrl] = useState("");
   const [forwardUrl, setForwardUrl] = useState("");
+  const [forwardingUnavailable, setForwardingUnavailable] = useState(false);
   const [forwardType, setForwardType] = useState<ForwardingType>("whatsapp");
   const [contentSettings, setContentSettings] = useState<SiteContentSettings>(DEFAULT_SITE_CONTENT_SETTINGS);
   const audience = coordinatorEntry ? "coordinator" : "participant";
@@ -175,19 +177,14 @@ export default function RegistrationModal({
         setResearchGroupUrl(effectiveGroupUrl);
       }
 
-      // Resolve configured forwarding channel
-      const fType = coordinatorEntry
-        ? (contentSettings.brand.coordinatorForwardType || "whatsapp")
-        : (contentSettings.brand.participantForwardType || "whatsapp");
-      const fTarget = coordinatorEntry
-        ? (contentSettings.brand.coordinatorForwardTarget || contentSettings.brand.coordinatorWhatsapp || contentSettings.brand.whatsapp || "966562159258")
-        : (contentSettings.brand.participantForwardTarget || contentSettings.brand.participantWhatsapp || contentSettings.brand.whatsapp || "966562159258");
-      const fAuto = coordinatorEntry
-        ? contentSettings.brand.coordinatorAutoRedirect
-        : contentSettings.brand.participantAutoRedirect;
-      const fMsg = coordinatorEntry
-        ? contentSettings.brand.coordinatorCustomMessage
-        : contentSettings.brand.participantCustomMessage;
+      // Do not use a number captured when the form opened, or an old hardcoded fallback.
+      const currentBrand = await loadLatestForwardingBrand();
+      setForwardingUnavailable(currentBrand === null);
+      const forwarding = getRegistrationForwarding(currentBrand, coordinatorEntry);
+      const fType = forwarding.type;
+      const fTarget = forwarding.target;
+      const fAuto = forwarding.autoRedirect;
+      const fMsg = forwarding.customMessage;
 
       const generatedUrl = buildForwardingUrl({
         type: fType,
@@ -256,6 +253,7 @@ export default function RegistrationModal({
           <div className="px-7 py-10 text-center">
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#e7f3ef]"><CheckCircle2 size={34} style={{ color: contentSettings.accentColor }} /></div>
             <h3 className="text-xl font-black text-[#172238]">{localize("تم حفظ التسجيل بنجاح", "Registration saved successfully")}</h3>
+            {forwardingUnavailable && <p role="status" className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">{localize("تم حفظ تسجيلك، لكن تعذّر تحميل بيانات التواصل الحالية. حدّث الصفحة للاطلاع عليها؛ لا تعِد التسجيل.", "Your registration is saved, but current contact details could not be loaded. Refresh to view them; do not register again.")}</p>}
             <p className="mx-auto mt-3 max-w-sm text-sm leading-7 text-slate-500">{coordinatorEntry ? localize("تمت إضافة بيانات الطالب إلى لوحة التسجيلات بنجاح.", "The student's details have been added to the registrations dashboard.") : localize(`تم حفظ بياناتك وسيتم التواصل معك من فريق ${contentSettings.brand.siteNameAr} قريباً.`, `Your details have been saved and the ${contentSettings.brand.siteNameEn} team will contact you soon.`)}</p>
 
             {forwardUrl && forwardType !== "none" && (

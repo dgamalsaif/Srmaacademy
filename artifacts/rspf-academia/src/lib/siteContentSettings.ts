@@ -119,6 +119,7 @@ export interface BrandContactSettings {
   // Opportunity Inquiry Button directly under Register Button
   opportunityInquiryEnabled?: boolean;
   opportunityInquiryChannel?: OpportunityInquiryChannel;
+  opportunityInquiryChannels?: OpportunityInquiryChannel[];
   opportunityInquiryValue?: string;
   opportunityInquiryWhatsapp?: string;
   opportunityInquiryTelegram?: string;
@@ -559,7 +560,8 @@ export interface OpportunityInquiryLink {
 export function getOpportunityInquiryLink(
   brand?: BrandContactSettings,
   opportunityTitle?: string,
-  language: "ar" | "en" = "ar"
+  language: "ar" | "en" = "ar",
+  channelOverride?: OpportunityInquiryChannel
 ): OpportunityInquiryLink | null {
   const b = brand || DEFAULT_SITE_CONTENT_SETTINGS.brand;
   if (b.opportunityInquiryEnabled === false) {
@@ -569,6 +571,7 @@ export function getOpportunityInquiryLink(
   // Determine channel (whatsapp / email / telegram / phone / custom_url)
   // opportunityInquiryChannel takes primary precedence
   const channel: OpportunityInquiryChannel =
+    channelOverride ||
     b.opportunityInquiryChannel ||
     (b.opportunityContactType as OpportunityInquiryChannel) ||
     "whatsapp";
@@ -714,6 +717,31 @@ export function getOpportunityInquiryLink(
   }
 
   return null;
+}
+
+export function getSelectedInquiryChannels(brand?: BrandContactSettings): OpportunityInquiryChannel[] {
+  const b = brand || DEFAULT_SITE_CONTENT_SETTINGS.brand;
+  if (b.opportunityInquiryEnabled === false) return [];
+  if (Array.isArray(b.opportunityInquiryChannels)) return Array.from(new Set(b.opportunityInquiryChannels));
+  return [b.opportunityInquiryChannel || (b.opportunityContactType as OpportunityInquiryChannel) || "whatsapp"];
+}
+
+export function getInquiryOwnTarget(b: BrandContactSettings, channel: OpportunityInquiryChannel): string {
+  const map = { whatsapp: b.opportunityInquiryWhatsapp, email: b.opportunityInquiryEmail, telegram: b.opportunityInquiryTelegram, phone: b.opportunityInquiryPhone, custom_url: b.opportunityInquiryCustomUrl } as const;
+  return (map[channel] || "").trim();
+}
+
+export function buildOpportunityInquiryLinks(
+  brand?: BrandContactSettings,
+  opportunityTitle?: string,
+  language: "ar" | "en" = "ar"
+): OpportunityInquiryLink[] {
+  const b = brand || DEFAULT_SITE_CONTENT_SETTINGS.brand;
+  const explicit = Array.isArray(b.opportunityInquiryChannels);
+  return getSelectedInquiryChannels(brand)
+    .filter((channel) => !explicit || !!getInquiryOwnTarget(b, channel))
+    .map((channel) => getOpportunityInquiryLink(brand, opportunityTitle, language, channel))
+    .filter((l): l is OpportunityInquiryLink => !!l);
 }
 
 export function buildForwardingUrl({
