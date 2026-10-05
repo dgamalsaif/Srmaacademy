@@ -118,8 +118,8 @@ export default function Home() {
   const [serviceModalOpen, setServiceModalOpen] = useState(false);
   const [selectedServiceName, setSelectedServiceName] = useState("إعداد الدراسة البحثية");
 
-  const loadOpportunities = useCallback(() => {
-    setLoadState("loading");
+  const loadOpportunities = useCallback((background = false) => {
+    if (!background) setLoadState("loading");
     apiFetch("/api/programs", { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : Promise.reject(new Error("programs unavailable"))))
       .then((data: ResearchOpportunity[]) => {
@@ -132,6 +132,11 @@ export default function Home() {
 
   useEffect(() => {
     loadOpportunities();
+    const refresh = () => { if (!document.hidden) loadOpportunities(true); };
+    const timer = window.setInterval(refresh, 10000);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => { window.clearInterval(timer); window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); };
   }, [loadOpportunities]);
 
   const preview = opportunities.slice(0, 6);
@@ -224,7 +229,7 @@ export default function Home() {
               <p className="mt-1 text-sm text-slate-500">{localize("تحقق من الاتصال ثم أعد المحاولة.", "Check your connection and try again.")}</p>
               <button
                 type="button"
-                onClick={loadOpportunities}
+                onClick={() => loadOpportunities()}
                 data-testid="button-home-retry"
                 className="mt-4 inline-flex items-center gap-2 rounded-xl bg-[#0C3156] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#0a2847]"
               >

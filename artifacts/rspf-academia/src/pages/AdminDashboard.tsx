@@ -784,21 +784,25 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!role) return;
-    const loadPrograms = async () => {
-      setLoadingPrograms(true);
+    const loadPrograms = async (background = false) => {
+      if (!background) setLoadingPrograms(true);
       try {
         let response = await apiFetch("/api/programs");
         let data = await response.json() as ResearchOpportunity[];
-        setResearch(Array.isArray(data) ? data : []);
+        if (!response.ok || !Array.isArray(data)) throw new Error("تعذر تحديث الفرص.");
+        setResearch(data);
       } catch {
-        setResearch([]);
+        // Keep the last loaded catalog on temporary connection failures.
       } finally {
         setLoadingPrograms(false);
       }
     };
     void loadPrograms();
-    const timer = window.setInterval(() => void loadPrograms(), 30000);
-    return () => window.clearInterval(timer);
+    const refresh = () => { if (!document.hidden) void loadPrograms(true); };
+    const timer = window.setInterval(refresh, 10000);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => { window.clearInterval(timer); window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); };
   }, [role]);
 
   useEffect(() => {

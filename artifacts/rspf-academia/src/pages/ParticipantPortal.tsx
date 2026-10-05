@@ -80,9 +80,11 @@ export default function ParticipantPortal() {
       if (document.visibilityState === "visible") refreshOpportunities();
     };
     window.addEventListener("focus", refreshOpportunities);
+    const timer = window.setInterval(() => { if (!document.hidden) refreshOpportunities(); }, 10000);
     document.addEventListener("visibilitychange", refreshWhenVisible);
     return () => {
       window.removeEventListener("focus", refreshOpportunities);
+      window.clearInterval(timer);
       document.removeEventListener("visibilitychange", refreshWhenVisible);
     };
   }, []);

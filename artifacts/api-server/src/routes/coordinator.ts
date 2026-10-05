@@ -1,11 +1,12 @@
 import { Router } from "express";
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 import { db, coordinatorsTable, ownerAccountsTable, serviceRequestsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import {
   clearCoordinatorCookie, createSession, readSession, setCoordinatorCookie, requireCoordinator, requireOwner,
 } from "../middlewares/coordinatorAuth";
 import { getManagedOwner } from "../middlewares/ownerAuth";
+import type { DatabaseTransaction } from "../lib/programCapacity";
 
 const router = Router();
 
@@ -186,22 +187,34 @@ router.post("/coordinator-accounts/approve", requireOwner, async (req, res) => {
     return;
   }
 
-  const [request] = await db.select().from(serviceRequestsTable).where(eq(serviceRequestsTable.id, requestId)).limit(1);
+  const result = await db.transaction(async (tx: DatabaseTransaction) => {
+  const [request] = await tx.select().from(serviceRequestsTable).where(eq(serviceRequestsTable.id, requestId)).limit(1).for("update");
   if (!request || !request.serviceType.includes("منسق")) {
     res.status(404).json({ error: "طلب المنسق غير موجود" });
     return;
   }
+  if (request.status === "approved") {
+    res.status(409).json({ error: "تم اعتماد هذا الطلب من قبل. يمكنك إصدار رمز جديد من إدارة المنسقين." }); return;
+  }
+  const email = request.email.trim().toLowerCase();
+  await tx.execute(sql`SELECT pg_advisory_xact_lock(4218, hashtext(${email}))`);
+  const [existing] = await tx.select({ id: coordinatorsTable.id }).from(coordinatorsTable)
+    .where(sql`lower(${coordinatorsTable.email}) = ${email}`).limit(1);
+  if (existing) { res.status(409).json({ error: "يوجد حساب منسق بهذا البريد بالفعل. راجع إدارة المنسقين." }); return; }
 
   const code = `SRMA-${randomBytes(3).toString("hex").toUpperCase()}-${randomBytes(3).toString("hex").toUpperCase()}`;
-  const [coordinator] = await db.insert(coordinatorsTable).values({
+  const [coordinator] = await tx.insert(coordinatorsTable).values({
     fullName: request.fullName,
     phone: request.phone,
-    email: request.email,
+    email,
     affiliation: request.details.replace(/^.*جهة الانتساب:\s*/, "").trim(),
     accessCodeHash: accessCodeHash(code),
   }).returning();
-  await db.update(serviceRequestsTable).set({ status: "approved" }).where(eq(serviceRequestsTable.id, requestId));
-  res.status(201).json({ coordinator, accessCode: code });
+  await tx.update(serviceRequestsTable).set({ status: "approved" }).where(eq(serviceRequestsTable.id, requestId));
+  const { accessCodeHash: _hash, ...safeCoordinator } = coordinator;
+  return { coordinator: safeCoordinator, accessCode: code };
+  });
+  if (result) res.status(201).json(result);
 });
 
 function accessCodeHash(code: string) {

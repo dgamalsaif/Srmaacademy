@@ -44,6 +44,7 @@ export default function RegistrationModal({
   const [agreeFeesAndTasks, setAgreeFeesAndTasks] = useState<"agree" | "disagree" | "">("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [remainingSeats, setRemainingSeats] = useState<number | null>(null);
   const [error, setError] = useState("");
   const [researchGroupUrl, setResearchGroupUrl] = useState("");
   const [forwardUrl, setForwardUrl] = useState("");
@@ -102,6 +103,7 @@ export default function RegistrationModal({
     setResearchExpDetails("");
     setAgreeFeesAndTasks("");
     setDone(false);
+    setRemainingSeats(null);
     setError("");
     setResearchGroupUrl("");
     setLoading(false);
@@ -160,8 +162,9 @@ export default function RegistrationModal({
       const response = await fetch(coordinatorEntry ? `${API_BASE}/coordinator/registrations` : `${API_BASE}/registrations`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload),
       });
-      const result = await response.json().catch(() => ({})) as { error?: string; researchGroupUrl?: string | null };
+      const result = await response.json().catch(() => ({})) as { error?: string; researchGroupUrl?: string | null; remainingSeats?: number };
       if (!response.ok) throw new Error(submitError(result.error));
+      setRemainingSeats(typeof result.remainingSeats === "number" ? result.remainingSeats : null);
 
       // Resolve specialty group link or research group link
       const specialtyMatch = contentSettings.specialtyOptions.find((opt) =>
@@ -253,6 +256,7 @@ export default function RegistrationModal({
           <div className="px-7 py-10 text-center">
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#e7f3ef]"><CheckCircle2 size={34} style={{ color: contentSettings.accentColor }} /></div>
             <h3 className="text-xl font-black text-[#172238]">{localize("تم حفظ التسجيل بنجاح", "Registration saved successfully")}</h3>
+            {remainingSeats !== null && <p className="mt-2 font-bold text-[#117b59]">{localize("المقاعد المتبقية بعد تسجيلك", "Seats remaining after your registration")}: {remainingSeats}</p>}
             {forwardingUnavailable && <p role="status" className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">{localize("تم حفظ تسجيلك، لكن تعذّر تحميل بيانات التواصل الحالية. حدّث الصفحة للاطلاع عليها؛ لا تعِد التسجيل.", "Your registration is saved, but current contact details could not be loaded. Refresh to view them; do not register again.")}</p>}
             <p className="mx-auto mt-3 max-w-sm text-sm leading-7 text-slate-500">{coordinatorEntry ? localize("تمت إضافة بيانات الطالب إلى لوحة التسجيلات بنجاح.", "The student's details have been added to the registrations dashboard.") : localize(`تم حفظ بياناتك وسيتم التواصل معك من فريق ${contentSettings.brand.siteNameAr} قريباً.`, `Your details have been saved and the ${contentSettings.brand.siteNameEn} team will contact you soon.`)}</p>
 

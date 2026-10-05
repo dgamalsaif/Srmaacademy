@@ -1,6 +1,8 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
 import { getManagedOwner, requireManagedOwner } from "./ownerAuth";
+import { db, coordinatorsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 
 const COOKIE_NAME = "srma_coordinator_session";
 const SESSION_TTL_SECONDS = 60 * 60 * 8;
@@ -54,8 +56,10 @@ export async function getStaffSession(req: Request): Promise<StaffSession | null
   } catch {}
   try {
     const session = readSession(req.cookies?.[COOKIE_NAME]);
-    if (session?.role === "coordinator") {
-      return { role: "coordinator", coordinatorId: session.coordinatorId ?? 0 };
+    if (session?.role === "coordinator" && session.coordinatorId > 0) {
+      const [account] = await db.select({ id: coordinatorsTable.id, status: coordinatorsTable.status })
+        .from(coordinatorsTable).where(eq(coordinatorsTable.id, session.coordinatorId)).limit(1);
+      if (account?.status === "active") return { role: "coordinator", coordinatorId: account.id };
     }
   } catch {}
   return null;

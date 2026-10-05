@@ -4,7 +4,8 @@ import { readFile } from "node:fs/promises";
 import sharp from "sharp";
 import { db, insertResearchProgramSchema, programCatalogBootstrapTable, registrationsTable, researchProgramsTable } from "@workspace/db";
 import { desc, eq, inArray, sql } from "drizzle-orm";
-import { readSession, requireOwner } from "../middlewares/coordinatorAuth";
+import { getStaffSession, requireOwner } from "../middlewares/coordinatorAuth";
+import { holdsSeat } from "../lib/registrationSeats";
 import { getManagedOwner } from "../middlewares/ownerAuth";
 import { getSiteContentSettings, OpportunityFieldId } from "../lib/siteContentSettings";
 import { getEnglishOpportunityTitle, getOpportunityShareSummary } from "../lib/opportunityDisplay";
@@ -177,7 +178,7 @@ router.get("/programs", async (req, res) => {
   try {
     const rows = await listPrograms();
     const isOwner = Boolean(await getManagedOwner(req).catch(() => null));
-    const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session)) || isOwner;
+    const isStaff = Boolean(await getStaffSession(req)) || isOwner;
     const visibleRows = isStaff ? rows : rows.filter(isPublicProgram);
     const visibility = await getOpportunityVisibility(visibleRows.map((row: typeof researchProgramsTable.$inferSelect) => row.id));
     res.json(visibleRows.map(row => toClient(row, isOwner, visibility.get(row.id) ?? [])));
@@ -257,7 +258,7 @@ router.get("/programs/:id/image", async (req, res) => {
   }
   const isPublic = isPublicProgram(program);
   if (!isPublic) {
-    const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session)) || Boolean(await getManagedOwner(req).catch(() => null));
+    const isStaff = Boolean(await getStaffSession(req));
     if (!isStaff) {
       res.status(404).end();
       return;
@@ -357,7 +358,7 @@ router.get("/programs/:id/poster.svg", async (req, res) => {
   }
   const isPublic = isPublicProgram(program);
   if (!isPublic) {
-    const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session)) || Boolean(await getManagedOwner(req).catch(() => null));
+    const isStaff = Boolean(await getStaffSession(req));
     if (!isStaff) {
       res.status(404).end();
       return;
@@ -385,7 +386,7 @@ router.get("/programs/:id/share", async (req, res) => {
   }
   const isPublic = isPublicProgram(program);
   if (!isPublic) {
-    const isStaff = Boolean(readSession(req.cookies?.srma_coordinator_session)) || Boolean(await getManagedOwner(req).catch(() => null));
+    const isStaff = Boolean(await getStaffSession(req));
     if (!isStaff) {
       res.status(404).type("html").send("<!doctype html><html lang=\"ar\" dir=\"rtl\"><head><meta charset=\"utf-8\"><title>الفرصة غير متوفرة</title></head><body><p>عذراً، هذه الفرصة البحثية غير موجودة أو مغلقة.</p></body></html>");
       return;
@@ -778,8 +779,8 @@ async function getSeatsLeftOverride(value: unknown, current: typeof researchProg
   if (!Number.isInteger(requested) || requested < 0 || requested > 15) {
     return { error: "المقاعد المتبقية يجب أن تكون رقماً صحيحاً بين 0 و15." };
   }
-  const registrations: Array<{ authorRole: string }> = await tx.select({ authorRole: registrationsTable.authorRole })
-    .from(registrationsTable).where(eq(registrationsTable.researchId, programId));
+  const registrations: Array<{ authorRole: string; customFields: Record<string, string> | null }> = (await tx.select({ authorRole: registrationsTable.authorRole, customFields: registrationsTable.customFields })
+    .from(registrationsTable).where(eq(registrationsTable.researchId, programId))).filter(holdsSeat);
   const firstAuthorUsed = registrations.filter((registration) => registration.authorRole === "first_author").length;
   const coAuthorUsed = registrations.length - firstAuthorUsed;
   const maximumRemaining = Math.max(0, 15 - registrations.length);

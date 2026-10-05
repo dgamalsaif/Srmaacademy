@@ -41,9 +41,11 @@ export default function ResearchDetail() {
       if (document.visibilityState === "visible") loadResearch();
     };
     window.addEventListener("focus", loadResearch);
+    const timer = window.setInterval(() => { if (!document.hidden) loadResearch(); }, 10000);
     document.addEventListener("visibilitychange", refreshWhenVisible);
     return () => {
       window.removeEventListener("focus", loadResearch);
+      window.clearInterval(timer);
       document.removeEventListener("visibilitychange", refreshWhenVisible);
     };
   }, [params.id]);

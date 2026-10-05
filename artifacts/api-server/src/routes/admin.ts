@@ -10,8 +10,9 @@ import {
   researchProgramsTable,
   serviceRequestsTable,
 } from "@workspace/db";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { requireOwner } from "../middlewares/coordinatorAuth";
+import type { DatabaseTransaction } from "../lib/programCapacity";
 
 const router = Router();
 const coordinatorStatuses = new Set(["active", "disabled"]);
@@ -30,6 +31,7 @@ function accessCodeHash(code: string) {
 }
 
 router.get("/admin/coordinators", requireOwner, async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
   const coordinators = await db.select().from(coordinatorsTable).orderBy(desc(coordinatorsTable.createdAt));
   const rows = await Promise.all(coordinators.map(async ({ accessCodeHash: _accessCodeHash, ...coordinator }) => {
     const registrations = await db.select({ id: registrationsTable.id })
@@ -38,6 +40,32 @@ router.get("/admin/coordinators", requireOwner, async (_req, res) => {
     return { ...coordinator, registrationCount: registrations.length };
   }));
   res.json(rows);
+});
+
+router.post("/admin/coordinators", requireOwner, async (req, res) => {
+  const values = Object.fromEntries(["fullName", "phone", "email", "affiliation"].map(key => [key,
+    typeof req.body?.[key] === "string" ? req.body[key].trim() : ""]));
+  if (values.fullName.length < 3 || values.fullName.length > 160 ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email) || values.email.length > 254 ||
+      !/^\+?[\d\s()-]{7,30}$/.test(values.phone) || !values.affiliation || values.affiliation.length > 250) {
+    res.status(400).json({ error: "أدخل الاسم والهاتف والبريد الإلكتروني وجهة الانتساب بشكل صحيح." }); return;
+  }
+  const accessCode = `SRMA-${randomBytes(3).toString("hex").toUpperCase()}-${randomBytes(3).toString("hex").toUpperCase()}`;
+  const email = values.email.toLowerCase();
+  const created = await db.transaction(async (tx: DatabaseTransaction) => {
+  await tx.execute(sql`SELECT pg_advisory_xact_lock(4218, hashtext(${email}))`);
+  const [existing] = await tx.select({ id: coordinatorsTable.id }).from(coordinatorsTable)
+    .where(sql`lower(${coordinatorsTable.email}) = ${email}`).limit(1);
+  if (existing) return null;
+  const [row] = await tx.insert(coordinatorsTable).values({
+    fullName: values.fullName, phone: values.phone, email, affiliation: values.affiliation,
+    accessCodeHash: accessCodeHash(accessCode), status: "active",
+  }).returning();
+  return row;
+  });
+  if (!created) { res.status(409).json({ error: "يوجد حساب منسق بهذا البريد بالفعل." }); return; }
+  const { accessCodeHash: _hash, ...coordinator } = created;
+  res.status(201).json({ coordinator: { ...coordinator, registrationCount: 0 }, accessCode });
 });
 
 router.patch("/admin/coordinators/:id", requireOwner, async (req, res) => {
@@ -101,15 +129,13 @@ router.delete("/admin/coordinators/:id", requireOwner, async (req, res) => {
     res.status(400).json({ error: "رقم المنسق غير صحيح." });
     return;
   }
-  const [linkedRegistration] = await db.select({ id: registrationsTable.id })
-    .from(registrationsTable)
-    .where(eq(registrationsTable.coordinatorId, id))
-    .limit(1);
-  if (linkedRegistration) {
-    res.status(409).json({ error: "لا يمكن حذف منسق لديه تسجيلات مرتبطة. عطّل الحساب للحفاظ على سجل البيانات." });
-    return;
-  }
-  const [deleted] = await db.delete(coordinatorsTable).where(eq(coordinatorsTable.id, id)).returning({ id: coordinatorsTable.id });
+  // Registration attribution keeps the former ID; no student records or seats are removed.
+  const deleted = await db.transaction(async (tx: DatabaseTransaction) => {
+    const [account] = await tx.select().from(coordinatorsTable).where(eq(coordinatorsTable.id, id)).limit(1).for("update");
+    if (!account) return null;
+    const [row] = await tx.delete(coordinatorsTable).where(eq(coordinatorsTable.id, id)).returning({ id: coordinatorsTable.id });
+    return row;
+  });
   if (!deleted) {
     res.status(404).json({ error: "حساب المنسق غير موجود." });
     return;

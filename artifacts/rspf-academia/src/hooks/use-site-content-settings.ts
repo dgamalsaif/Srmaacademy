@@ -16,6 +16,6 @@ export function useSiteContentSettings() {
     staleTime: 0,
     refetchOnMount: "always",
     refetchOnWindowFocus: true,
-    refetchInterval: 30000,
+    refetchInterval: 10000,
   });
 }

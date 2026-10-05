@@ -77,22 +77,25 @@ export default function OpportunitySurvey() {
   const numericId = matchId ? parseInt(matchId[1], 10) : parseInt(rawRid.replace(/\D/g, ""), 10);
 
   useEffect(() => {
-    apiFetch("/api/programs", { cache: "no-store" })
+    const refresh = () => apiFetch("/api/programs", { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : Promise.reject()))
       .then((data: ResearchOpportunity[]) => {
         setOpportunities(data);
-        if (Number.isInteger(numericId) && numericId > 0) {
-          const match = data.find((item) => item.id === numericId);
-          if (match) setSelectedOpp(match);
-        } else if (data.length > 0) {
-          setSelectedOpp(data[0]);
-        }
+        setSelectedOpp(current => {
+          const id = current?.id || (Number.isInteger(numericId) && numericId > 0 ? numericId : null);
+          return id ? data.find(item => item.id === id) || null : data[0] || null;
+        });
       })
       .catch(() => {
-        setOpportunities([]);
-        setSelectedOpp(null);
+        // Preserve the selected opportunity and typed registration on connection failure.
       })
       .finally(() => setLoadingOpp(false));
+    void refresh();
+    const visibleRefresh = () => { if (!document.hidden) void refresh(); };
+    const timer = window.setInterval(visibleRefresh, 10000);
+    window.addEventListener("focus", visibleRefresh);
+    document.addEventListener("visibilitychange", visibleRefresh);
+    return () => { window.clearInterval(timer); window.removeEventListener("focus", visibleRefresh); document.removeEventListener("visibilitychange", visibleRefresh); };
   }, [numericId]);
 
   useEffect(() => {

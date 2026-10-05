@@ -1,5 +1,6 @@
-import { db, programCatalogBootstrapTable } from "@workspace/db";
+import { db, programCatalogBootstrapTable, registrationsTable, researchProgramsTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
+import { SEAT_MARKER, holdsSeat, seatChange } from "./registrationSeats";
 
 const CAPACITY_MIGRATION_KEY = "program-capacity-and-author-roles-v1";
 const CAPACITY_MIGRATION_LOCK_ID = 4_218_999;
@@ -19,7 +20,7 @@ export async function ensureProgramCapacityModel(tx: DatabaseTransaction) {
     .from(programCatalogBootstrapTable)
     .where(eq(programCatalogBootstrapTable.key, CAPACITY_MIGRATION_KEY))
     .limit(1);
-  if (migration) return;
+  if (migration) { await releaseLegacyRejectedSeats(tx); return; }
 
   await tx.execute(sql`
     WITH ranked_registrations AS (
@@ -67,4 +68,26 @@ export async function ensureProgramCapacityModel(tx: DatabaseTransaction) {
     WHERE id NOT IN (SELECT DISTINCT research_id FROM registrations)
   `);
   await tx.insert(programCatalogBootstrapTable).values({ key: CAPACITY_MIGRATION_KEY });
+  await releaseLegacyRejectedSeats(tx);
+}
+
+// Idempotent reconciliation: old rejection did not release capacity.
+async function releaseLegacyRejectedSeats(tx: DatabaseTransaction) {
+  const key = "rejected-registration-seat-release";
+  const [done] = await tx.select().from(programCatalogBootstrapTable).where(eq(programCatalogBootstrapTable.key, key)).limit(1);
+  if (done) return;
+  const rejected = await tx.select().from(registrationsTable).where(eq(registrationsTable.status, "rejected")).for("update");
+  for (const registration of rejected) {
+    if (!holdsSeat(registration)) continue;
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(${PROGRAM_CAPACITY_LOCK_NAMESPACE + registration.researchId})`);
+    const [program] = await tx.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, registration.researchId)).limit(1);
+    if (program) {
+      const change = seatChange(program, registration, "rejected");
+      if (change) await tx.update(researchProgramsTable).set(change).where(eq(researchProgramsTable.id, program.id));
+    }
+    await tx.update(registrationsTable).set({
+      customFields: { ...registration.customFields, [SEAT_MARKER]: "released" },
+    }).where(eq(registrationsTable.id, registration.id));
+  }
+  await tx.insert(programCatalogBootstrapTable).values({ key });
 }

@@ -28,6 +28,7 @@ interface Registration {
   coordinatorId: number | null;
   coordinatorName: string | null;
   registrationSource: "coordinator" | "public";
+  remainingSeats?: number | null;
   status: string;
   createdAt: string;
 }
@@ -83,13 +84,20 @@ function StatusActions({ id, current, onUpdate, endpoint }: { id: number; curren
 
   const update = async (status: string) => {
     setLoading(true);
-    await fetch(`${API_BASE}/${endpoint}/${id}/status`, {
+    try {
+    const response = await apiFetch(`${API_BASE}/${endpoint}/${id}/status`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
-    onUpdate();
-    setLoading(false);
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || "تعذر تحديث الحالة.");
+    }
+    await onUpdate();
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : "تعذر تحديث الحالة.");
+    } finally { setLoading(false); }
   };
 
   return (
@@ -392,20 +400,26 @@ export default function AdminSubmissions() {
       .catch(() => { setAuthorized(false); setLocation(workspace === "owner" ? "/sign-in" : "/coordinator"); });
   }, [location, setLocation]);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
+  const fetchData = useCallback(async (background = false) => {
+    if (!background) setLoading(true);
     try {
-      const r = await apiFetch(`${API_BASE}/registrations`).then((res) => res.json());
+      const response = await apiFetch(`${API_BASE}/registrations`, { cache: "no-store" });
+      if (response.status === 401 || response.status === 403) {
+        setAuthorized(false); setRegistrations([]); setServices([]);
+        setLocation(role === "owner" ? "/sign-in" : "/coordinator"); return;
+      }
+      if (!response.ok) throw new Error("تعذر تحديث تسجيلات الطلاب.");
+      const r = await response.json();
       const s = role === "owner"
         ? await apiFetch(`${API_BASE}/service-requests`).then((res) => res.json())
         : [];
       setRegistrations(Array.isArray(r) ? r : []);
       setServices(Array.isArray(s) ? s : []);
     } catch {
-      // ignore
+      setMutationError("تعذر تحديث البيانات. الأرقام المعروضة هي آخر بيانات تم جلبها بنجاح.");
     }
     setLoading(false);
-  }, [role]);
+  }, [role, setLocation]);
 
   const handleLogout = async () => {
     if (role === "owner") {
@@ -416,11 +430,14 @@ export default function AdminSubmissions() {
     setLocation("/coordinator");
   };
 
-  useEffect(() => { void fetchData(); }, [fetchData]);
+  useEffect(() => { if (authorized === true) void fetchData(); }, [authorized, fetchData]);
   useEffect(() => {
     if (authorized !== true) return;
-    const timer = window.setInterval(() => void fetchData(), 30000);
-    return () => window.clearInterval(timer);
+    const refresh = () => { if (!document.hidden) void fetchData(true); };
+    const timer = window.setInterval(refresh, 10000);
+    window.addEventListener("focus", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => { window.clearInterval(timer); window.removeEventListener("focus", refresh); document.removeEventListener("visibilitychange", refresh); };
   }, [authorized, fetchData]);
 
   if (authorized !== true) return null;
@@ -666,7 +683,7 @@ export default function AdminSubmissions() {
               {exportError && <span className="text-xs font-bold text-red-600">{exportError}</span>}
               </div>
             )}
-            <button onClick={fetchData} disabled={loading}
+            <button onClick={() => void fetchData()} disabled={loading}
               className="flex items-center gap-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm disabled:cursor-not-allowed disabled:opacity-50">
               <RefreshCw size={16} className={loading ? "animate-spin" : "text-slate-400"} />
               تحديث
@@ -753,6 +770,7 @@ export default function AdminSubmissions() {
                           </td>
                           <td className="px-6 py-5">
                             <p className="text-xs font-bold text-slate-700 leading-5 line-clamp-2 max-w-[220px] mb-1">{reg.researchTitle}</p>
+                            {typeof reg.remainingSeats === "number" && <p className="text-xs font-bold text-[#117b59]">المقاعد المتبقية: {reg.remainingSeats}</p>}
                              {reg.researchStatus && <span className="inline-flex rounded-lg bg-blue-50 px-2 py-1 text-[10px] font-black text-blue-700">{RESEARCH_STATUS_LABELS[reg.researchStatus] || reg.researchStatus}</span>}
                             <p className="text-[11px] font-medium text-slate-400">ID: {reg.researchId}</p>
                           </td>
@@ -896,7 +914,7 @@ export default function AdminSubmissions() {
           <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm" />
           <div className="relative w-full max-w-md rounded-3xl bg-white p-6 text-right shadow-2xl" dir="rtl" onClick={(event) => event.stopPropagation()}>
             <h2 className="text-lg font-black text-slate-800">حذف التسجيلات المرفوضة</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500">سيتم حذف <strong className="text-slate-800">{rejectedInView.length}</strong> تسجيل مرفوض في العرض الحالي نهائياً ولا يمكن استرجاعها، وسيتم إرجاع المقاعد المحجوزة إلى الفرص.</p>
+            <p className="mt-2 text-sm leading-6 text-slate-500">سيتم حذف <strong className="text-slate-800">{rejectedInView.length}</strong> تسجيل مرفوض في العرض الحالي نهائياً ولا يمكن استرجاعها. المقاعد أُعيدت عند الرفض ولن تُضاف مرة ثانية عند الحذف.</p>
             {mutationError && <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">{mutationError}</p>}
             <div className="mt-6 flex justify-end gap-3">
               <button type="button" disabled={bulkDeleting} onClick={() => setBulkDeleteOpen(false)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-slate-50">إلغاء</button>
@@ -913,7 +931,7 @@ export default function AdminSubmissions() {
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600"><Trash2 size={21} /></div>
               <div>
                 <h2 className="text-lg font-black text-slate-800">حذف تسجيل الطالب</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-500">هل تريد حذف تسجيل <strong className="text-slate-800">{deletingRegistration.fullName}</strong> نهائياً؟ سيُحذف التسجيل بشكل دائم ولا يمكن استرجاعه، وسيتم إرجاع المقعد المحجوز إلى الفرصة.</p>
+                <p className="mt-2 text-sm leading-6 text-slate-500">هل تريد حذف تسجيل <strong className="text-slate-800">{deletingRegistration.fullName}</strong> نهائياً؟ لا يمكن استرجاعه. يُعاد المقعد إن كان محجوزاً، ولا يُضاف مرة ثانية إذا أُعيد عند الرفض.</p>
               </div>
             </div>
             {mutationError && <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-bold text-red-700">{mutationError}</p>}

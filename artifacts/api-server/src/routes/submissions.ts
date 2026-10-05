@@ -4,8 +4,9 @@ import { desc, eq, sql } from "drizzle-orm";
 import { sendServiceRequestEmail } from "../lib/mailer";
 import { type StaffSession, requireCoordinator, requireOwner } from "../middlewares/coordinatorAuth";
 import { getSiteContentSettings } from "../lib/siteContentSettings";
-import { ensureProgramCapacityModel, PROGRAM_CAPACITY_LOCK_NAMESPACE } from "../lib/programCapacity";
+import { ensureProgramCapacityModel, PROGRAM_CAPACITY_LOCK_NAMESPACE, type DatabaseTransaction } from "../lib/programCapacity";
 import { insertCompatibleRegistration, normalizeRegistrationAnswers } from "../lib/registrationCompatibility";
+import { SEAT_MARKER, SeatAllocationError, seatChange, cleanRegistrationFields } from "../lib/registrationSeats";
 
 const router = Router();
 const AUTHOR_ROLES = new Set(["first_author", "co_author"]);
@@ -33,7 +34,7 @@ async function createRegistration(req: Request, res: Response, coordinatorId: nu
   }
 
   const customFields = source.customFields && typeof source.customFields === "object" && !Array.isArray(source.customFields)
-    ? Object.fromEntries(Object.entries(source.customFields as Record<string, unknown>)
+    ? Object.fromEntries(Object.entries(source.customFields as Record<string, unknown>).filter(([key]) => key !== SEAT_MARKER)
       .filter(([, value]) => typeof value === "string")
       .map(([key, value]) => [key.slice(0, 64), (value as string).trim().slice(0, 1000)]))
     : {};
@@ -86,8 +87,12 @@ async function createRegistration(req: Request, res: Response, coordinatorId: nu
   }
 
   try {
-    const result = await db.transaction(async (tx) => {
+    const result = await db.transaction(async (tx: DatabaseTransaction) => {
       await ensureProgramCapacityModel(tx);
+      if (coordinatorId !== null) {
+        const [account] = await tx.select().from(coordinatorsTable).where(eq(coordinatorsTable.id, coordinatorId)).limit(1).for("update");
+        if (!account || account.status !== "active") throw new RegistrationCapacityError("حساب المنسق غير متاح.", 403);
+      }
       await tx.execute(sql`SELECT pg_advisory_xact_lock(${PROGRAM_CAPACITY_LOCK_NAMESPACE + parsed.data.researchId})`);
       const [program] = await tx.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, parsed.data.researchId)).limit(1);
       if (!program || program.status !== "open") {
@@ -132,7 +137,7 @@ async function createRegistration(req: Request, res: Response, coordinatorId: nu
           resolvedGroupUrl = matchedSpec.groupUrl;
         }
       }
-      return { registration, researchGroupUrl: resolvedGroupUrl };
+      return { registration: { ...registration, remainingSeats: seatsLeft }, researchGroupUrl: resolvedGroupUrl };
     });
     res.status(201).json(audience === "participant"
       ? { ...result.registration, researchGroupUrl: result.researchGroupUrl || null }
@@ -172,17 +177,19 @@ router.get("/registrations", requireCoordinator, async (req, res) => {
   const coordinators = staff.role === "owner"
     ? await db.select({ id: coordinatorsTable.id, fullName: coordinatorsTable.fullName }).from(coordinatorsTable)
     : [];
-  const coordinatorNames = new Map(coordinators.map((coordinator) => [coordinator.id, coordinator.fullName]));
+  const coordinatorNames = new Map<number, string>(coordinators.map((coordinator: { id: number; fullName: string }) => [coordinator.id, coordinator.fullName]));
   const programs = await db.select({
     id: researchProgramsTable.id,
     titleAr: researchProgramsTable.titleAr,
     titleEn: researchProgramsTable.titleEn,
     status: researchProgramsTable.status,
     category: researchProgramsTable.category,
+    seatsLeft: researchProgramsTable.seatsLeft,
   }).from(researchProgramsTable);
-  const programById = new Map(programs.map((program) => [program.id, program]));
+  type ProgramSummary = Pick<typeof researchProgramsTable.$inferSelect, "id" | "titleAr" | "titleEn" | "status" | "category" | "seatsLeft">;
+  const programById = new Map<number, ProgramSummary>(programs.map((program: ProgramSummary) => [program.id, program]));
 
-  res.json(rows.map((registration) => {
+  res.json(rows.map((registration: typeof registrationsTable.$inferSelect) => {
     const custom = (registration.customFields && typeof registration.customFields === "object" ? registration.customFields : {}) as Record<string, string>;
     return {
       ...registration,
@@ -193,6 +200,7 @@ router.get("/registrations", requireCoordinator, async (req, res) => {
       researchTitle: programById.get(registration.researchId)?.titleAr || programById.get(registration.researchId)?.titleEn || registration.researchTitle,
       researchStatus: programById.get(registration.researchId)?.status || "",
       researchCategory: programById.get(registration.researchId)?.category || "active",
+      remainingSeats: programById.get(registration.researchId)?.seatsLeft ?? null,
       coordinatorName: staff.role === "owner" && registration.coordinatorId
         ? coordinatorNames.get(registration.coordinatorId) || "منسق سابق"
         : null,
@@ -204,7 +212,8 @@ router.get("/registrations", requireCoordinator, async (req, res) => {
 /* ── PATCH /api/registrations/:id ── owner only; coordinators add/remove only. */
 router.patch("/registrations/:id", requireOwner, async (req, res) => {
   const id = Number(req.params["id"]);
-  const [current] = await db.select().from(registrationsTable).where(eq(registrationsTable.id, id)).limit(1);
+  const saved = await db.transaction(async (tx: DatabaseTransaction) => {
+  const [current] = await tx.select().from(registrationsTable).where(eq(registrationsTable.id, id)).limit(1).for("update");
   if (!current) {
     res.status(404).json({ error: "الطالب غير موجود" });
     return;
@@ -234,11 +243,18 @@ router.patch("/registrations/:id", requireOwner, async (req, res) => {
     return;
   }
 
-  const [row] = await db.update(registrationsTable).set(parsed.data).where(eq(registrationsTable.id, id)).returning();
+  if ("customFields" in parsed.data) {
+    parsed.data.customFields = { ...cleanRegistrationFields(parsed.data.customFields || {}),
+      ...(current.customFields?.[SEAT_MARKER] ? { [SEAT_MARKER]: current.customFields[SEAT_MARKER] } : {}) };
+  }
+  const [row] = await tx.update(registrationsTable).set(parsed.data).where(eq(registrationsTable.id, id)).returning();
+  return row;
+  });
+  if (!saved) return;
   res.json({
-    ...row,
+    ...saved,
     coordinatorName: null,
-    registrationSource: row.coordinatorId ? "coordinator" : "public",
+    registrationSource: saved.coordinatorId ? "coordinator" : "public",
   });
 });
 
@@ -246,8 +262,9 @@ router.patch("/registrations/:id", requireOwner, async (req, res) => {
 router.delete("/registrations/:id", requireCoordinator, async (req, res) => {
   const staff = res.locals.staff as StaffSession;
   const id = Number(req.params["id"]);
+  if (!Number.isInteger(id) || id < 1) { res.status(400).json({ error: "رقم الطالب غير صحيح." }); return; }
   try {
-    await db.transaction(async (tx) => {
+    await db.transaction(async (tx: DatabaseTransaction) => {
       const [candidate] = await tx.select().from(registrationsTable).where(eq(registrationsTable.id, id)).limit(1);
       if (!candidate) throw new RegistrationCapacityError("الطالب غير موجود", 404);
       await ensureProgramCapacityModel(tx);
@@ -265,21 +282,8 @@ router.delete("/registrations/:id", requireCoordinator, async (req, res) => {
       await tx.delete(registrationsTable).where(eq(registrationsTable.id, id));
       if (!program) return;
 
-      const firstAuthorSeatsLeft = Math.min(
-        program.firstAuthorSeats,
-        program.firstAuthorSeatsLeft + (current.authorRole === "first_author" ? 1 : 0),
-      );
-      const coAuthorSeatsLeft = Math.min(
-        program.coAuthorSeats,
-        program.coAuthorSeatsLeft + (current.authorRole === "first_author" ? 0 : 1),
-      );
-      await tx.update(researchProgramsTable).set({
-        firstAuthorSeatsLeft,
-        coAuthorSeatsLeft,
-        seatsLeft: firstAuthorSeatsLeft + coAuthorSeatsLeft,
-        status: program.status === "seats_full" && program.category === "active" ? "open" : program.status,
-        updatedAt: new Date(),
-      }).where(eq(researchProgramsTable.id, program.id));
+      const change = seatChange(program, current, "deleted");
+      if (change) await tx.update(researchProgramsTable).set(change).where(eq(researchProgramsTable.id, program.id));
     });
     res.status(204).end();
   } catch (error) {
@@ -295,17 +299,35 @@ router.delete("/registrations/:id", requireCoordinator, async (req, res) => {
 /* ── PATCH /api/registrations/:id/status ── */
 router.patch("/registrations/:id/status", requireOwner, async (req, res) => {
   const id = Number(req.params["id"]);
-  const { status } = req.body as { status: string };
-  if (!status) { res.status(400).json({ error: "status required" }); return; }
-
-  const row = await db
-    .update(registrationsTable)
-    .set({ status })
-    .where(eq(registrationsTable.id, id))
-    .returning();
-
-  if (!row.length) { res.status(404).json({ error: "not found" }); return; }
-  res.json(row[0]);
+  const status = req.body?.status;
+  if (!Number.isInteger(id) || id < 1 || !["pending", "contacted", "approved", "rejected"].includes(status)) {
+    res.status(400).json({ error: "رقم الطالب أو حالة الطلب غير صحيحة." }); return;
+  }
+  try {
+    const row = await db.transaction(async (tx: DatabaseTransaction) => {
+      const [candidate] = await tx.select().from(registrationsTable).where(eq(registrationsTable.id, id)).limit(1);
+      if (!candidate) throw new RegistrationCapacityError("الطالب غير موجود.", 404);
+      await ensureProgramCapacityModel(tx);
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(${PROGRAM_CAPACITY_LOCK_NAMESPACE + candidate.researchId})`);
+      const [current] = await tx.select().from(registrationsTable).where(eq(registrationsTable.id, id)).limit(1).for("update");
+      if (!current) throw new RegistrationCapacityError("الطالب غير موجود.", 404);
+      const [program] = await tx.select().from(researchProgramsTable).where(eq(researchProgramsTable.id, current.researchId)).limit(1);
+      if (!program) throw new RegistrationCapacityError("الفرصة البحثية غير موجودة.", 409);
+      const change = seatChange(program, current, status);
+      if (change) await tx.update(researchProgramsTable).set(change).where(eq(researchProgramsTable.id, program.id));
+      const [updated] = await tx.update(registrationsTable).set({
+        status, customFields: { ...current.customFields, [SEAT_MARKER]: status === "rejected" ? "released" : "held" },
+      }).where(eq(registrationsTable.id, id)).returning();
+      return updated;
+    });
+    res.json(row);
+  } catch (error) {
+    if (error instanceof RegistrationCapacityError || error instanceof SeatAllocationError) {
+      res.status(error.status).json({ error: error.message }); return;
+    }
+    req.log.error({ err: error, registrationId: id }, "Could not change registration status and seat");
+    res.status(500).json({ error: "تعذر تحديث الحالة والمقعد. لم يتم اعتماد التغيير." });
+  }
 });
 
 /* ── POST /api/service-requests ── */
