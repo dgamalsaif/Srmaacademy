@@ -13,3 +13,4 @@
 - [Persistence test isolation](persistence-test-isolation.md) — inject transaction/read doubles; global database method overrides may not isolate imported helpers.
 - [Public content policy](public-content-policy.md) — keep real tools and admin content; do not restore fabricated promotional sections or conceal empty/error states with invented data.
 - [Image cache invalidation](image-cache-invalidation.md) — persist cache versions after validation; successful deletion can conceal a replacement-cache defect.
+- [Site link preview images](site-share-images.md) — owner-selected logo/image, honest GIF limits, and crawler-side versioning on Pages.

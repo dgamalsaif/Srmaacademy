@@ -91,6 +91,8 @@ export type OpportunityInquiryChannel = "whatsapp" | "email" | "telegram" | "pho
 export interface BrandContactSettings {
   siteNameAr: string; siteNameEn: string; logoUrl: string;
   logoAnimationEnabled: boolean;
+  socialShareImageUrl?: string;
+  socialShareImageVersion?: string;
   appNameAr: string; appNameEn: string; appShortName: string; appIconUrl: string; appThemeColor: string;
   phone: string; whatsapp: string; participantWhatsapp: string; coordinatorWhatsapp: string; whatsappChannelUrl: string; email: string;
   telegramUsername: string; instagramUsername: string; xUsername: string; linkedinUsername: string;

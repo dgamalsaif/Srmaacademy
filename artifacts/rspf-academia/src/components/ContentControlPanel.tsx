@@ -1,6 +1,7 @@
 import { ChevronDown, ChevronUp, Eye, EyeOff, Palette, Save, SlidersHorizontal, Image, Phone, Mail, Link as LinkIcon, FileText, Send, Share2, ExternalLink, MessageCircle, Check, GraduationCap, ShieldCheck, Plus, Trash2, AlertTriangle } from "lucide-react";
 import { useState, useRef, useId } from "react";
 import BrandLogo from "@/components/BrandLogo";
+import SiteShareImageSettings from "@/components/SiteShareImageSettings";
 import { buildOpportunityInquiryLinks, getSelectedInquiryChannels, getInquiryOwnTarget } from "@/lib/siteContentSettings";
 import { CARD_PARTS, OPPORTUNITY_FIELDS, OpportunityDisplayMode, OpportunityFieldId, RegistrationFieldSetting, SiteContentSettings, SpecialtyOption, JournalOption, PublicPageId, BrandContactSettings, PublicPageContent, SOCIAL_ICON_OPTIONS, SocialIconId, FloatingIconPosition, ForwardingType, OpportunityInquiryChannel, ContactUsType, AcademicDegreeOption, DEFAULT_ACADEMIC_DEGREE_SETTINGS, DEFAULT_RESEARCH_EXPERIENCE_SETTINGS, DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS } from "@/lib/siteContentSettings";
 
@@ -24,6 +25,7 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
   const [inquiryPreviewLanguage, setInquiryPreviewLanguage] = useState<"ar" | "en">("ar");
   const previewInquiries = buildOpportunityInquiryLinks(settings.brand, inquiryPreviewTitle, inquiryPreviewLanguage);
   const [activeForwardTab, setActiveForwardTab] = useState<"participant" | "coordinator">("participant");
+  const [shareImageBusy, setShareImageBusy] = useState(false);
   const selectedInquiryChannels = getSelectedInquiryChannels({ ...settings.brand, opportunityInquiryEnabled: true });
   const missingInquiryTargets = Array.isArray(settings.brand.opportunityInquiryChannels) && settings.brand.opportunityInquiryEnabled !== false ? selectedInquiryChannels.filter((c) => !getInquiryOwnTarget(settings.brand, c)) : [];
   const latestSettings = useRef(settings);
@@ -163,7 +165,7 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
         </div>
         <div className="flex items-center gap-3">
           {message && <p className={`text-sm font-bold ${message.includes("نجاح") ? "text-[#117b59]" : "text-rose-600"}`}>{message}</p>}
-          <button type="button" onClick={onSave} disabled={saving} data-testid="button-save-content-settings" className="flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-[#117b59] px-5 py-3 font-black text-white shadow-sm transition hover:bg-[#0c6549] disabled:opacity-60">
+          <button type="button" onClick={onSave} disabled={saving || shareImageBusy} data-testid="button-save-content-settings" className="flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-[#117b59] px-5 py-3 font-black text-white shadow-sm transition hover:bg-[#0c6549] disabled:opacity-60">
             <Save size={17} />{saving ? "جارٍ الحفظ..." : "حفظ التغييرات"}
           </button>
         </div>
@@ -172,6 +174,7 @@ export default function ContentControlPanel({ settings, onChange, onSave, saving
       <div className="grid gap-6 xl:grid-cols-12">
         <div className="space-y-6 xl:col-span-8">
           <Panel title="إعدادات الهوية والتواصل" icon={Palette}>
+            <SiteShareImageSettings value={settings.brand.socialShareImageUrl || ""} onChange={(value) => updateBrand("socialShareImageUrl", value)} onBusyChange={setShareImageBusy} version={settings.brand.socialShareImageVersion} />
             <div className="grid gap-4 md:grid-cols-2">
               <TextField label="اسم المنصة (عربي)" value={settings.brand.siteNameAr} onChange={(v) => updateBrand("siteNameAr", v)} />
               <TextField label="اسم المنصة (إنجليزي)" value={settings.brand.siteNameEn} onChange={(v) => updateBrand("siteNameEn", v)} />

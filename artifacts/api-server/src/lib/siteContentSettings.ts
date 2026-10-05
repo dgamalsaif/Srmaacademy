@@ -87,6 +87,8 @@ export interface BrandContactSettings {
   siteNameEn: string;
   logoUrl: string;
   logoAnimationEnabled: boolean;
+  socialShareImageUrl?: string;
+  socialShareImageVersion?: string;
   appNameAr: string;
   appNameEn: string;
   appShortName: string;
@@ -625,6 +627,8 @@ type BrandTextKey = { [K in keyof BrandContactSettings]-?: BrandContactSettings[
       logoAnimationEnabled: typeof brandInput.logoAnimationEnabled === "boolean"
         ? brandInput.logoAnimationEnabled
         : DEFAULT_SITE_CONTENT_SETTINGS.brand.logoAnimationEnabled,
+      socialShareImageUrl: safeUrl(typeof brandInput.socialShareImageUrl === "string" ? brandInput.socialShareImageUrl : ""),
+      socialShareImageVersion: typeof brandInput.socialShareImageVersion === "string" ? brandInput.socialShareImageVersion.slice(0, 64) : "",
       appNameAr: brandText("appNameAr", 160),
       appNameEn: brandText("appNameEn", 160),
       appShortName: brandText("appShortName", 30),

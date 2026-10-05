@@ -116,7 +116,7 @@ export function PageSeo({ pathname, language, title, description, image, jsonLd,
     const canonical = buildPublicUrl(pathname, language);
     const configuredLogo = settings?.brand.logoUrl || "/srma-logo.jpg";
     const logo = configuredLogo.startsWith("https://") ? configuredLogo : `${SITE_URL}${configuredLogo}`;
-    const socialImage = image ? (image.startsWith("http") ? image : `${SITE_URL}${image.startsWith("/") ? "" : "/"}${image}`) : logo;
+    const socialImage = image ? (image.startsWith("http") ? image : `${SITE_URL}${image.startsWith("/") ? "" : "/"}${image}`) : `${SITE_URL}/api/site-share-image?v=${encodeURIComponent(settings?.brand.socialShareImageVersion || "current")}`;
 
     document.title = pageTitle;
     setMeta('meta[name="description"]', "name", pageDescription);
@@ -126,8 +126,6 @@ export function PageSeo({ pathname, language, title, description, image, jsonLd,
     setMeta('meta[property="og:url"]', "property", canonical);
     setMeta('meta[property="og:image"]', "property", socialImage);
     setMeta('meta[property="og:image:secure_url"]', "property", socialImage);
-    setMeta('meta[property="og:image:width"]', "property", "1200");
-    setMeta('meta[property="og:image:height"]', "property", "630");
     setMeta('meta[property="og:locale"]', "property", language === "ar" ? "ar_SA" : "en_US");
     setMeta('meta[name="twitter:card"]', "name", "summary_large_image");
     setMeta('meta[name="twitter:title"]', "name", pageTitle);
