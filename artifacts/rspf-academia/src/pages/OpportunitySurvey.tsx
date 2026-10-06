@@ -24,6 +24,7 @@ import {
   DEFAULT_ACADEMIC_DEGREE_SETTINGS,
   DEFAULT_RESEARCH_EXPERIENCE_SETTINGS,
   DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS,
+  getOrderedRegistrationFields,
 } from "@/lib/siteContentSettings";
 import { useLanguage } from "@/lib/i18n";
 import { PageSeo } from "@/lib/seo";
@@ -112,6 +113,12 @@ export default function OpportunitySurvey() {
   const fieldSetting = (id: RegistrationFieldId) =>
     contentSettings.registrationFields.find((f) => f.id === id) ||
     DEFAULT_SITE_CONTENT_SETTINGS.registrationFields.find((f) => f.id === id)!;
+  const localizedFieldText = (id: RegistrationFieldId) => {
+    const setting = fieldSetting(id);
+    return language === "en"
+      ? { label: setting.labelEn || setting.label, placeholder: setting.placeholderEn || setting.placeholder }
+      : { label: setting.label, placeholder: setting.placeholder };
+  };
   const visible = (id: ParticipantFieldId) => {
     if (id === "academicDegree") return degreeSettings.enabled;
     if (id === "researchExperience") return expSettings.enabled;
@@ -176,6 +183,10 @@ export default function OpportunitySurvey() {
       setError(localize("يرجى الإجابة على سؤال الخبرة البحثية السابقة", "Please answer the research experience question"));
       return;
     }
+    if (visible("researchExperience") && expSettings.enabled && hasResearchExp === "yes" && expSettings.detailsRequiredWhenYes && !researchExpDetails.trim()) {
+      setError(localize(expSettings.detailsLabelAr, expSettings.detailsLabelEn));
+      return;
+    }
     if (visible("feeAndTaskAgreement") && agreementSettings.enabled) {
       if (!agreeFeesAndTasks) {
         setError(localize("يرجى تحديد موافقتك على الرسوم والمهام البحثية", "Please indicate agreement with fees and research tasks"));
@@ -198,7 +209,7 @@ export default function OpportunitySurvey() {
           fullName: form.fullName.trim(),
           specialization: form.specialization.trim(),
           email: form.email.trim(),
-          whatsapp: `${form.dialCode} ${form.whatsapp}`.trim(),
+          whatsapp: visible("whatsapp") ? `${form.dialCode} ${form.whatsapp}`.trim() : "",
           affiliation: form.affiliation.trim(),
           country: form.country,
           city: form.city.trim(),
@@ -455,169 +466,96 @@ export default function OpportunitySurvey() {
                   </div>
                 </div>
 
-                {/* Personal & Academic Fields */}
+                {/* Registration fields rendered in the order configured from the admin page */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {visible("fullName") && (
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                        {localize("الاسم الثلاثي أو الرباعي بالإنجليزية (كما يُنشر في الورقة)", "Full Name in English (as it appears in paper)")}
-                        {required("fullName") && <span className="text-rose-500"> *</span>}
-                      </label>
-                      <input
-                        required={required("fullName")}
-                        type="text"
-                        value={form.fullName}
-                        onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-                        placeholder="Dr. Ahmed Mohammed Ali"
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-[#117b59] focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 text-left"
-                        dir="ltr"
-                      />
-                    </div>
-                  )}
+                  {getOrderedRegistrationFields(contentSettings).filter((field) => visible(field.id)).map((field) => {
+                    const setting = fieldSetting(field.id);
+                    const fieldText = localizedFieldText(field.id);
+                    if (field.id === "whatsapp") {
+                      return (
+                        <div key="whatsapp">
+                          <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                            {fieldText.label}
+                            {required("whatsapp") && <span className="text-rose-500"> *</span>}
+                          </label>
+                          <div className="flex gap-2" dir="ltr">
+                            <input
+                              type="text"
+                              readOnly
+                              value={form.dialCode}
+                              className="w-20 rounded-xl border border-slate-200 bg-slate-100 px-3 py-3 text-sm font-bold text-slate-700 text-center"
+                            />
+                            <input
+                              data-testid="input-whatsapp"
+                              required={required("whatsapp")}
+                              type="tel"
+                              value={form.whatsapp}
+                              onChange={(e) => setForm({ ...form, whatsapp: e.target.value.replace(/[^0-9]/g, "") })}
+                              placeholder={fieldText.placeholder}
+                              className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-[#117b59] focus:outline-none focus:ring-2 focus:ring-[#117b59]/20"
+                            />
+                          </div>
+                        </div>
+                      );
+                    }
+                    if (field.id === "country") {
+                      return (
+                        <div key="country">
+                          <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                            {fieldText.label}
+                            {required("country") && <span className="text-rose-500"> *</span>}
+                          </label>
+                          <CountrySelector
+                            country={form.country}
+                            onCountryChange={(country) => setForm({ ...form, country })}
+                            dialCode={form.dialCode}
+                            onDialCodeChange={(dialCode) => setForm({ ...form, dialCode })}
+                            required={required("country")}
+                          />
+                        </div>
+                      );
+                    }
+                    const isLtr = field.id === "email" || field.id === "orcid";
+                    return (
+                      <div key={field.id}>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                          {fieldText.label}
+                          {required(field.id) && <span className="text-rose-500"> *</span>}
+                        </label>
+                        <input
+                          data-testid={`input-${field.id}`}
+                          required={required(field.id)}
+                          type={setting.type}
+                          value={form[field.id]}
+                          onChange={(e) => setForm({ ...form, [field.id]: e.target.value })}
+                          placeholder={fieldText.placeholder}
+                          className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-[#117b59] focus:outline-none focus:ring-2 focus:ring-[#117b59]/20"
+                          dir={isLtr ? "ltr" : undefined}
+                        />
+                      </div>
+                    );
+                  })}
 
                   {visible("academicDegree") && degreeSettings.enabled && (
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                        {localize("الدرجة العلمية الحالية", "Current Academic Degree")}
+                        {localize(degreeSettings.labelAr, degreeSettings.labelEn)}
                         {required("academicDegree") && <span className="text-rose-500"> *</span>}
                       </label>
                       <select
+                        data-testid="select-academic-degree"
                         required={required("academicDegree")}
                         value={academicDegree}
                         onChange={(e) => setAcademicDegree(e.target.value)}
                         className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-[#117b59] focus:outline-none focus:ring-2 focus:ring-[#117b59]/20"
                       >
-                        <option value="">{localize("-- اختر الدرجة العلمية --", "-- Select Academic Degree --")}</option>
+                        <option value="">{localize("— اختر الدرجة الأكاديمية —", "— Select Academic Degree —")}</option>
                         {degreeSettings.options.map((opt) => (
-                          <option key={opt.id} value={opt.nameAr}>
+                          <option key={opt.id} value={language === "en" ? opt.nameEn : opt.nameAr}>
                             {localize(opt.nameAr, opt.nameEn)}
                           </option>
                         ))}
                       </select>
-                    </div>
-                  )}
-
-                  {visible("specialization") && (
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                        {localize("التخصص الطبي أو الدقيق", "Specialization")}
-                        {required("specialization") && <span className="text-rose-500"> *</span>}
-                      </label>
-                      <input
-                        required={required("specialization")}
-                        type="text"
-                        value={form.specialization}
-                        onChange={(e) => setForm({ ...form, specialization: e.target.value })}
-                        placeholder="طب وجراحة عامة / Cardiology"
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-[#117b59] focus:outline-none focus:ring-2 focus:ring-[#117b59]/20"
-                      />
-                    </div>
-                  )}
-
-                  {visible("affiliation") && (
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                        {localize("جهة الانتساب الأكاديمي أو الوظيفي (الجامعة أو المستشفى)", "Affiliation (University or Hospital)")}
-                        {required("affiliation") && <span className="text-rose-500"> *</span>}
-                      </label>
-                      <input
-                        required={required("affiliation")}
-                        type="text"
-                        value={form.affiliation}
-                        onChange={(e) => setForm({ ...form, affiliation: e.target.value })}
-                        placeholder="جامعة الملك سعود / King Saud University"
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-[#117b59] focus:outline-none focus:ring-2 focus:ring-[#117b59]/20"
-                      />
-                    </div>
-                  )}
-
-                  {visible("email") && (
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                        {localize("البريد الإلكتروني", "Email Address")}
-                        {required("email") && <span className="text-rose-500"> *</span>}
-                      </label>
-                      <input
-                        required={required("email")}
-                        type="email"
-                        value={form.email}
-                        onChange={(e) => setForm({ ...form, email: e.target.value })}
-                        placeholder="doctor@example.com"
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-[#117b59] focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 text-left"
-                        dir="ltr"
-                      />
-                    </div>
-                  )}
-
-                  {visible("whatsapp") && (
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                        {localize("رقم الواتساب مع المفتاح الدولي", "WhatsApp Number with Country Code")}
-                        {required("whatsapp") && <span className="text-rose-500"> *</span>}
-                      </label>
-                      <div className="flex gap-2" dir="ltr">
-                        <input
-                          type="text"
-                          readOnly
-                          value={form.dialCode}
-                          className="w-20 rounded-xl border border-slate-200 bg-slate-100 px-3 py-3 text-sm font-bold text-slate-700 text-center"
-                        />
-                        <input
-                          required={required("whatsapp")}
-                          type="tel"
-                          value={form.whatsapp}
-                          onChange={(e) => setForm({ ...form, whatsapp: e.target.value.replace(/[^0-9]/g, "") })}
-                          placeholder="5XXXXXXXX"
-                          className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-[#117b59] focus:outline-none focus:ring-2 focus:ring-[#117b59]/20"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {visible("country") && (
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                        {localize("الدولة", "Country")}
-                      </label>
-                      <CountrySelector
-                        country={form.country}
-                        onCountryChange={(country) => setForm({ ...form, country })}
-                        dialCode={form.dialCode}
-                        onDialCodeChange={(dialCode) => setForm({ ...form, dialCode })}
-                      />
-                    </div>
-                  )}
-
-                  {visible("city") && (
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                        {localize("المدينة", "City")}
-                        {required("city") && <span className="text-rose-500"> *</span>}
-                      </label>
-                      <input
-                        required={required("city")}
-                        type="text"
-                        value={form.city}
-                        onChange={(e) => setForm({ ...form, city: e.target.value })}
-                        placeholder="الرياض / مسقط / القاهرة"
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-[#117b59] focus:outline-none focus:ring-2 focus:ring-[#117b59]/20"
-                      />
-                    </div>
-                  )}
-
-                  {visible("orcid") && (
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                        {localize("معرّف ORCID (اختياري)", "ORCID iD (Optional)")}
-                      </label>
-                      <input
-                        type="text"
-                        value={form.orcid}
-                        onChange={(e) => setForm({ ...form, orcid: e.target.value })}
-                        placeholder="0000-0000-0000-0000"
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-[#117b59] focus:outline-none focus:ring-2 focus:ring-[#117b59]/20 text-left"
-                        dir="ltr"
-                      />
                     </div>
                   )}
                 </div>
@@ -626,7 +564,7 @@ export default function OpportunitySurvey() {
                 {visible("researchExperience") && expSettings.enabled && (
                   <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
                     <label className="block text-xs font-bold text-slate-800 mb-2">
-                      {localize("هل لديك خبرة بحثية سابقة؟", "Do you have previous research experience?")}
+                      {localize(expSettings.labelAr, expSettings.labelEn)}
                       {required("researchExperience") && <span className="text-rose-500"> *</span>}
                     </label>
                     <div className="flex gap-4">
@@ -639,7 +577,7 @@ export default function OpportunitySurvey() {
                           onChange={() => setHasResearchExp("yes")}
                           className="text-[#117b59] focus:ring-[#117b59]"
                         />
-                        <span>{localize("نعم", "Yes")}</span>
+                        <span>{localize(expSettings.yesLabelAr, expSettings.yesLabelEn)}</span>
                       </label>
                       <label className="inline-flex items-center gap-2 cursor-pointer text-sm font-bold text-slate-700">
                         <input
@@ -647,20 +585,31 @@ export default function OpportunitySurvey() {
                           name="exp"
                           value="no"
                           checked={hasResearchExp === "no"}
-                          onChange={() => setHasResearchExp("no")}
+                          onChange={() => {
+                            setHasResearchExp("no");
+                            setResearchExpDetails("");
+                          }}
                           className="text-[#117b59] focus:ring-[#117b59]"
                         />
-                        <span>{localize("لا (مبتدئ)", "No (Beginner)")}</span>
+                        <span>{localize(expSettings.noLabelAr, expSettings.noLabelEn)}</span>
                       </label>
                     </div>
                     {hasResearchExp === "yes" && (
-                      <textarea
-                        value={researchExpDetails}
-                        onChange={(e) => setResearchExpDetails(e.target.value)}
-                        placeholder={localize("اذكر ملخصاً بسيطاً (أبحاث منشورة، أو خبرة في التحليل والكتابة)...", "Briefly describe your experience...")}
-                        className="mt-3 w-full rounded-xl border border-slate-200 bg-white p-3 text-xs focus:border-[#117b59] focus:outline-none focus:ring-2 focus:ring-[#117b59]/20"
-                        rows={2}
-                      />
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mt-3 mb-1.5">
+                          {localize(expSettings.detailsLabelAr, expSettings.detailsLabelEn)}
+                          {expSettings.detailsRequiredWhenYes && <span className="text-rose-500"> *</span>}
+                        </label>
+                        <textarea
+                          data-testid="textarea-research-exp-details"
+                          required={expSettings.detailsRequiredWhenYes}
+                          value={researchExpDetails}
+                          onChange={(e) => setResearchExpDetails(e.target.value)}
+                          placeholder={localize(expSettings.detailsPlaceholderAr, expSettings.detailsPlaceholderEn)}
+                          className="w-full rounded-xl border border-slate-200 bg-white p-3 text-xs focus:border-[#117b59] focus:outline-none focus:ring-2 focus:ring-[#117b59]/20"
+                          rows={2}
+                        />
+                      </div>
                     )}
                   </div>
                 )}

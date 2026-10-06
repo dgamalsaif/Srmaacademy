@@ -59,6 +59,25 @@ async function createRegistration(req: Request, res: Response, coordinatorId: nu
   if (researchExperienceDetails) customFields.researchExperienceDetails = researchExperienceDetails;
   if (agreedToFeeAndTasks) customFields.agreedToFeeAndTasks = agreedToFeeAndTasks;
 
+  // Participant-only advanced settings (academic degree, research experience) must
+  // match what the registration form enforces, so API submissions cannot bypass them.
+  if (audience === "participant") {
+    const degreeSettings = settings.academicDegreeSettings;
+    if (degreeSettings?.enabled && degreeSettings.required && !academicDegree) {
+      res.status(400).json({ error: "يرجى اختيار الدرجة الأكاديمية لإتمام التسجيل." });
+      return;
+    }
+    const experienceSettings = settings.researchExperienceSettings;
+    if (experienceSettings?.enabled && experienceSettings.required && !hasResearchExperience) {
+      res.status(400).json({ error: "يرجى تحديد هل لديك خبرات بحثية سابقة أم لا." });
+      return;
+    }
+    if (experienceSettings?.enabled && hasResearchExperience === "yes" && experienceSettings.detailsRequiredWhenYes && !researchExperienceDetails) {
+      res.status(400).json({ error: "يرجى كتابة وتوضيح تفاصيل خبراتك البحثية السابقة." });
+      return;
+    }
+  }
+
   const parsed = insertRegistrationSchema.safeParse({
     ...source,
     fullName: valueOf("fullName"),
