@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { X, CheckCircle2, Loader2, UserRound, Building2, MapPin, AtSign, ExternalLink, MessageCircle, Send, Mail, Share2, GraduationCap, AlertTriangle, ShieldCheck } from "lucide-react";
 import CountrySelector from "./CountrySelector";
 import OpportunityPrice from "./OpportunityPrice";
-import { DEFAULT_SITE_CONTENT_SETTINGS, RegistrationFieldId, SiteContentSettings, buildForwardingUrl, ForwardingType, DEFAULT_ACADEMIC_DEGREE_SETTINGS, DEFAULT_RESEARCH_EXPERIENCE_SETTINGS, DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS } from "@/lib/siteContentSettings";
+import { DEFAULT_SITE_CONTENT_SETTINGS, RegistrationFieldId, SiteContentSettings, buildForwardingUrl, ForwardingType, DEFAULT_ACADEMIC_DEGREE_SETTINGS, DEFAULT_RESEARCH_EXPERIENCE_SETTINGS, DEFAULT_FEE_AND_TASK_AGREEMENT_SETTINGS, getOrderedRegistrationFields } from "@/lib/siteContentSettings";
 import { useLanguage } from "@/lib/i18n";
 import { apiFetch } from "@/lib/api";
 import { getRegistrationForwarding, loadLatestForwardingBrand } from "@/lib/registrationForwarding";
@@ -234,10 +234,10 @@ export default function RegistrationModal({
   };
 
   if (!isOpen) return null;
-  const baseFields: Array<{ key: "fullName" | "specialization" | "email" | "affiliation"; icon: typeof UserRound; ltr?: boolean }> = [
-    { key: "fullName", icon: UserRound }, { key: "specialization", icon: UserRound },
-    { key: "email", icon: AtSign, ltr: true }, { key: "affiliation", icon: Building2 },
-  ];
+  const orderedFields = getOrderedRegistrationFields(contentSettings);
+  const fieldIcon = (id: RegistrationFieldId): typeof UserRound | null =>
+    id === "email" ? AtSign : id === "affiliation" ? Building2 : id === "city" ? MapPin
+    : id === "whatsapp" || id === "orcid" || id === "country" ? null : UserRound;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={handleClose}>
@@ -299,31 +299,36 @@ export default function RegistrationModal({
           <form onSubmit={handleSubmit} className="space-y-4 px-6 py-6">
             {coordinatorEntry && <div className="rounded-xl border border-[#d8eee7] bg-[#f3fbf8] px-4 py-3 text-right text-sm leading-6 text-[#28634f]">{localizedSetting(contentSettings.coordinatorFormDescription, contentSettings.coordinatorFormDescriptionEn, "Enter the student's details exactly as they appear in their academic documents.")}</div>}
             {error && <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-right text-sm text-red-700">⚠️ {error}</div>}
-            {baseFields.filter(({ key }) => visible(key)).map(({ key, icon: Icon, ltr }) => {
-              const setting = fieldSetting(key);
-              return <div key={key}>
-                <label className="mb-1.5 block text-right text-sm font-semibold text-slate-700">{localizedField(key).label} {required(key) && <span className="text-rose-500">*</span>}</label>
+            {/* Registration fields rendered in the order configured from the admin page */}
+            {orderedFields.filter((field) => visible(field.id)).map((field) => {
+              const setting = fieldSetting(field.id);
+              if (field.id === "whatsapp") {
+                return <div key="whatsapp">
+                  <label className="mb-1.5 block text-right text-sm font-semibold text-slate-700">{localizedField("whatsapp").label} {required("whatsapp") && <span className="text-rose-500">*</span>}</label>
+                  <div className="flex gap-2" dir="ltr">
+                    <input data-testid="input-whatsapp" required={required("whatsapp")} type="tel" placeholder={localizedField("whatsapp").placeholder} value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} className="min-w-0 flex-1 rounded-xl border px-4 py-3 text-sm outline-none" style={{ borderColor: `${setting.color}55` }} />
+                    <span className="flex items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold" style={{ color: contentSettings.accentColor }}>{form.dialCode}</span>
+                  </div>
+                </div>;
+              }
+              if (field.id === "country") {
+                return <CountrySelector key="country" country={form.country} onCountryChange={(country) => setForm((previous) => ({ ...previous, country }))} dialCode={form.dialCode} onDialCodeChange={(dialCode) => setForm((previous) => ({ ...previous, dialCode }))} id={coordinatorEntry ? "student-country" : "registration-country"} required={required("country")} />;
+              }
+              if (field.id === "orcid") {
+                return <div key="orcid">
+                  <label className="mb-1.5 block text-right text-sm font-semibold text-slate-700">{localizedField("orcid").label} {required("orcid") && <span className="text-rose-500">*</span>}</label>
+                  <input data-testid="input-orcid" required={required("orcid")} type="text" placeholder={localizedField("orcid").placeholder} value={form.orcid} onChange={(e) => setForm({ ...form, orcid: e.target.value })} dir="ltr" className="w-full rounded-xl border px-4 py-3 text-left text-sm outline-none" style={{ borderColor: `${setting.color}55` }} />
+                </div>;
+              }
+              const Icon = fieldIcon(field.id);
+              return <div key={field.id}>
+                <label className="mb-1.5 block text-right text-sm font-semibold text-slate-700">{localizedField(field.id).label} {required(field.id) && <span className="text-rose-500">*</span>}</label>
                 <div className="relative">
-                  <Icon size={16} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: setting.color }} />
-                  <input data-testid={`input-${key}`} required={required(key)} type={setting.type} placeholder={localizedField(key).placeholder} value={form[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} dir={ltr ? "ltr" : undefined} className="w-full rounded-xl border py-3 pr-10 pl-4 text-right text-sm outline-none transition focus:ring-2" style={{ borderColor: `${setting.color}55` }} />
+                  {Icon && <Icon size={16} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: setting.color }} />}
+                  <input data-testid={`input-${field.id}`} required={required(field.id)} type={setting.type} placeholder={localizedField(field.id).placeholder} value={form[field.id]} onChange={(e) => setForm({ ...form, [field.id]: e.target.value })} dir={field.id === "email" ? "ltr" : undefined} className="w-full rounded-xl border py-3 pr-10 pl-4 text-right text-sm outline-none transition focus:ring-2" style={{ borderColor: `${setting.color}55` }} />
                 </div>
               </div>;
             })}
-
-            {visible("whatsapp") && <div>
-              <label className="mb-1.5 block text-right text-sm font-semibold text-slate-700">{localizedField("whatsapp").label} {required("whatsapp") && <span className="text-rose-500">*</span>}</label>
-              <div className="flex gap-2" dir="ltr">
-                <input data-testid="input-whatsapp" required={required("whatsapp")} type="tel" placeholder={localizedField("whatsapp").placeholder} value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} className="min-w-0 flex-1 rounded-xl border px-4 py-3 text-sm outline-none" style={{ borderColor: `${fieldSetting("whatsapp").color}55` }} />
-                <span className="flex items-center rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm font-bold" style={{ color: contentSettings.accentColor }}>{form.dialCode}</span>
-              </div>
-            </div>}
-
-            {(visible("city") || visible("orcid")) && <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {visible("city") && <div><label className="mb-1.5 block text-right text-sm font-semibold text-slate-700">{localizedField("city").label} {required("city") && <span className="text-rose-500">*</span>}</label><div className="relative"><MapPin size={16} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: fieldSetting("city").color }} /><input data-testid="input-city" required={required("city")} type="text" placeholder={localizedField("city").placeholder} value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className="w-full rounded-xl border py-3 pr-10 pl-4 text-right text-sm outline-none" style={{ borderColor: `${fieldSetting("city").color}55` }} /></div></div>}
-              {visible("orcid") && <div><label className="mb-1.5 block text-right text-sm font-semibold text-slate-700">{localizedField("orcid").label} {required("orcid") && <span className="text-rose-500">*</span>}</label><input data-testid="input-orcid" required={required("orcid")} type="text" placeholder={localizedField("orcid").placeholder} value={form.orcid} onChange={(e) => setForm({ ...form, orcid: e.target.value })} dir="ltr" className="w-full rounded-xl border px-4 py-3 text-left text-sm outline-none" style={{ borderColor: `${fieldSetting("orcid").color}55` }} /></div>}
-            </div>}
-
-            {visible("country") && <CountrySelector country={form.country} onCountryChange={(country) => setForm((previous) => ({ ...previous, country }))} dialCode={form.dialCode} onDialCodeChange={(dialCode) => setForm((previous) => ({ ...previous, dialCode }))} id={coordinatorEntry ? "student-country" : "registration-country"} required={required("country")} />}
 
             {!coordinatorEntry && (priceDiscountedSar || priceOriginalSar) && (
               <div className="rounded-xl overflow-hidden mb-2">

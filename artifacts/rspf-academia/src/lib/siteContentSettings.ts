@@ -382,6 +382,27 @@ export const DEFAULT_SITE_CONTENT_SETTINGS: SiteContentSettings = {
   },
 };
 
+/**
+ * Registration fields in the order configured from the admin page.
+ * Unknown ids saved by past settings are dropped, and any default field
+ * missing from the saved list is appended at the end, so the participant
+ * and coordinator forms always render a complete, admin-ordered form.
+ */
+export function getOrderedRegistrationFields(
+  settings?: Pick<SiteContentSettings, "registrationFields"> | null,
+): RegistrationFieldSetting[] {
+  const defaults = DEFAULT_SITE_CONTENT_SETTINGS.registrationFields;
+  const knownIds = new Set(defaults.map((field) => field.id));
+  const configured = Array.isArray(settings?.registrationFields)
+    ? settings.registrationFields.filter((field) => field && knownIds.has(field.id))
+    : [];
+  const byId = new Map<RegistrationFieldId, RegistrationFieldSetting>(configured.map((field) => [field.id, field]));
+  for (const fallback of defaults) {
+    if (!byId.has(fallback.id)) byId.set(fallback.id, fallback);
+  }
+  return [...byId.values()];
+}
+
 export function getContactUsHref(brand?: BrandContactSettings): { href: string; isExternal: boolean; labelAr: string; labelEn: string } {
   const b = brand || DEFAULT_SITE_CONTENT_SETTINGS.brand;
   const type = b.contactUsType || "whatsapp";
